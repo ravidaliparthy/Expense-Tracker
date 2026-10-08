@@ -2,20 +2,26 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
-import { ApiService } from '../../core/api.service';
+import { ApiService, DEFAULT_FALLBACK_CATEGORIES } from '../../core/api.service';
 import { Category } from '../../core/models';
 
 @Component({ selector: 'app-categories', standalone: true, imports: [CommonModule, FormsModule], template: `
   <div class="categories-container">
     <h1>Categories</h1>
     <p class="lede">Dynamic departments with custom emojis. Deleting a category archives it — past transactions keep their label, color and emoji snapshot.</p>
-    <div class="flash {{ f.type }}" *ngIf="flash() as f">{{ f.text }}</div>
+    <div class="flash {{ f.type }}" *ngIf="flash() as f" style="display:flex;align-items:center;gap:8px">
+      <span>{{ f.text }}</span>
+      <button *ngIf="f.type === 'err'" class="ghost" style="margin-left:auto;padding:2px 8px;font-size:11px" (click)="load(true)">↻ Retry</button>
+    </div>
 
     <div class="layout">
       <!-- ALL CATEGORIES CARD -->
       <div class="card all-cats-card">
         <div class="card-header-row">
           <h3>All categories ({{ cats().length }})</h3>
+          <button class="ghost refresh-btn" (click)="load(true)" [disabled]="loading()" title="Refresh categories from cloud">
+            {{ loading() ? '↻ Loading...' : '↻ Refresh' }}
+          </button>
         </div>
 
         <!-- DESKTOP TABLE VIEW -->
@@ -190,7 +196,20 @@ import { Category } from '../../core/models';
 `] })
 export class CategoriesPage implements OnInit {
   private api = inject(ApiService);
-  readonly cats = signal<Category[]>([]);
+
+  private readInitialCats(): Category[] {
+    try {
+      const cached = localStorage.getItem('et.categories');
+      if (cached) {
+        const parsed = JSON.parse(cached) as Category[];
+        if (parsed.length) return parsed;
+      }
+    } catch {}
+    return [...DEFAULT_FALLBACK_CATEGORIES];
+  }
+
+  readonly cats = signal<Category[]>(this.readInitialCats());
+  readonly loading = signal(false);
   readonly flash = signal<{ type: string; text: string } | null>(null);
   readonly saving = signal<number | null>(null);
   readonly deletingCatIds = signal<Set<number>>(new Set());
@@ -202,11 +221,21 @@ export class CategoriesPage implements OnInit {
     await this.load(true);
   }
 
-  private async load(includeArchived: boolean): Promise<void> {
+  async load(includeArchived: boolean = true): Promise<void> {
     try {
-      this.cats.set(await firstValueFrom(this.api.getCategories(includeArchived)));
+      this.loading.set(true);
+      const data = await firstValueFrom(this.api.getCategories(includeArchived));
+      if (data && data.length) {
+        this.cats.set(data);
+      }
     } catch {
-      this.flash.set({ type: 'err', text: 'Failed to load categories' });
+      if (this.cats().length === 0) {
+        this.cats.set(this.readInitialCats());
+      }
+      this.flash.set({ type: 'err', text: 'Network connection slow — showing saved categories' });
+      setTimeout(() => { if (this.flash()?.type === 'err') this.flash.set(null); }, 4000);
+    } finally {
+      this.loading.set(false);
     }
   }
 

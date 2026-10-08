@@ -1,9 +1,22 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, firstValueFrom, throwError } from 'rxjs';
+import { Observable, firstValueFrom, of, throwError } from 'rxjs';
+import { catchError, tap } from 'rxjs/operators';
 import { Budget, Category, Expense, ExpensePage, Filters, Insights, TransactionKind } from './models';
 import { OfflineQueueService } from './offline-queue.service';
 import { safeUuid } from './uuid';
+
+export const DEFAULT_FALLBACK_CATEGORIES: Category[] = [
+  { id: 1, name: 'Food', colorHex: '#F97316', icon: '🍔', isSystem: true, isArchived: false },
+  { id: 2, name: 'Travel', colorHex: '#3B82F6', icon: '✈️', isSystem: true, isArchived: false },
+  { id: 3, name: 'Shopping', colorHex: '#EC4899', icon: '🛍️', isSystem: true, isArchived: false },
+  { id: 4, name: 'Utilities', colorHex: '#F59E0B', icon: '💡', isSystem: true, isArchived: false },
+  { id: 5, name: 'Health', colorHex: '#10B981', icon: '💊', isSystem: true, isArchived: false },
+  { id: 6, name: 'Entertainment', colorHex: '#8B5CF6', icon: '🎬', isSystem: true, isArchived: false },
+  { id: 7, name: 'Salary', colorHex: '#22C55E', icon: '💰', isSystem: true, isArchived: false },
+  { id: 8, name: 'Freelance', colorHex: '#06B6D4', icon: '🧑‍💻', isSystem: true, isArchived: false },
+  { id: 9, name: 'Bonus', colorHex: '#EAB308', icon: '🎉', isSystem: true, isArchived: false },
+];
 
 export interface BudgetStatusDto { range: { from: string; to: string }; statuses: import('./budget-status').BudgetStatus[]; }
 export interface SummaryDto {
@@ -19,7 +32,25 @@ export class ApiService {
   private queue = inject(OfflineQueueService);
 
   getCategories(includeArchived = false): Observable<Category[]> {
-    return this.http.get<Category[]>('/api/categories', { params: includeArchived ? { includeArchived: 'true' } : {} });
+    return this.http.get<Category[]>('/api/categories', { params: includeArchived ? { includeArchived: 'true' } : {} }).pipe(
+      tap((cats) => {
+        try {
+          if (cats && cats.length) {
+            localStorage.setItem('et.categories', JSON.stringify(cats));
+          }
+        } catch {}
+      }),
+      catchError(() => {
+        try {
+          const cached = localStorage.getItem('et.categories');
+          if (cached) {
+            const list = JSON.parse(cached) as Category[];
+            if (list.length) return of(list);
+          }
+        } catch {}
+        return of([...DEFAULT_FALLBACK_CATEGORIES]);
+      })
+    );
   }
   createCategory(body: { name: string; colorHex: string; icon?: string | null }): Observable<Category> { return this.http.post<Category>('/api/categories', body); }
   updateCategory(id: number, body: Partial<Pick<Category, 'name' | 'colorHex' | 'icon' | 'isArchived'>>): Observable<Category> { return this.http.patch<Category>(`/api/categories/${id}`, body); }
