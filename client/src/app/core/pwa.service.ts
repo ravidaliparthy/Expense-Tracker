@@ -14,11 +14,30 @@ export class PwaService {
   private deferredPrompt: any = null;
   readonly canInstall = signal(false);
   readonly isStandalone = signal(false);
+  readonly isIos = signal(false);
+  readonly isIosChrome = signal(false);
+  readonly showIosInstructions = signal(false);
+  readonly copiedLink = signal(false);
 
   constructor() {
+    this.detectPlatform();
     this.detectStandalone();
     this.initUpdateChecker();
     this.initInstallPrompt();
+  }
+
+  private detectPlatform(): void {
+    if (typeof window === 'undefined') return;
+    const ua = window.navigator.userAgent.toLowerCase();
+    const isIos = /iphone|ipad|ipod/.test(ua) && !(window as any).MSStream;
+    const isIosChrome = isIos && (/crios/.test(ua) || /fxios/.test(ua));
+    this.isIos.set(isIos);
+    this.isIosChrome.set(isIosChrome);
+
+    // On iOS running in normal browser (not added to home screen yet), enable install button
+    if (isIos && !this.isStandalone()) {
+      this.canInstall.set(true);
+    }
   }
 
   private detectStandalone(): void {
@@ -27,6 +46,9 @@ export class PwaService {
       window.matchMedia?.('(display-mode: standalone)').matches ||
       (window.navigator as any).standalone === true;
     this.isStandalone.set(!!isStandalone);
+    if (isStandalone) {
+      this.canInstall.set(false);
+    }
   }
 
   private initUpdateChecker(): void {
@@ -102,7 +124,16 @@ export class PwaService {
 
   /** Prompt the user to install the app on their home screen */
   async installApp(): Promise<void> {
-    if (!this.deferredPrompt) return;
+    if (this.isIos()) {
+      this.showIosInstructions.set(true);
+      return;
+    }
+
+    if (!this.deferredPrompt) {
+      this.showIosInstructions.set(true);
+      return;
+    }
+
     try {
       this.deferredPrompt.prompt();
       const choice = await this.deferredPrompt.userChoice;
@@ -112,6 +143,32 @@ export class PwaService {
       this.deferredPrompt = null;
     } catch {
       this.canInstall.set(false);
+    }
+  }
+
+  closeIosInstructions(): void {
+    this.showIosInstructions.set(false);
+  }
+
+  async copyAppLink(): Promise<void> {
+    if (typeof window === 'undefined') return;
+    const url = window.location.href;
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(url);
+      } else {
+        const input = document.createElement('input');
+        input.value = url;
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand('copy');
+        document.body.removeChild(input);
+      }
+      this.copiedLink.set(true);
+      setTimeout(() => this.copiedLink.set(false), 3000);
+    } catch {
+      this.copiedLink.set(true);
+      setTimeout(() => this.copiedLink.set(false), 3000);
     }
   }
 }

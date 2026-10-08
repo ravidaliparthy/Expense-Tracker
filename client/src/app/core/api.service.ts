@@ -3,6 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, firstValueFrom, throwError } from 'rxjs';
 import { Budget, Category, Expense, ExpensePage, Filters, Insights, TransactionKind } from './models';
 import { OfflineQueueService } from './offline-queue.service';
+import { safeUuid } from './uuid';
 
 export interface BudgetStatusDto { range: { from: string; to: string }; statuses: import('./budget-status').BudgetStatus[]; }
 export interface SummaryDto {
@@ -30,10 +31,11 @@ export class ApiService {
   }
   async createExpense(body: { clientUuid?: string; amountCents: number; occurredAt: string; categoryId: number | null; kind: TransactionKind; merchant?: string | null; notes?: string | null; }): Promise<{ id: number; status?: string } | 'queued'> {
     try { return await firstValueFrom(this.http.post<{ id: number; status?: string }>('/api/expenses', body)); }
-    catch (err) { if (this.isNetworkError(err)) { this.queue.enqueue({ clientUuid: body.clientUuid ?? crypto.randomUUID(), op: 'create', payload: body }); return 'queued'; } return throwError(() => err) as never; }
+    catch (err) { if (this.isNetworkError(err)) { this.queue.enqueue({ clientUuid: body.clientUuid ?? safeUuid(), op: 'create', payload: body }); return 'queued'; } return throwError(() => err) as never; }
   }
   updateExpense(id: number, body: Record<string, unknown>): Observable<Expense> { return this.http.patch<Expense>(`/api/expenses/${id}`, body); }
   deleteExpense(id: number): Observable<void> { return this.http.delete<void>(`/api/expenses/${id}`); }
+  seedSample(): Observable<{ ok: boolean; count: number }> { return this.http.post<{ ok: boolean; count: number }>('/api/expenses/seed-sample', {}); }
 
   getBudgets(period: 'monthly' | 'yearly', year: number, month: number): Observable<Budget[]> { return this.http.get<Budget[]>('/api/budgets', { params: { period, year, month } }); }
   saveBudget(body: Record<string, unknown>): Observable<Budget> { return this.http.put<Budget>('/api/budgets', body); }

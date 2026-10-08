@@ -13,6 +13,7 @@ import { FilterBarComponent } from './filter-bar.component';
 import { ExpenseTableComponent } from './expense-table.component';
 import { ExpenseFormComponent, ExpenseFormValue } from './expense-form.component';
 import { OnboardingOverlayComponent } from '../onboarding/onboarding-overlay.component';
+import { safeUuid } from '../../core/uuid';
 const pad = (n: number) => String(n).padStart(2, '0');
 
 export interface BreakdownRow {
@@ -129,6 +130,15 @@ export interface BreakdownRow {
     :host-context([data-theme='dark']) .sort-btn:hover{background:#334155}
     :host-context([data-theme='dark']) .sort-btn.active{background:#312E81;border-color:#6366F1;color:#A5B4FC}
     :host-context([data-theme='dark']) .sortable:hover{color:#A5B4FC}
+
+    /* Empty state card */
+    .empty-state-card { text-align:center; padding:32px 16px; background:#F8FAFC; border:1px dashed #CBD5E1; border-radius:12px; margin-top:8px; }
+    :host-context([data-theme='dark']) .empty-state-card { background:#1E293B; border-color:#334155; }
+    .empty-state-art { font-size:36px; margin-bottom:8px; }
+    .empty-state-card h4 { margin:0 0 6px; font-size:16px; color:#1E293B; }
+    :host-context([data-theme='dark']) .empty-state-card h4 { color:#F1F5F9; }
+    .empty-state-desc { color:#64748B; font-size:13px; max-width:440px; margin:0 auto 16px; line-height:1.4; }
+    .empty-state-actions { display:flex; justify-content:center; gap:10px; flex-wrap:wrap; }
   `]
 })
 export class DashboardPage {
@@ -137,6 +147,7 @@ export class DashboardPage {
   readonly trackById = (_: number, e: Expense): number => e.id;
   readonly expenses=signal<Expense[]>([]); readonly total=signal(0); readonly categories=signal<Category[]>([]); readonly budgets=signal<Budget[]>([]); readonly summary=signal<SummaryDto|null>(null); readonly insights=signal<Insights|null>(null); readonly loading=signal(false); readonly flash=signal<{type:'ok'|'warn'|'err';text:string}|null>(null); readonly exportBusy=signal(false); readonly formOpen=signal(false); readonly editing=signal<Expense|null>(null); readonly hadData=signal(false);
   readonly deletingIds=signal<Set<number>>(new Set());
+  readonly seedingDemo=signal(false);
 
   // Customizable breakdown mode & sub-filter keys
   readonly breakdownMode=signal<'weekday'|'weekly'|'monthly'|'yearly'>('weekday');
@@ -541,6 +552,19 @@ export class DashboardPage {
     window.addEventListener('et:synced',()=>void this.reload());
   }
   readonly tierMsg=(s:BudgetStatus):string=>{ if(s.tier==='exceeded')return`Over budget by ${money(-s.remainingCents,this.currency())}!`; if(s.tier==='critical')return`${s.percentUsed}% used — ${money(s.remainingCents,this.currency())} left`; if(s.tier==='warning')return`${s.percentUsed}% used — approaching limit`; if(s.isProjectionOver)return`Projected ${money(s.projectedSpendCents,this.currency())} by period end`; return`${money(s.remainingCents,this.currency())} remaining`; };
+  async seedSampleData(): Promise<void> {
+    try {
+      this.seedingDemo.set(true);
+      const res = await firstValueFrom(this.api.seedSample());
+      this.flash.set({ type: 'ok', text: `Loaded ${res.count} sample transactions!` });
+      setTimeout(() => { if (this.flash()?.type === 'ok') this.flash.set(null); }, 3500);
+      await this.reload();
+    } catch {
+      this.flash.set({ type: 'err', text: 'Could not load sample data' });
+    } finally {
+      this.seedingDemo.set(false);
+    }
+  }
   reload():Promise<void>{return this.loadFor(this.filter.filters());} min(a:number,b:number):number{return Math.min(a,b);}
   private async loadCategories(): Promise<void> {
     try {
@@ -634,7 +658,7 @@ export class DashboardPage {
         await firstValueFrom(this.api.updateExpense(editing.id, { ...v, baseVersion: editing.syncVersion }));
         this.flash.set({ type: 'ok', text: 'Transaction updated successfully.' });
       } else {
-        const res = await this.api.createExpense({ ...v, clientUuid: crypto.randomUUID() });
+        const res = await this.api.createExpense({ ...v, clientUuid: safeUuid() });
         this.flash.set(
           res === 'queued'
             ? { type: 'warn', text: 'Offline — saved locally, will sync when back online' }

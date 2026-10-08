@@ -153,8 +153,16 @@
         </button>
       </div>
     </div>
-    <div *ngIf="sortedExpenses().length === 0" style="color:#94A3B8;text-align:center;padding:24px 0">
-      No transactions match the current filters.
+    <div *ngIf="sortedExpenses().length === 0" class="empty-state-card">
+      <div class="empty-state-art">📊</div>
+      <h4>Your dashboard is ready — no transactions yet</h4>
+      <p class="empty-state-desc">Add your first transaction, or load sample data to explore cashflow charts, category breakdowns, and budgets in action.</p>
+      <div class="empty-state-actions">
+        <button type="button" class="btn-primary" (click)="openCreate()">+ Add Transaction</button>
+        <button type="button" class="btn-ghost" (click)="seedSampleData()" [disabled]="seedingDemo()">
+          {{ seedingDemo() ? 'Loading sample data...' : '⚡ Load Sample Data' }}
+        </button>
+      </div>
     </div>
     <div class="tbl-wrap" *ngIf="sortedExpenses().length > 0">
       <table>

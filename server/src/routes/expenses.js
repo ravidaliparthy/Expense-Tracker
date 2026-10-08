@@ -194,4 +194,71 @@ router.post('/restore/:id', (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+router.post('/seed-sample', (req, res, next) => {
+  try {
+    const db = getDb();
+    const userId = req.user.id;
+    const cats = db.prepare(
+      `SELECT id, name, color_hex AS colorHex, icon FROM categories WHERE user_id = ? AND deleted_at IS NULL`
+    ).all(userId);
+    const byName = Object.fromEntries(cats.map((c) => [c.name, c]));
+
+    const now = new Date();
+    const y = now.getUTCFullYear();
+    const m = String(now.getUTCMonth() + 1).padStart(2, '0');
+    const currency = req.user.base_currency || 'USD';
+    const tz = req.user.timezone || 'UTC';
+
+    const insert = db.prepare(
+      `INSERT INTO expenses (user_id, category_id, category_name_snapshot, category_color_snapshot,
+         category_icon_snapshot, amount_cents, currency, kind, occurred_at_utc, local_date, tz_offset_minutes,
+         merchant, notes, client_uuid)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+    );
+
+    const samples = [
+      { cat: 'Salary', kind: 'income', cents: 450000, day: '01', merchant: 'Direct Deposit', notes: 'Monthly payroll credit' },
+      { cat: 'Food', kind: 'expense', cents: 4520, day: '02', merchant: 'Whole Foods Market', notes: 'Weekly grocery basket' },
+      { cat: 'Utilities', kind: 'expense', cents: 9500, day: '03', merchant: 'Power & Gas Co', notes: 'Home utilities bill' },
+      { cat: 'Entertainment', kind: 'expense', cents: 1999, day: '04', merchant: 'Netflix', notes: 'Monthly streaming subscription' },
+      { cat: 'Shopping', kind: 'expense', cents: 6250, day: '05', merchant: 'Amazon', notes: 'Home essentials' },
+      { cat: 'Travel', kind: 'expense', cents: 3400, day: '06', merchant: 'Metro Transit / Uber', notes: 'Transit fare' },
+      { cat: 'Food', kind: 'expense', cents: 2850, day: '07', merchant: 'Local Cafe', notes: 'Lunch with team' },
+      { cat: 'Health', kind: 'expense', cents: 4200, day: '08', merchant: 'Wellness Pharmacy', notes: 'Prescription & vitamins' },
+    ];
+
+    const seedTx = db.transaction(() => {
+      let count = 0;
+      for (const s of samples) {
+        const c = byName[s.cat] || Object.values(byName)[0];
+        const localDate = `${y}-${m}-${s.day}`;
+        const timeIso = `${localDate}T12:00:00.000Z`;
+        const { utc, offset } = resolveInstant(timeIso, tz);
+        insert.run(
+          userId,
+          c ? c.id : null,
+          c ? c.name : 'General',
+          c ? c.colorHex : '#64748B',
+          c ? c.icon : '🏷️',
+          s.cents,
+          currency,
+          s.kind,
+          utc,
+          localDate,
+          offset,
+          s.merchant,
+          s.notes,
+          crypto.randomUUID()
+        );
+        count++;
+      }
+      return count;
+    });
+
+    const inserted = seedTx();
+    audit(userId, 'expense', userId, 'seed_sample', { count: inserted });
+    res.json({ ok: true, count: inserted });
+  } catch (err) { next(err); }
+});
+
 module.exports = { router, buildFilters, SELECT_EXP };

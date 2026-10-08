@@ -65,6 +65,60 @@ import { KeepAliveService } from './core/keep-alive.service';
           <router-outlet />
         </main>
       </div>
+
+      <!-- iOS PWA Installation Guidance Modal -->
+      <div class="ios-modal-backdrop" *ngIf="pwa.showIosInstructions()" (click)="pwa.closeIosInstructions()">
+        <div class="ios-modal-sheet" (click)="$event.stopPropagation()">
+          <div class="ios-modal-handle"></div>
+          <div class="ios-modal-header">
+            <div class="ios-modal-icon">📲</div>
+            <div class="ios-modal-title-wrap">
+              <h3>Install ExpenseTracker</h3>
+              <p class="ios-modal-subtitle">Run full-screen on your iPhone home screen</p>
+            </div>
+            <button class="ios-modal-close" (click)="pwa.closeIosInstructions()">✕</button>
+          </div>
+
+          <div class="ios-modal-body">
+            <div class="ios-warning-banner" *ngIf="pwa.isIosChrome()">
+              <span class="ios-warn-icon">ℹ️</span>
+              <div>
+                <strong>Using Chrome on iPhone?</strong>
+                <p>Apple only allows Home Screen app installation from <strong>Safari</strong>. Open this link in Safari to install.</p>
+              </div>
+            </div>
+
+            <div class="ios-copy-box" *ngIf="pwa.isIosChrome()">
+              <button class="btn-copy-link" (click)="pwa.copyAppLink()">
+                {{ pwa.copiedLink() ? '✓ Copied! Open Safari and paste' : '📋 Copy App Link for Safari' }}
+              </button>
+            </div>
+
+            <div class="ios-steps-list">
+              <div class="ios-step-item" *ngIf="pwa.isIosChrome()">
+                <div class="step-num">1</div>
+                <div class="step-desc">Open <strong>Safari</strong> on your iPhone and paste the link.</div>
+              </div>
+              <div class="ios-step-item">
+                <div class="step-num">{{ pwa.isIosChrome() ? '2' : '1' }}</div>
+                <div class="step-desc">Tap the <strong>Share</strong> button <span class="share-icon-badge">⎋</span> at the bottom of Safari.</div>
+              </div>
+              <div class="ios-step-item">
+                <div class="step-num">{{ pwa.isIosChrome() ? '3' : '2' }}</div>
+                <div class="step-desc">Scroll down and tap <span class="action-highlight">⊞ Add to Home Screen</span>.</div>
+              </div>
+              <div class="ios-step-item">
+                <div class="step-num">{{ pwa.isIosChrome() ? '4' : '3' }}</div>
+                <div class="step-desc">Tap <strong>Add</strong> in the top-right corner — done! 🎉</div>
+              </div>
+            </div>
+
+            <div class="ios-modal-footer">
+              <button class="btn-primary" style="width:100%" (click)="pwa.closeIosInstructions()">Got it</button>
+            </div>
+          </div>
+        </div>
+      </div>
     </ng-container>
     <ng-template #loginOutlet>
       <router-outlet />
@@ -99,7 +153,7 @@ import { KeepAliveService } from './core/keep-alive.service';
       .shell {
         display: block !important;
         min-height: calc(100vh - 56px) !important;
-        padding-bottom: 64px !important;
+        padding-bottom: calc(85px + env(safe-area-inset-bottom, 0px)) !important;
       }
       .sidenav {
         position: fixed !important;
@@ -108,14 +162,13 @@ import { KeepAliveService } from './core/keep-alive.service';
         left: 0 !important;
         right: 0 !important;
         width: 100% !important;
-        height: 56px !important;
-        max-height: 56px !important;
+        height: auto !important;
+        min-height: 56px !important;
         z-index: 100 !important;
         background: #0F172A !important;
         border-top: 1px solid #1E293B !important;
         border-bottom: none !important;
-        padding: 0 4px !important;
-        padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+        padding: 4px 4px max(6px, env(safe-area-inset-bottom, 0px)) !important;
         display: flex !important;
         flex-direction: row !important;
         justify-content: space-around !important;
@@ -207,6 +260,177 @@ import { KeepAliveService } from './core/keep-alive.service';
     .install-btn:hover {
       background: rgba(99, 102, 241, 0.35) !important;
       color: #FFFFFF !important;
+    }
+
+    /* iOS Install Guidance Bottom Sheet */
+    .ios-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.65);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      z-index: 1000;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      animation: fadeIn 0.2s ease;
+    }
+    .ios-modal-sheet {
+      background: #FFFFFF;
+      width: 100%;
+      max-width: 480px;
+      border-radius: 20px 20px 0 0;
+      padding: 16px 20px calc(24px + env(safe-area-inset-bottom, 0px));
+      box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.25);
+      animation: sheetSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      box-sizing: border-box;
+    }
+    :host-context([data-theme='dark']) .ios-modal-sheet {
+      background: #1E293B;
+      color: #F1F5F9;
+      border-top: 1px solid #334155;
+    }
+    @keyframes sheetSlideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    .ios-modal-handle {
+      width: 38px;
+      height: 4px;
+      background: #CBD5E1;
+      border-radius: 999px;
+      margin: 0 auto 14px;
+    }
+    .ios-modal-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+      position: relative;
+    }
+    .ios-modal-icon {
+      font-size: 32px;
+      line-height: 1;
+    }
+    .ios-modal-title-wrap h3 {
+      margin: 0 0 2px;
+      font-size: 17px;
+      font-weight: 700;
+    }
+    .ios-modal-subtitle {
+      margin: 0;
+      font-size: 12px;
+      color: #64748B;
+    }
+    .ios-modal-close {
+      margin-left: auto;
+      background: #F1F5F9;
+      border: none;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      font-size: 12px;
+      cursor: pointer;
+      color: #64748B;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    :host-context([data-theme='dark']) .ios-modal-close {
+      background: #334155;
+      color: #94A3B8;
+    }
+    .ios-warning-banner {
+      display: flex;
+      gap: 10px;
+      background: #EFF6FF;
+      border: 1px solid #BFDBFE;
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin-bottom: 12px;
+      font-size: 12px;
+      color: #1E40AF;
+      line-height: 1.4;
+    }
+    .ios-warning-banner strong {
+      display: block;
+      margin-bottom: 2px;
+      font-size: 13px;
+    }
+    .ios-warning-banner p {
+      margin: 0;
+    }
+    .ios-warn-icon {
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    .ios-copy-box {
+      margin-bottom: 14px;
+    }
+    .btn-copy-link {
+      width: 100%;
+      padding: 10px;
+      background: #EEF2FF;
+      border: 1px dashed #6366F1;
+      border-radius: 8px;
+      color: #4F46E5;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      transition: background 0.1s ease;
+    }
+    .btn-copy-link:hover {
+      background: #E0E7FF;
+    }
+    .ios-steps-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+    .ios-step-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 13px;
+    }
+    .step-num {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #6366F1;
+      color: #FFFFFF;
+      font-weight: 700;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .step-desc {
+      color: #334155;
+      line-height: 1.4;
+    }
+    :host-context([data-theme='dark']) .step-desc {
+      color: #CBD5E1;
+    }
+    .share-icon-badge {
+      display: inline-block;
+      background: #F1F5F9;
+      border: 1px solid #CBD5E1;
+      border-radius: 4px;
+      padding: 1px 5px;
+      font-weight: bold;
+      color: #2563EB;
+      font-size: 14px;
+    }
+    .action-highlight {
+      font-weight: 600;
+      color: #4F46E5;
     }
   `],
 })

@@ -8,6 +8,7 @@ import { AuthService } from '../../core/auth.service';
 import { Category, Expense, money, signedMoney } from '../../core/models';
 import { FilterBarComponent } from '../dashboard/filter-bar.component';
 import { ExpenseFormComponent, ExpenseFormValue } from '../dashboard/expense-form.component';
+import { safeUuid } from '../../core/uuid';
 
 @Component({
   selector: 'app-transactions-page',
@@ -438,7 +439,7 @@ export class TransactionsPage {
         await firstValueFrom(this.api.updateExpense(editing.id, { ...v, baseVersion: editing.syncVersion }));
         this.flash.set({ type: 'ok', text: 'Transaction updated successfully.' });
       } else {
-        const res = await this.api.createExpense({ ...v, clientUuid: crypto.randomUUID() });
+        const res = await this.api.createExpense({ ...v, clientUuid: safeUuid() });
         this.flash.set(
           res === 'queued'
             ? { type: 'warn', text: 'Offline — saved locally, will sync when back online' }
