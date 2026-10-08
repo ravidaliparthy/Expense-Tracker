@@ -2,6 +2,8 @@
 
 # ⚡ Expense Tracker & Financial Analytics
 
+[![Live Demo](https://img.shields.io/badge/🚀%20LIVE%20DEMO-OPEN%20APP-00C7B7?style=for-the-badge&logo=vercel&logoColor=white)](https://expense-tracker-ochre-eight-80.vercel.app)
+[![API Status](https://img.shields.io/badge/API-ONLINE-22C55E?style=for-the-badge&logo=render&logoColor=white)](https://expense-tracker-ai6g.onrender.com/api/health)
 [![PWA Ready](https://img.shields.io/badge/PWA-INSTALLABLE-3178C6?style=for-the-badge&logo=pwa&logoColor=white)](https://web.dev/progressive-web-apps/)
 [![Offline First](https://img.shields.io/badge/OFFLINE-ENABLED-22C55E?style=for-the-badge&logo=pwa&logoColor=white)](#-offline-first-support-does-it-require-internet)
 [![Frontend](https://img.shields.io/badge/FRONTEND-ANGULAR%2016-DD0031?style=for-the-badge&logo=angular&logoColor=white)](https://angular.io/)
@@ -16,13 +18,18 @@
 
 <br />
 
-🔗 **Live Application**: [https://expense-tracker-ochre-eight-80.vercel.app](https://expense-tracker-ochre-eight-80.vercel.app)  
-🔌 **API Backend**: [https://expense-tracker-ai6g.onrender.com](https://expense-tracker-ai6g.onrender.com)  
-👤 **Demo Account**: `demo@expense.test` / `demo1234`
+### 🌐 [👉 Click Here to Launch the Live Working App](https://expense-tracker-ochre-eight-80.vercel.app)
+
+| Resource | Direct Link | Details |
+|---|---|---|
+| 🚀 **Live Web & Mobile App** | **[https://expense-tracker-ochre-eight-80.vercel.app](https://expense-tracker-ochre-eight-80.vercel.app)** | Production PWA hosted on Vercel Edge |
+| ⚡ **Backend REST API** | **[https://expense-tracker-ai6g.onrender.com](https://expense-tracker-ai6g.onrender.com)** | Node.js Express server hosted on Render |
+| 🩺 **API Health Check** | **[https://expense-tracker-ai6g.onrender.com/api/health](https://expense-tracker-ai6g.onrender.com/api/health)** | Live JSON heartbeat check |
+| 🔑 **Instant Demo Login** | `demo@expense.test` / `demo1234` | Pre-seeded with transactions, analytics & budgets |
 
 <br />
 
-[📱 Mobile & PWA](#-mobile-app--pwa-installation) • [🌐 Offline Support](#-offline-first-support-does-it-require-internet) • [✨ Guided Tour](#-interactive-guided-tour) • [Architecture](#-architecture--system-flow) • [Quickstart](#-quickstart) • [API Reference](#-api-endpoint-reference)
+[🚀 Live Demo](https://expense-tracker-ochre-eight-80.vercel.app) • [📱 Mobile & PWA](#-mobile-app--pwa-installation) • [🌐 Offline Support](#-offline-first-support-does-it-require-internet) • [✨ Guided Tour](#-interactive-guided-tour) • [Architecture](#-architecture--system-flow) • [Quickstart](#-quickstart) • [API Reference](#-api-endpoint-reference)
 
 </div>
 
@@ -118,6 +125,9 @@ Tap the **✨ Tour** button in the header at any time to launch a 7-step interac
 ---
 
 ## ⚡ Quickstart
+
+> 💡 **Prefer not to install locally?** Test the deployed application immediately in your browser or smartphone:  
+> **👉 [Launch Live Working App](https://expense-tracker-ochre-eight-80.vercel.app)** *(Instant Login: `demo@expense.test` / `demo1234`)*
 
 ```powershell
 # ── Terminal 1: Backend (port 3001) ─────────────────────────────
@@ -249,7 +259,8 @@ The application follows a decoupled production architecture:
 
 6. **Click "Create Web Service"**:
    Render will build and deploy the Node.js API, assigning you a live HTTPS URL:
-   `https://expense-tracker-api.onrender.com`
+   - Example live URL: **[`https://expense-tracker-ai6g.onrender.com`](https://expense-tracker-ai6g.onrender.com)**
+   - Health check: **[`https://expense-tracker-ai6g.onrender.com/api/health`](https://expense-tracker-ai6g.onrender.com/api/health)**
 
 > 💡 **Persistent Storage on Render:**
 > Render's free tier spins down instances after 15 minutes of inactivity. When restarted, ephemeral filesystem changes are reset. For permanent persistence across free instance restarts:
@@ -279,7 +290,7 @@ The application follows a decoupled production architecture:
      "rewrites": [
        {
          "source": "/api/(.*)",
-         "destination": "https://YOUR-RENDER-API.onrender.com/api/$1"
+         "destination": "https://expense-tracker-ai6g.onrender.com/api/$1"
        },
        {
          "source": "/(.*)",
@@ -288,11 +299,11 @@ The application follows a decoupled production architecture:
      ]
    }
    ```
-   *(Replace `https://YOUR-RENDER-API.onrender.com` with your actual Render URL).*
+   *(Pre-configured with `https://expense-tracker-ai6g.onrender.com`).*
 
 5. **Click "Deploy"**:
    Vercel will compile the Angular bundle, optimize chunks, and deploy the application globally to edge servers:
-   `https://your-expense-tracker.vercel.app`
+   - Example live deployment: **[`https://expense-tracker-ochre-eight-80.vercel.app`](https://expense-tracker-ochre-eight-80.vercel.app)**
 
 ---
 
