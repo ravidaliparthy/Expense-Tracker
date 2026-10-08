@@ -8,31 +8,17 @@ const TOKEN_KEY = 'et.token';
 const USER_KEY = 'et.user';
 
 function getStoredToken(): string | null {
-  const sessionToken = sessionStorage.getItem(TOKEN_KEY);
-  if (sessionToken) return sessionToken;
-  const localToken = localStorage.getItem(TOKEN_KEY);
-  if (localToken) {
-    sessionStorage.setItem(TOKEN_KEY, localToken);
-    localStorage.removeItem(TOKEN_KEY);
-    return localToken;
-  }
-  return null;
+  return localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
 }
 
 function getStoredUser(): User | null {
-  const sessionUser = sessionStorage.getItem(USER_KEY);
-  if (sessionUser) {
-    try { return JSON.parse(sessionUser) as User; } catch { return null; }
+  const raw = localStorage.getItem(USER_KEY) || sessionStorage.getItem(USER_KEY);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as User;
+  } catch {
+    return null;
   }
-  const localUser = localStorage.getItem(USER_KEY);
-  if (localUser) {
-    try {
-      sessionStorage.setItem(USER_KEY, localUser);
-      localStorage.removeItem(USER_KEY);
-      return JSON.parse(localUser) as User;
-    } catch { return null; }
-  }
-  return null;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -84,15 +70,15 @@ export class AuthService {
   }
 
   private persist(res: { token: string; user: User }): void {
+    localStorage.setItem(TOKEN_KEY, res.token);
     sessionStorage.setItem(TOKEN_KEY, res.token);
-    localStorage.removeItem(TOKEN_KEY);
     this.persistUser(res.user);
     this.isLoggedIn.set(true);
   }
 
   private persistUser(u: User): void {
+    localStorage.setItem(USER_KEY, JSON.stringify(u));
     sessionStorage.setItem(USER_KEY, JSON.stringify(u));
-    localStorage.removeItem(USER_KEY);
     this._user.set(u);
   }
 

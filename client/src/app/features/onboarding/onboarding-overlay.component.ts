@@ -133,12 +133,12 @@ export class OnboardingOverlayComponent implements OnDestroy {
     effect(() => {
       if (this.tour.active()) {
         this.dismissed.set(false);
-        this.scheduleLocate();
+        setTimeout(() => this.scheduleLocate(), 0);
       }
     }, { allowSignalWrites: true });
 
     afterNextRender(() => {
-      this.scheduleLocate();
+      setTimeout(() => this.scheduleLocate(), 0);
       this.ngZone.runOutsideAngular(() => {
         window.addEventListener('resize', this.resizeHandler, { passive: true });
         window.addEventListener('scroll', this.resizeHandler, { passive: true, capture: true });

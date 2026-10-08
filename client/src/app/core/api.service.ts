@@ -59,5 +59,7 @@ export class ApiService {
     if (f.kind && f.kind !== 'all') p = p.set('kind', f.kind);
     return p;
   }
-  private isNetworkError(err: unknown): boolean { return !!err && typeof err === 'object' && 'status' in err && (err as { status: number }).status === 0; }
+  private isNetworkError(err: unknown): boolean {
+    return !navigator.onLine || (!!err && typeof err === 'object' && 'status' in err && (err as { status: number }).status === 0);
+  }
 }
