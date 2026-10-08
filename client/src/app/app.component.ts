@@ -4,18 +4,28 @@ import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/rou
 import { AuthService } from './core/auth.service';
 import { OfflineQueueService } from './core/offline-queue.service';
 import { OnboardingService } from './core/onboarding.service';
+import { PwaService } from './core/pwa.service';
 
 @Component({
   selector: 'app-root',
   standalone: true,
   imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive],
   template: `
+    <!-- PWA Update Notification Banner -->
+    <div class="pwa-update-bar" *ngIf="pwa.updateAvailable()">
+      <span>🚀 A new update is ready!</span>
+      <button class="btn-pwa-update" (click)="pwa.activateUpdate()">Update now</button>
+    </div>
+
     <ng-container *ngIf="auth.isLoggedIn(); else loginOutlet">
       <header class="topbar">
         <div class="brand">
           <span class="logo">◆</span> Expense<span class="accent">Tracker</span>
         </div>
         <div class="topbar-right">
+          <button class="ghost install-btn" *ngIf="pwa.canInstall()" (click)="pwa.installApp()" title="Install app on your phone">
+            📲 Install
+          </button>
           <span class="badge warn" *ngIf="queue.pending() > 0" title="Changes waiting to sync">
             ⟳ {{ queue.pending() }} pending
           </span>
@@ -151,6 +161,52 @@ import { OnboardingService } from './core/onboarding.service';
       .topbar-right .ghost { padding: 3px 6px !important; font-size: 11px !important; border-radius: 4px !important; }
       .topbar-right .badge { display: none !important; }
     }
+
+    .pwa-update-bar {
+      background: linear-gradient(90deg, #4338CA, #6366F1);
+      color: #FFFFFF;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      font-size: 13px;
+      font-weight: 500;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+      position: sticky;
+      top: 0;
+      z-index: 2000;
+      animation: pwaSlideDown 0.25s ease;
+    }
+    @keyframes pwaSlideDown {
+      from { transform: translateY(-100%); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .btn-pwa-update {
+      background: #FFFFFF;
+      color: #312E81;
+      border: none;
+      padding: 5px 12px;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 12px;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+      transition: background 0.15s ease;
+    }
+    .btn-pwa-update:hover {
+      background: #F1F5F9;
+    }
+    .install-btn {
+      background: rgba(99, 102, 241, 0.2) !important;
+      border-color: #818CF8 !important;
+      color: #C7D2FE !important;
+      font-weight: 600 !important;
+    }
+    .install-btn:hover {
+      background: rgba(99, 102, 241, 0.35) !important;
+      color: #FFFFFF !important;
+    }
   `],
 })
 export class AppComponent {
@@ -158,6 +214,7 @@ export class AppComponent {
   readonly auth = inject(AuthService);
   readonly queue = inject(OfflineQueueService);
   readonly onboarding = inject(OnboardingService);
+  readonly pwa = inject(PwaService);
   /** Theme preference — persisted so the app opens in your chosen mode. */
   readonly dark = signal(readStoredTheme());
 
