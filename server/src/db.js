@@ -16,7 +16,20 @@ function init() {
   const sql = fs.readFileSync(SCHEMA_PATH, 'utf8');
   db.exec(sql);                                            // idempotent (IF NOT EXISTS)
   migrate();                                               // idempotent ALTERs for older DBs
+  ensureDemoUser();
   return db;
+}
+
+function ensureDemoUser() {
+  try {
+    const exists = db.prepare(`SELECT 1 FROM users WHERE email = ?`).get('demo@expense.test');
+    if (!exists) {
+      const { seedDemoUser } = require('./seed');
+      seedDemoUser(db, true);
+    }
+  } catch (err) {
+    console.error('Auto-seed check error:', err);
+  }
 }
 
 /** Adds columns introduced after a DB file was first created. Safe to rerun. */
