@@ -551,10 +551,10 @@ export class DashboardPage {
     } catch {}
   }
   private async loadFor(f: ReturnType<FilterService['filters']>): Promise<void> {
-    this.loading.set(true);
-    this.cdr.detectChanges();
-    if (this.categories().length === 0) {
-      await this.loadCategories();
+    // Only show blocking loader on initial cold load; background updates stay smooth with zero flicker
+    if (!this.hadData() && this.expenses().length === 0) {
+      this.loading.set(true);
+      this.cdr.detectChanges();
     }
     try {
       const shouldFetchCats = this.categories().length === 0;
@@ -574,8 +574,11 @@ export class DashboardPage {
         this.total.set(expSettled.value.total || 0);
         if ((expSettled.value.total || 0) > 0) this.hadData.set(true);
       } else {
-        this.expenses.set([]);
-        this.total.set(0);
+        // Keep cached items if already loaded to avoid jarring layout shifts
+        if (!this.hadData() && this.expenses().length === 0) {
+          this.expenses.set([]);
+          this.total.set(0);
+        }
       }
       if (budgetsSettled.status === 'fulfilled') {
         this.budgets.set(budgetsSettled.value || []);

@@ -1,4 +1,4 @@
-import { Component, HostListener, Input, NgZone, OnDestroy, afterNextRender, effect, inject, signal } from '@angular/core';
+import { ChangeDetectorRef, Component, HostListener, Input, NgZone, OnDestroy, afterNextRender, effect, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { OnboardingService, TOUR_STEPS } from '../../core/onboarding.service';
 
@@ -99,6 +99,7 @@ import { OnboardingService, TOUR_STEPS } from '../../core/onboarding.service';
 export class OnboardingOverlayComponent implements OnDestroy {
   readonly tour = inject(OnboardingService);
   private readonly ngZone = inject(NgZone);
+  private readonly cdr = inject(ChangeDetectorRef);
   readonly steps = TOUR_STEPS;
   readonly total = TOUR_STEPS.length;
   /** Local latch: hides every overlay instantly on Skip, even before signals propagate. */
@@ -200,17 +201,29 @@ export class OnboardingOverlayComponent implements OnDestroy {
     const start = performance.now();
     const poll = () => {
       this.locate(false);
-      if (performance.now() - start < 550) {
+      if (performance.now() - start < 800) {
         requestAnimationFrame(poll);
       }
     };
     requestAnimationFrame(poll);
+
+    if (typeof window !== 'undefined') {
+      const onScrollEnd = () => {
+        this.locate(false);
+        window.removeEventListener('scrollend', onScrollEnd);
+      };
+      window.addEventListener('scrollend', onScrollEnd, { once: true });
+      setTimeout(() => this.locate(false), 200);
+      setTimeout(() => this.locate(false), 450);
+      setTimeout(() => this.locate(false), 750);
+    }
   }
 
   private locate(shouldScroll = true): void {
     if (!this.tour.active()) {
       this.targetRect.set(null);
       this.updateLayout(null);
+      this.cdr.detectChanges();
       return;
     }
     const sel = this.tour.currentStep().target;
@@ -223,6 +236,7 @@ export class OnboardingOverlayComponent implements OnDestroy {
     if (!node) {
       this.targetRect.set(null);
       this.updateLayout(null);
+      this.cdr.detectChanges();
       return;
     }
 
@@ -232,7 +246,14 @@ export class OnboardingOverlayComponent implements OnDestroy {
       if (isMobile) {
         if (sel.includes('budgets-nav') || sel.includes('categories-nav')) {
           // Bottom bar items are fixed at the bottom of the viewport; no scroll needed
+        } else if (sel.includes('add-expense') || sel.includes('view-transactions') || sel.includes('export-menu')) {
+          // Top toolbar actions: scroll to very top smoothly
+          if (window.scrollY > 0) {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }
         } else {
+          // Cards (spending-breakdown, transactions-table, filter-bar):
+          // Position cleanly 68px below topbar
           const rect = node.getBoundingClientRect();
           const targetY = Math.max(0, window.scrollY + rect.top - 68);
           window.scrollTo({ top: targetY, behavior: 'smooth' });
@@ -254,6 +275,7 @@ export class OnboardingOverlayComponent implements OnDestroy {
     const r = node.getBoundingClientRect();
     this.targetRect.set(r);
     this.updateLayout(r);
+    this.cdr.detectChanges();
   }
 
   private updateLayout(r: DOMRect | null): void {

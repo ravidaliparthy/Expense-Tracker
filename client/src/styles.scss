@@ -723,6 +723,10 @@ html[data-theme='dark'] .tbl-icon-btn.danger:active{background:#5F0F0F}
     border-radius: 10px !important;
   }
 
+  [data-tour] {
+    scroll-margin-top: 70px !important;
+  }
+
   .coach-kbd-hint {
     display: none !important;
   }

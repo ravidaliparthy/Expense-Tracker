@@ -5,6 +5,7 @@ import { AuthService } from './core/auth.service';
 import { OfflineQueueService } from './core/offline-queue.service';
 import { OnboardingService } from './core/onboarding.service';
 import { PwaService } from './core/pwa.service';
+import { KeepAliveService } from './core/keep-alive.service';
 
 @Component({
   selector: 'app-root',
@@ -215,10 +216,12 @@ export class AppComponent {
   readonly queue = inject(OfflineQueueService);
   readonly onboarding = inject(OnboardingService);
   readonly pwa = inject(PwaService);
+  private readonly keepAlive = inject(KeepAliveService);
   /** Theme preference — persisted so the app opens in your chosen mode. */
   readonly dark = signal(readStoredTheme());
 
   constructor() {
+    this.keepAlive.init();
     effect(() => {
       document.documentElement.dataset['theme'] = this.dark() ? 'dark' : 'light';
       try { localStorage.setItem('et.theme', this.dark() ? 'dark' : 'light'); } catch { /* private mode */ }
