@@ -26,5 +26,22 @@
         ]
       }
     }
+  ],
+  "dataGroups": [
+    {
+      "name": "api-cache",
+      "urls": [
+        "/api/categories",
+        "/api/budgets",
+        "/api/analytics/**",
+        "/api/expenses**"
+      ],
+      "cacheConfig": {
+        "maxSize": 100,
+        "maxAge": "7d",
+        "timeout": "2s",
+        "strategy": "freshness"
+      }
+    }
   ]
 }

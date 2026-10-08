@@ -1,6 +1,13 @@
 /* ── Expense Tracker design system ─────────────────────────── */
-* { box-sizing: border-box; }
-html, body { margin: 0; height: 100%; }
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+html, body {
+  margin: 0;
+  height: 100%;
+  touch-action: manipulation;
+}
 body {
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
   background: #F1F5F9; color: #0F172A; font-size: 14px;
