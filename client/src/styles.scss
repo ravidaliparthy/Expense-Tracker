@@ -690,6 +690,11 @@ html[data-theme='dark'] .tbl-icon-btn.danger:active{background:#5F0F0F}
     white-space: nowrap;
   }
 
+  /* Prevent iOS Safari auto-zoom on focus */
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+
   /* Modal on mobile */
   .overlay {
     padding: 12px !important;

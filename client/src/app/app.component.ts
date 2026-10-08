@@ -67,18 +67,49 @@ import { OnboardingService } from './core/onboarding.service';
     .sidenav a.active { background:#1E1B4B; color:#A5B4FC; font-weight:600; }
     .content { flex:1; padding:24px; background:#F1F5F9; min-width:0; }
     @media (max-width: 820px) {
-      .shell { flex-direction: column; }
-      .sidenav { width:100%; flex-direction:row; overflow-x:auto; padding:8px; gap:6px;
-        position:sticky; top:56px; z-index:15; }
-      .sidenav a { white-space:nowrap; padding:8px 12px; }
-      .content { padding:16px; }
-      .user { display:none; }
+      .shell { flex-direction: column; min-height: calc(100vh - 56px); }
+      .sidenav {
+        width: 100%;
+        height: auto !important;
+        min-height: unset !important;
+        max-height: 50px !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        padding: 6px 10px !important;
+        gap: 6px !important;
+        position: sticky !important;
+        top: 56px !important;
+        z-index: 15 !important;
+        background: #111827 !important;
+        border-bottom: 1px solid #1F2937 !important;
+        -webkit-overflow-scrolling: touch !important;
+        scrollbar-width: none !important;
+      }
+      .sidenav::-webkit-scrollbar { display: none !important; }
+      .sidenav a {
+        white-space: nowrap !important;
+        padding: 0 12px !important;
+        height: 36px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        border-radius: 8px !important;
+        flex-shrink: 0 !important;
+        font-size: 13px !important;
+        box-sizing: border-box !important;
+      }
+      .content { padding: 12px 10px !important; width: 100% !important; box-sizing: border-box !important; }
+      .user { display: none !important; }
     }
     @media (max-width: 480px) {
-      .topbar { padding:0 12px; }
-      .brand { font-size:14px; }
-      .topbar-right { gap:6px; }
-      .topbar-right .ghost { padding:4px 8px; font-size:12px; }
+      .topbar { padding: 0 10px !important; height: 50px !important; }
+      .brand { font-size: 14px !important; }
+      .topbar-right { gap: 4px !important; }
+      .topbar-right .ghost { padding: 3px 6px !important; font-size: 11px !important; border-radius: 4px !important; }
+      .topbar-right .badge { display: none !important; }
+      .sidenav { top: 50px !important; padding: 4px 6px !important; gap: 4px !important; max-height: 44px !important; }
+      .sidenav a { height: 32px !important; padding: 0 10px !important; font-size: 12px !important; border-radius: 6px !important; }
     }
   `],
 })

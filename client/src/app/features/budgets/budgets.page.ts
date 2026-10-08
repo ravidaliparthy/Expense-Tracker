@@ -179,6 +179,16 @@ import { BudgetStatus } from '../../core/budget-status';
       margin-bottom: 6px;
       gap: 8px;
     }
+    @media (max-width: 600px) {
+      .gauge .row {
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .gauge-right {
+        width: 100%;
+        justify-content: space-between;
+      }
+    }
     .gauge-label {
       font-size: 14px;
       font-weight: 600;
