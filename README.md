@@ -102,6 +102,174 @@ Tap the **✨ Tour** button in the header at any time to launch a 7-step interac
 
 ---
 
+## 🏛️ Architecture & System Flow
+
+The Expense Tracker & Financial Analytics platform is built as an **offline-resilient, tiered Progressive Web App (PWA)** backed by a high-throughput Node.js micro-service and an ACID-compliant SQLite WAL database.
+
+### 📐 High-Level End-to-End System Architecture
+
+```mermaid
+flowchart TD
+    subgraph CLIENT["📱 Client Tier (PWA & Desktop Browser)"]
+        direction TB
+        UI["Angular 16 Standalone UI<br/>(Signals, SCSS Glassmorphism, Zero-Dep SVG Charts)"]
+        SW["Angular Service Worker<br/>(ngsw-worker.js — Shell Caching)"]
+        LS[("Device LocalStorage<br/>• JWT Auth Session<br/>• et.offlineQueue<br/>• Category Cache")]
+        OQS["OfflineQueueService<br/>(UUID Generation & Auto-Flush)"]
+        KAS["KeepAliveService<br/>(10m Ping + Phone Unlock Pre-Warm)"]
+
+        UI <--> SW
+        UI <--> LS
+        UI <--> OQS
+        UI --> KAS
+    end
+
+    subgraph EDGE["⚡ Edge Gateway & Hosting Tier (Vercel)"]
+        direction TB
+        V_CDN["Vercel Global Edge CDN<br/>https://expense-tracker-ochre-eight-80.vercel.app/"]
+        V_REWRITE["Vercel Edge Rewrite Proxy<br/>/api/* ➔ Render Backend"]
+        V_CDN --> V_REWRITE
+    end
+
+    subgraph SERVER["🖥️ API & Business Logic Tier (Render Web Service)"]
+        direction TB
+        EXP["Express 4 REST Application<br/>https://expense-tracker-ai6g.onrender.com"]
+        MW["Security & Auth Middleware<br/>• JWT Bearer Verification<br/>• CORS & JSON Body Parser"]
+        ZOD["Zod Schema Validation<br/>(Strict Type Guardrails)"]
+        
+        subgraph MODULES["Controller & Service Modules"]
+            AUTH_M["Auth Engine<br/>(bcryptjs + 7-Day JWT)"]
+            EXP_M["Expense Engine<br/>(Integer Cents Precision)"]
+            BUD_M["Budget Engine<br/>(Rolling Horizons & Thresholds)"]
+            ANA_M["Analytics Engine<br/>(Day/Week/Month Aggregations)"]
+            SYNC_M["Batch Sync Engine<br/>(Idempotent UUID Upserts)"]
+            EXP_STR["Export Pipelines<br/>(Streaming CSV & PDFKit)"]
+        end
+
+        EXP --> MW --> ZOD --> MODULES
+    end
+
+    subgraph DATA["💾 Persistence & Storage Tier"]
+        SQLITE[("better-sqlite3 Database Engine<br/>PRAGMA journal_mode = WAL<br/>PRAGMA synchronous = NORMAL")]
+        TABLES["Relational Tables<br/>• users (auth credentials)<br/>• categories (system & custom)<br/>• expenses (amount_cents, client_id)<br/>• budgets (monthly targets)"]
+        SQLITE --- TABLES
+    end
+
+    %% Network Connections
+    SW -.->|1. Fetch Cached Assets| V_CDN
+    OQS -->|2. Direct Sync /api/sync/batch| V_REWRITE
+    UI -->|3. REST API Requests| V_REWRITE
+    KAS -->|4. Periodic Keep-Alive /api/health| V_REWRITE
+    V_REWRITE -->|Reverse Proxied TLS| EXP
+    MODULES <-->|Synchronous ACID Queries & Transactions| SQLITE
+```
+
+### 📦 Structural Block Diagram
+
+```text
++---------------------------------------------------------------------------------------------------+
+|                                  CLIENT LAYER (iOS / Android / Desktop)                           |
+|                                                                                                   |
+|  +---------------------------+   +-----------------------------+   +---------------------------+  |
+|  |   Angular 16 UI Shell     |   |   Offline Queue Manager     |   |   Keep-Alive Monitor      |  |
+|  | - Standalone Components   |   | - Client-generated UUIDs    |   | - 10-minute ping loop     |  |
+|  | - Reactive Signals & SVG  |   | - LocalStorage persistence  |   | - Phone unlock pre-warm   |  |
+|  | - Safe Area Mobile Nav    |   | - Auto-reconnect flush      |   | - Zero cold-start latency |  |
+|  +-------------+-------------+   +--------------+--------------+   +-------------+-------------+  |
+|                |                                |                                |                |
+|                +--------------------------------+--------------------------------+                |
+|                                                 |                                                 |
+|                               +-----------------+-----------------+                               |
+|                               |  Service Worker (ngsw-worker.js)  |                               |
+|                               | - Instant <0.3s cache loading     |                               |
+|                               | - Offline asset delivery          |                               |
+|                               +-----------------+-----------------+                               |
++-------------------------------------------------|-------------------------------------------------+
+                                                  | HTTPS Requests
+                                                  v
++---------------------------------------------------------------------------------------------------+
+|                             EDGE GATEWAY (Vercel Global CDN)                                      |
+|                                                                                                   |
+|  • Serves Production Static SPA Bundle (HTML, JS, CSS, Web App Manifest)                         |
+|  • Reverse-Proxy Route Rules: /api/*  ===>  https://expense-tracker-ai6g.onrender.com/api/*      |
++-------------------------------------------------|-------------------------------------------------+
+                                                  | Proxied HTTP / REST
+                                                  v
++---------------------------------------------------------------------------------------------------+
+|                        APPLICATION LAYER (Node.js 18+ / Express 4 on Render)                      |
+|                                                                                                   |
+|  [ Middlewares ]  CORS Headers  -->  JSON Parser  -->  JWT Bearer Authentication                  |
+|                                                                                                   |
+|  [ Validation ]   Strict Zod Schemas on every mutation payload                                    |
+|                                                                                                   |
+|  [ REST API Modules ]                                                                             |
+|  ├── /api/auth          : Signup, Login (bcrypt hashed), Token Verification                       |
+|  ├── /api/categories    : System defaults + User-defined custom categories                        |
+|  ├── /api/expenses      : CRUD with integer-cent accuracy & 1-tap sample seed                     |
+|  ├── /api/budgets       : Dynamic threshold calculation (<80% Safe, 80-99% Warning, ≥100% Limit) |
+|  ├── /api/analytics     : Rolling trends, week-over-week comparisons, category breakdown         |
+|  ├── /api/sync/batch    : Idempotent bulk sync handling offline uploads with client_id dedupe     |
+|  ├── /api/export/*      : Memory-safe CSV streaming (fast-csv) & multi-page PDF summary (pdfkit)  |
+|  └── /api/health        : Lightweight heartbeat endpoint preventing free-tier sleep               |
++-------------------------------------------------|-------------------------------------------------+
+                                                  | Synchronous C++ Binding
+                                                  v
++---------------------------------------------------------------------------------------------------+
+|                               DATA LAYER (better-sqlite3 WAL Mode)                                |
+|                                                                                                   |
+|  • File-backed SQLite database with Write-Ahead Logging (WAL) for high concurrency reads & writes |
+|  • Integer cents storage (`amount_cents`) eliminates IEEE-754 floating point rounding errors      |
+|  • Relational schema with Foreign Key cascading deletions and performance indexes                 |
+|    - idx_expenses_user_date (user_id, date DESC)                                                  |
+|    - idx_expenses_client_id (client_id UNIQUE per user)                                           |
+|    - idx_budgets_user_month (user_id, month, category_id)                                         |
++---------------------------------------------------------------------------------------------------+
+```
+
+---
+
+### 🔄 Offline-First Synchronization Lifecycle
+
+When working offline on a mobile device or desktop without internet connectivity, the application guarantees zero data loss using client-side queuing and idempotent server synchronization:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as 👤 User (Mobile / Desktop)
+    participant UI as 📱 Angular Application
+    participant LS as 💾 LocalStorage (et.offlineQueue)
+    participant SW as ⚙️ Service Worker
+    participant API as 🖥️ Backend API (/api/sync/batch)
+    participant DB as 🗄️ SQLite Database (WAL)
+
+    Note over User, UI: Device is Offline (Airplane Mode / No Signal)
+    User->>UI: Logs new expense ($45.50 for Groceries)
+    UI->>UI: Generates unique client_id (UUID)
+    UI->>LS: Enqueues mutation payload into et.offlineQueue
+    UI->>UI: Updates local view optimistically (Header: "⟳ 1 pending")
+    UI-->>User: Immediate UI confirmation (No loading spinner)
+
+    Note over User, UI: Internet Connection Restores (online event fires)
+    SW->>UI: Emits window "online" event
+    UI->>LS: Reads all pending mutations from et.offlineQueue
+    UI->>API: POST /api/sync/batch with queued items array
+    activate API
+    API->>API: Validates JWT token & Zod schemas
+    API->>DB: BEGIN TRANSACTION
+    loop For each queued item
+        API->>DB: INSERT OR IGNORE / UPSERT by client_id
+    end
+    API->>DB: COMMIT TRANSACTION
+    API-->>UI: HTTP 200 OK: { success: true, synced: ["uuid-1"] }
+    deactivate API
+
+    UI->>LS: Purges successfully synced items from queue
+    UI->>UI: Emits "et:synced" event & refreshes Dashboard KPIs
+    UI-->>User: Updates status indicator to "● Online"
+```
+
+---
+
 ## 🛠️ Tech Stack
 
 | Layer | Technology | Notes |
