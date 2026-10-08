@@ -95,6 +95,28 @@ function startServer(port = PORT) {
   const server = app.listen(port, () => {
     console.log(`✔ Expense Tracker API listening on http://localhost:${port} (workers=${WORKERS})`);
   });
+
+  const gracefulShutdown = (signal) => {
+    console.log(`✔ Received ${signal}, closing server and SQLite cleanly...`);
+    server.close(() => {
+      try {
+        const { closeDb } = require('./db');
+        closeDb();
+      } catch (_) {}
+      process.exit(0);
+    });
+    setTimeout(() => {
+      try {
+        const { closeDb } = require('./db');
+        closeDb();
+      } catch (_) {}
+      process.exit(0);
+    }, 1500).unref();
+  };
+
+  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
   return server;
 }
 

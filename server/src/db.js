@@ -113,9 +113,20 @@ function audit(userId, entityType, entityId, action, payload) {
     .run(userId, entityType, entityId, action, payload ? JSON.stringify(payload) : null);
 }
 
+function closeDb() {
+  if (db) {
+    try {
+      if (db.open) {
+        db.close();
+      }
+    } catch (_) {}
+    db = null;
+  }
+}
+
 if (require.main === module) {
   getDb();
   console.log('✔ SQLite database initialized at', DB_PATH);
 }
 
-module.exports = { getDb, audit, DB_PATH };
+module.exports = { getDb, closeDb, audit, DB_PATH };
