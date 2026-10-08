@@ -1,0 +1,208 @@
+<div class="toolbar">
+  <div><h1>Dashboard</h1><div class="sub">{{ filter.activePresetLabel() }} · {{ currency() }} · income, expenses, net cashflow</div></div>
+  <div class="actions">
+    <button class="btn-ghost" routerLink="/transactions" data-tour="view-transactions" title="View & edit all transactions">📋 View transactions</button>
+    <button class="btn-ghost" data-tour="export-menu" [disabled]="exportBusy()" (click)="exportCsv()">⤓ CSV</button>
+    <button class="btn-ghost" [disabled]="exportBusy()" (click)="exportPdf()">⤓ PDF</button>
+    <button class="btn-primary" data-tour="add-expense" (click)="openCreate()">+ Add transaction</button>
+  </div>
+</div>
+<div class="flash {{ f.type }}" *ngIf="flash() as f" (click)="flash.set(null)">
+  <span>{{ f.type === 'ok' ? '✓' : (f.type === 'warn' ? '⚠' : '✕') }}</span>
+  <span>{{ f.text }}</span>
+  <span style="margin-left:auto;opacity:0.6;font-size:11px">✕</span>
+</div>
+<app-filter-bar [categories]="categories()"></app-filter-bar>
+
+<div class="kpi-grid">
+  <div class="card kpi"><h3>Total expenses</h3><div class="value negative">{{ money(kpis().expense, currency()) }}</div><div class="sub">{{ kpis().expenseCount }} debit transactions</div></div>
+  <div class="card kpi"><h3>Total income</h3><div class="value positive">{{ money(kpis().income, currency()) }}</div><div class="sub">{{ kpis().incomeCount }} credits received</div></div>
+  <div class="card kpi"><h3>Net savings</h3><div class="value" [class.positive]="kpis().net >= 0" [class.negative]="kpis().net < 0">{{ signedMoney(kpis().net, currency()) }}</div><div class="sub">income minus expenses</div></div>
+  <div class="card kpi"><h3>Savings rate</h3><div class="value" [class.positive]="kpis().savings >= 0" [class.negative]="kpis().savings < 0">{{ kpis().savings }}%</div><div class="sub">of income retained</div></div>
+</div>
+<div class="analysis-grid">
+  <div class="card"><h3>Avg expense</h3><div class="value" style="font-size:22px">{{ money(kpis().avgExpense, currency()) }}</div><p class="mini">Average debit in this filter.</p></div>
+  <div class="card"><h3>Top spend category</h3><div class="value" style="font-size:20px">{{ kpis().topName }}</div><p class="mini">{{ money(kpis().topCents, currency()) }}</p></div>
+  <div class="card"><h3>Daily burn rate</h3><div class="value" style="font-size:22px">{{ money(cashflowBreakdown().burnRate, currency()) }}</div><p class="mini">Expense run-rate over selected range.</p></div>
+  <div class="card"><h3>Expense / income</h3><div class="value" style="font-size:22px">{{ cashflowBreakdown().expenseRatio }}%</div><p class="mini">Lower is better; over 100% means overspending income.</p></div>
+</div>
+<div class="analysis-grid">
+  <div class="card"><h3>Added vs spent</h3><div class="value positive" style="font-size:22px">{{ money(kpis().income, currency()) }}</div><p class="mini">Added, against {{ money(kpis().expense, currency()) }} spent.</p></div>
+  <div class="card"><h3>Savings this period</h3><div class="value" style="font-size:22px" [class.positive]="kpis().net >= 0" [class.negative]="kpis().net < 0">{{ signedMoney(kpis().net, currency()) }}</div><p class="mini">Actual retained cash after expenses.</p></div>
+  <div class="card"><h3>Projected savings</h3><div class="value" style="font-size:22px" [class.positive]="cashflowBreakdown().projectedNet >= 0" [class.negative]="cashflowBreakdown().projectedNet < 0">{{ signedMoney(cashflowBreakdown().projectedNet, currency()) }}</div><p class="mini">If today's burn rate continues.</p></div>
+  <div class="card"><h3>Safe to spend/day</h3><div class="value" style="font-size:22px">{{ money(cashflowBreakdown().safeToday, currency()) }}</div><p class="mini">For {{ cashflowBreakdown().daysLeft }} days left in this range.</p></div>
+</div>
+<div class="grid-2" *ngIf="insights()">
+  <div class="card"><h3>🧠 Money insights</h3>
+  <div class="insight" *ngFor="let m of insightMessages()"><span class="ico">{{ m.icon }}</span><span class="txt" [class.pos]="m.tone === 'pos'" [class.neg]="m.tone === 'neg'">{{ m.text }}</span></div>
+  <p *ngIf="insightMessages().length === 0" style="color:#94A3B8">Add transactions to unlock automatic insights.</p>
+</div>
+<div class="card" data-tour="spending-breakdown">
+  <div class="card-head-flex">
+    <h3>📅 {{ breakdownData().title }}</h3>
+    <div class="mode-toggle">
+      <button type="button" class="mode-btn" [class.active]="breakdownMode() === 'weekday'" (click)="setBreakdownMode('weekday')" title="Spending distribution across Monday to Sunday">Day of Week</button>
+      <button type="button" class="mode-btn" [class.active]="breakdownMode() === 'weekly'" (click)="setBreakdownMode('weekly')" title="Week-by-week totals with daily drill-down">Weekly</button>
+      <button type="button" class="mode-btn" [class.active]="breakdownMode() === 'monthly'" (click)="setBreakdownMode('monthly')" title="Month-by-month totals with weekly drill-down">Monthly</button>
+      <button type="button" class="mode-btn" [class.active]="breakdownMode() === 'yearly'" (click)="setBreakdownMode('yearly')" title="Annual spending totals">Yearly</button>
+    </div>
+  </div>
+
+    <!-- Week Mode Dropdown Filter (Picture 2 style) -->
+    <div *ngIf="breakdownMode() === 'weekly' && availableWeeks().length > 1" class="subfilter-container" (click)="$event.stopPropagation()">
+      <div class="subfilter-dropdown-wrap">
+        <button type="button" class="subfilter-dropdown-btn" (click)="weekDropdownOpen.set(!weekDropdownOpen()); monthDropdownOpen.set(false)">
+          <span>{{ currentWeekFilterLabel() }}</span>
+          <span class="dropdown-caret">▼</span>
+        </button>
+        <ul class="subfilter-dropdown-menu" *ngIf="weekDropdownOpen()">
+          <li class="subfilter-dropdown-item" [class.selected]="selectedWeekKey() === null" (click)="selectWeek(null)">
+            All Weeks
+          </li>
+          <li class="subfilter-dropdown-item" *ngFor="let w of availableWeeks()" [class.selected]="selectedWeekKey() === w.key" (click)="selectWeek(w.key)">
+            {{ w.fullLabel }}
+          </li>
+        </ul>
+      </div>
+      <span class="subfilter-range-label">{{ currentWeekFilterRange() }}</span>
+    </div>
+
+    <!-- Month Mode Dropdown Filter (Picture 2 style) -->
+    <div *ngIf="breakdownMode() === 'monthly' && availableMonths().length > 1" class="subfilter-container" (click)="$event.stopPropagation()">
+      <div class="subfilter-dropdown-wrap">
+        <button type="button" class="subfilter-dropdown-btn" (click)="monthDropdownOpen.set(!monthDropdownOpen()); weekDropdownOpen.set(false)">
+          <span>{{ currentMonthFilterLabel() }}</span>
+          <span class="dropdown-caret">▼</span>
+        </button>
+        <ul class="subfilter-dropdown-menu" *ngIf="monthDropdownOpen()">
+          <li class="subfilter-dropdown-item" [class.selected]="selectedMonthKey() === null" (click)="selectMonth(null)">
+            All Months
+          </li>
+          <li class="subfilter-dropdown-item" *ngFor="let m of availableMonths()" [class.selected]="selectedMonthKey() === m.key" (click)="selectMonth(m.key)">
+            {{ m.label }}
+          </li>
+        </ul>
+      </div>
+      <span class="subfilter-range-label">{{ currentMonthFilterRange() }}</span>
+    </div>
+
+    <!-- Breadcrumb back button when drilled down -->
+    <div *ngIf="selectedWeekKey() !== null || selectedMonthKey() !== null">
+      <button *ngIf="breakdownMode() === 'weekly' && selectedWeekKey() !== null" type="button" class="btn-back-crumb" (click)="selectedWeekKey.set(null)">
+        ← Back to all weeks
+      </button>
+      <button *ngIf="breakdownMode() === 'monthly' && selectedMonthKey() !== null" type="button" class="btn-back-crumb" (click)="selectedMonthKey.set(null)">
+        ← Back to all months
+      </button>
+    </div>
+
+    <!-- Scrollable breakdown rows container (Picture 1 scroll bar) -->
+    <div class="breakdown-scroll-body">
+      <div *ngIf="breakdownData().rows.length === 0" style="color:#94A3B8;font-size:13px;padding:12px 0">
+        No expense records in this range.
+      </div>
+      <div class="wdrow" *ngFor="let w of breakdownData().rows"
+           [class.clickable]="w.clickable"
+           [title]="w.clickable ? 'Click to view breakdown' : (w.label + ': ' + money(w.cents, currency()))"
+           (click)="onBreakdownRowClick(w)">
+        <span class="lbl">
+          {{ w.label }}
+          <span *ngIf="w.clickable" class="drill-hint">›</span>
+        </span>
+        <span class="bar"><div [style.width.%]="w.pct"></div></span>
+        <span class="v">{{ money(w.cents, currency()) }}</span>
+      </div>
+    </div>
+    <p class="mini" *ngIf="breakdownData().summary">{{ breakdownData().summary }}</p>
+  </div>
+</div>
+<div class="grid-2">
+  <div class="card chart"><h3>Cashflow trend ({{ filter.groupBy() }})</h3>
+    <ng-container *ngIf="expensePoints() || incomePoints(); else noTrend"><svg viewBox="0 0 600 150" preserveAspectRatio="none"><polyline [attr.points]="expensePoints()" fill="none" stroke="#EF4444" stroke-width="2.5" stroke-linejoin="round"/><polyline [attr.points]="incomePoints()" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linejoin="round"/><polyline class="dash" [attr.points]="netPoints()" fill="none" stroke="#6366F1" stroke-width="2" stroke-linejoin="round"/></svg><div style="display:flex;justify-content:space-between;font-size:10px;color:#94A3B8"><span>{{ trend()[0][0] }}</span><span>{{ trend()[trend().length - 1][0] }}</span></div><div class="legend-line"><span><i class="dot" style="background:#EF4444"></i>Expenses</span><span><i class="dot" style="background:#22C55E"></i>Income</span><span><i class="dot" style="background:#6366F1"></i>Net</span></div></ng-container>
+    <ng-template #noTrend><p style="color:#94A3B8">Not enough data points — add transactions across multiple periods.</p></ng-template>
+  </div>
+  <div class="card"><h3>Budget warnings</h3><div class="gauge" *ngFor="let s of statuses()"><div class="row"><span><strong>{{ s.label }}</strong></span><span>{{ money(s.spentCents, currency()) }} / {{ money(s.limitCents, currency()) }}</span></div><div class="track"><div class="fill" [style.width.%]="min(s.percentUsed, 100)" [style.background]="TIER_COLORS[s.tier]"></div></div><div class="warn-msg" [style.color]="TIER_COLORS[s.tier]">{{ s.percentUsed }}% · {{ tierMsg(s) }}<span *ngIf="s.isProjectionOver && s.tier === 'ok'" style="color:#F59E0B"> ↗</span></div></div><p *ngIf="statuses().length === 0" style="color:#94A3B8">Set limits on the Budgets page to unlock 80/90/100% warnings. Income credits do not consume budgets.</p></div>
+</div>
+<div class="grid-2">
+  <div class="card"><h3>💵 Credit vs debit ({{ filter.groupBy() }})</h3>
+    <div class="gbars" *ngIf="groupedBars().length; else noGBars">
+      <div class="gcol" *ngFor="let b of groupedBars()" [title]="b.bucket + ' • credit ' + money(b.creditCents, currency()) + ' • debit ' + money(b.debitCents, currency())">
+        <div class="gpair"><div class="gbar credit" [style.height.%]="b.creditPct"></div><div class="gbar debit" [style.height.%]="b.debitPct"></div></div>
+        <div class="glabel">{{ b.short }}</div>
+      </div>
+    </div>
+    <ng-template #noGBars><p style="color:#94A3B8">Not enough buckets yet — record transactions across several days.</p></ng-template>
+    <div class="legend-line"><span><i class="dot" style="background:#22C55E"></i>Credit (income)</span><span><i class="dot" style="background:#EF4444"></i>Debit (expense)</span></div>
+  </div>
+  <div class="card"><h3>📈 Cumulative net savings</h3>
+    <ng-container *ngIf="cumulative().points; else noCum"><svg viewBox="0 0 600 150" preserveAspectRatio="none"><line x1="10" [attr.y1]="cumulative().zeroY" x2="590" [attr.y2]="cumulative().zeroY" stroke="#CBD5E1" stroke-dasharray="4 4" stroke-width="1"/><polyline [attr.points]="cumulative().points" fill="none" stroke="#6366F1" stroke-width="2.5" stroke-linejoin="round"/></svg><div class="legend-line"><span><i class="dot" style="background:#6366F1"></i>Running net savings</span><span [class.positive]="cumulative().final >= 0" [class.negative]="cumulative().final < 0">{{ signedMoney(cumulative().final, currency()) }} by end of range</span></div></ng-container>
+    <ng-template #noCum><p style="color:#94A3B8">Add transactions across multiple periods to see savings accumulate.</p></ng-template>
+  </div>
+</div>
+<div class="grid-2">
+  <div class="card" data-tour="transactions-table">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <h3>Transactions ({{ total() }})</h3>
+      <div class="sort-controls">
+        <span class="sort-lbl">Sort:</span>
+        <button type="button" class="sort-btn" [class.active]="sortField() === 'date'" (click)="toggleSort('date')" title="Toggle date sort">
+          Date {{ sortField() === 'date' ? (sortDirection() === 'desc' ? '▼ Newest' : '▲ Oldest') : '↕' }}
+        </button>
+        <button type="button" class="sort-btn" [class.active]="sortField() === 'amount'" (click)="toggleSort('amount')" title="Toggle amount sort">
+          Amount {{ sortField() === 'amount' ? (sortDirection() === 'desc' ? '▼ High → Low' : '▲ Low → High') : '↕' }}
+        </button>
+      </div>
+    </div>
+    <div *ngIf="sortedExpenses().length === 0" style="color:#94A3B8;text-align:center;padding:24px 0">
+      No transactions match the current filters.
+    </div>
+    <div class="tbl-wrap" *ngIf="sortedExpenses().length > 0">
+      <table>
+        <thead>
+          <tr>
+            <th class="sortable" (click)="toggleSort('date')" title="Click to sort by date">
+              Date <span class="sort-icon">{{ sortField() === 'date' ? (sortDirection() === 'desc' ? '▼' : '▲') : '↕' }}</span>
+            </th>
+            <th>Type</th>
+            <th>Category</th>
+            <th>Merchant / Source</th>
+            <th class="notes">Notes</th>
+            <th class="amount sortable" (click)="toggleSort('amount')" title="Click to sort by amount">
+              Amount <span class="sort-icon">{{ sortField() === 'amount' ? (sortDirection() === 'desc' ? '▼' : '▲') : '↕' }}</span>
+            </th>
+            <th style="text-align:right;width:85px">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let e of sortedExpenses(); trackBy: trackById" [class.income]="e.kind === 'income'" [class.deleting]="deletingIds().has(e.id)">
+            <td class="mono">{{ e.localDate }}</td>
+            <td><span class="kind" [class.income]="e.kind === 'income'">{{ e.kind === 'income' ? 'Credit' : 'Expense' }}</span></td>
+            <td><span class="chip" [style.background]="hex(e.categoryColor, .14)" [style.color]="e.categoryColor">{{ e.categoryIcon || '🏷️' }} {{ e.categorySnapshot }}</span></td>
+            <td>{{ e.merchant || '—' }}</td>
+            <td class="notes-cell" [title]="e.notes || ''">{{ e.notes || '—' }}</td>
+            <td class="amount" [class.plus]="e.kind === 'income'" [class.minus]="e.kind !== 'income'">{{ e.kind === 'income' ? '+' : '-' }}{{ money(e.amountCents, e.currency) }}</td>
+            <td style="white-space:nowrap;text-align:right">
+              <button type="button" class="tbl-icon-btn" title="Edit transaction" [id]="'edit-tx-' + e.id" (click)="openEdit(e)">✎</button>
+              <button type="button" class="tbl-icon-btn danger" [disabled]="deletingIds().has(e.id)" title="Delete transaction" [id]="'delete-tx-' + e.id" (click)="onRemove(e)">🗑</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card"><h3>Expense breakdown by category</h3>
+    <div class="donutrow" *ngIf="donutSegments().length">
+      <svg viewBox="0 0 120 120" class="donut">
+        <circle cx="60" cy="60" r="42" fill="none" stroke="#E2E8F0" stroke-width="14"/>
+        <circle *ngFor="let s of donutSegments()" cx="60" cy="60" r="42" fill="none" [attr.stroke]="s.color" stroke-width="14" [attr.stroke-dasharray]="s.dash" [attr.stroke-dashoffset]="s.offset" transform="rotate(-90 60 60)"/>
+        <text x="60" y="57" text-anchor="middle" class="donut-cap">Spent</text>
+        <text x="60" y="73" text-anchor="middle" class="donut-total">{{ money(kpis().expense, currency()) }}</text>
+      </svg>
+      <div class="donutlegend">
+        <div *ngFor="let s of donutSegments().slice(0, 6)"><i class="dot" [style.background]="s.color"></i>{{ s.icon }} {{ s.name }} <strong>{{ s.pct }}%</strong></div>
+      </div>
+    </div><div class="catbar" *ngFor="let row of byCategory()"><span class="name" [title]="row.name">{{ row.icon }} {{ row.name }}</span><span class="bar"><div [style.width.%]="row.pct" [style.background]="row.color"></div></span><span class="val">{{ money(row.cents, currency()) }}</span></div><p *ngIf="byCategory().length === 0" style="color:#94A3B8">No expense transactions in this filter.</p></div>
+</div>
+
+<app-expense-form *ngIf="formOpen()" [expense]="editing()" [categories]="categories()" [currency]="currency()" (save)="onSave($event)" (createCategory)="onCreateCategory($event)" (close)="formOpen.set(false)"></app-expense-form>
+<app-onboarding-overlay [showZeroState]="isEmpty() && !hadData()"></app-onboarding-overlay>
