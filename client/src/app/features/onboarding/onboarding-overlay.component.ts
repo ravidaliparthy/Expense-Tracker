@@ -197,8 +197,14 @@ export class OnboardingOverlayComponent implements OnDestroy {
 
   private scheduleLocate(): void {
     this.locate(true);
-    setTimeout(() => this.locate(false), 50);
-    setTimeout(() => this.locate(false), 180);
+    const start = performance.now();
+    const poll = () => {
+      this.locate(false);
+      if (performance.now() - start < 550) {
+        requestAnimationFrame(poll);
+      }
+    };
+    requestAnimationFrame(poll);
   }
 
   private locate(shouldScroll = true): void {
@@ -220,18 +226,28 @@ export class OnboardingOverlayComponent implements OnDestroy {
       return;
     }
 
+    const isMobile = window.innerWidth <= 820;
+
     if (shouldScroll) {
-      if (sel.includes('add-expense') || sel.includes('view-transactions') || sel.includes('export-menu') || sel.includes('filter-bar')) {
-        // Reset scroll immediately to the very top so toolbar elements are in their pristine position
-        if (window.scrollY > 0) {
-          window.scrollTo({ top: 0, behavior: 'instant' });
+      if (isMobile) {
+        if (sel.includes('budgets-nav') || sel.includes('categories-nav')) {
+          // Bottom bar items are fixed at the bottom of the viewport; no scroll needed
+        } else {
+          const rect = node.getBoundingClientRect();
+          const targetY = Math.max(0, window.scrollY + rect.top - 68);
+          window.scrollTo({ top: targetY, behavior: 'smooth' });
         }
-      } else if (sel.includes('spending-breakdown') || sel.includes('transactions-table')) {
-        // Scroll so the element top sits at y=310px, leaving 240px clean space above it for the coach card with zero overlap!
-        const rect = node.getBoundingClientRect();
-        const currentY = window.scrollY;
-        const targetScrollY = Math.max(0, currentY + rect.top - 310);
-        window.scrollTo({ top: targetScrollY, behavior: 'instant' });
+      } else {
+        if (sel.includes('add-expense') || sel.includes('view-transactions') || sel.includes('export-menu') || sel.includes('filter-bar')) {
+          if (window.scrollY > 0) {
+            window.scrollTo({ top: 0, behavior: 'instant' });
+          }
+        } else if (sel.includes('spending-breakdown') || sel.includes('transactions-table')) {
+          const rect = node.getBoundingClientRect();
+          const currentY = window.scrollY;
+          const targetScrollY = Math.max(0, currentY + rect.top - 310);
+          window.scrollTo({ top: targetScrollY, behavior: 'instant' });
+        }
       }
     }
 
@@ -252,9 +268,46 @@ export class OnboardingOverlayComponent implements OnDestroy {
       return;
     }
 
-    const cardWidth = Math.min(360, window.innerWidth - 32);
+    const isMobile = window.innerWidth <= 820;
+    const cardWidth = Math.min(360, window.innerWidth - 24);
     const cardHeight = 220;
 
+    // MOBILE LAYOUT (Android & iOS)
+    if (isMobile) {
+      // If target is in the bottom bar (e.g. budgets-nav), dock card at top so bottom bar is 100% visible
+      const isTargetAtBottom = r.top > (window.innerHeight - 120);
+
+      if (isTargetAtBottom) {
+        this.placement.set('bottom');
+        this.coachStyle.set({
+          top: '64px',
+          bottom: 'auto',
+          left: '12px',
+          right: '12px',
+          width: 'calc(100vw - 24px)',
+          maxWidth: '460px',
+          margin: '0 auto',
+          transform: 'none',
+        });
+      } else {
+        // Dock card right above bottom navigation bar
+        this.placement.set('top');
+        this.coachStyle.set({
+          top: 'auto',
+          bottom: 'calc(env(safe-area-inset-bottom, 0px) + 64px)',
+          left: '12px',
+          right: '12px',
+          width: 'calc(100vw - 24px)',
+          maxWidth: '460px',
+          margin: '0 auto',
+          transform: 'none',
+        });
+      }
+      this.arrowStyle.set({ display: 'none' });
+      return;
+    }
+
+    // DESKTOP LAYOUT
     // 1. Sidebar target (e.g. items on the left side, r.left < 220)
     if (r.left < 220) {
       const left = Math.round(r.right + 16);
@@ -318,14 +371,16 @@ export class OnboardingOverlayComponent implements OnDestroy {
   spotStyle(): Record<string, string> {
     const r = this.targetRect();
     if (!r) return { display: 'none' };
-    // If element is completely scrolled off-screen or hidden behind sticky topbar
-    if (r.bottom < 58 || r.top > window.innerHeight) return { display: 'none' };
+    if (r.bottom < 50 || r.top > window.innerHeight) return { display: 'none' };
+
+    const isMobile = window.innerWidth <= 820;
+    const padding = isMobile ? 3 : 6;
 
     return {
-      left: `${Math.round(r.left - 6)}px`,
-      top: `${Math.round(r.top - 6)}px`,
-      width: `${Math.round(r.width + 12)}px`,
-      height: `${Math.round(r.height + 12)}px`,
+      left: `${Math.max(0, Math.round(r.left - padding))}px`,
+      top: `${Math.max(0, Math.round(r.top - padding))}px`,
+      width: `${Math.min(window.innerWidth, Math.round(r.width + padding * 2))}px`,
+      height: `${Math.round(r.height + padding * 2)}px`,
     };
   }
 }

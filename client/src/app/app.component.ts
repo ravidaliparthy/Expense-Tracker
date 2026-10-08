@@ -1,6 +1,6 @@
 import { Component, effect, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from './core/auth.service';
 import { OfflineQueueService } from './core/offline-queue.service';
 import { OnboardingService } from './core/onboarding.service';
@@ -154,6 +154,7 @@ import { OnboardingService } from './core/onboarding.service';
   `],
 })
 export class AppComponent {
+  private readonly router = inject(Router);
   readonly auth = inject(AuthService);
   readonly queue = inject(OfflineQueueService);
   readonly onboarding = inject(OnboardingService);
@@ -168,7 +169,13 @@ export class AppComponent {
   }
 
   toggleTheme(): void { this.dark.update((v) => !v); }
-  replayTour(): void { this.onboarding.replay(); }
+  replayTour(): void {
+    void this.router.navigate(['/dashboard']).then(() => {
+      setTimeout(() => {
+        this.onboarding.replay();
+      }, 80);
+    });
+  }
 }
 
 function readStoredTheme(): boolean {
