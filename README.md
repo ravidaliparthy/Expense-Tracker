@@ -1,21 +1,91 @@
-# Expense Tracker Dashboard — Full Documentation
+<div align="center">
 
-Enterprise-grade expense analytics application with budget thresholds, BI-style filtering,
-data export, guided onboarding, and resilience against real-world edge cases
-(historical data integrity, timezone drift, offline/concurrent writes).
+# ⚡ Expense Tracker & Financial Analytics
 
-**Table of contents**
-1. [Tech stack](#1-tech-stack) · 2. [Quick start](#2-quick-start) · 3. [Scripts & environment](#3-scripts--environment) ·
-4. [Production Deployment (GitHub, Render, Vercel)](#4-production-deployment-guide-github-render-vercel) ·
-5. [API endpoint reference](#5-api-endpoint-reference) · 6. [Database schema](#6-database-schema) ·
-7. [Edge-case design](#7-edge-case-design) · 8. [Budget threshold math](#8-budget-threshold-math) ·
-9. [Frontend architecture](#9-frontend-architecture) · 10. [Angular Material / UI stack](#10-angular-material--ui-stack) ·
-11. [Onboarding flow](#11-onboarding-flow) · 12. [Self-Hosted Deployments (Nginx / PM2)](#12-self-hosted-deployments-nginx--pm2) ·
-13. [Verification log](#13-verification-log) · 14. [Project file map](#14-project-file-map) · 15. [Troubleshooting](#15-troubleshooting)
+[![Frontend](https://img.shields.io/badge/FRONTEND-ANGULAR%2016-DD0031?style=for-the-badge&logo=angular&logoColor=white)](https://angular.io/)
+[![Backend](https://img.shields.io/badge/BACKEND-NODE.JS%20%26%20EXPRESS-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
+[![Database](https://img.shields.io/badge/DATABASE-SQLITE%20(WAL)-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](https://sqlite.org/)
+[![TypeScript](https://img.shields.io/badge/TYPESCRIPT-5.X-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+<br />
+[![Container](https://img.shields.io/badge/CONTAINER-DOCKER-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
+[![Deployment](https://img.shields.io/badge/DEPLOYMENT-VERCEL%20%2B%20RENDER-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://vercel.com/)
+[![License](https://img.shields.io/badge/LICENSE-MIT-007ACC?style=for-the-badge)](LICENSE)
+
+<br />
+
+**A real-world full-stack financial analytics platform benchmarked against modern fintech standards, featuring integer-cent double-entry precision, dynamic 10-year rolling calendar horizon filtering, responsive SVG analytics, and streamed CSV/PDF financial export pipelines.**
+
+<br />
+
+[Key Features](#-key-features) • [Architecture](#-architecture--system-flow) • [Quickstart](#-quickstart) • [Deployment](#-production-deployment-guide) • [API Reference](#-api-endpoint-reference)
+
+</div>
 
 ---
 
-## 1. Tech stack
+## 🏛️ Architecture & System Flow
+
+```mermaid
+graph TD
+    subgraph Frontend ["Frontend (Angular 16 + Custom SCSS Design System)"]
+        DASH["Visual Analytics & Dashboard (Hand-rolled SVG Trends)"]
+        CATS["Category Allocation & Budget Threshold Cards"]
+        TIME["10-Year Rolling Calendar Horizon Filter (Auto-Updating)"]
+        MODAL["Transaction Management & Batch Import / Export"]
+    end
+
+    subgraph Backend ["Backend (Node.js & Express 4 Engine)"]
+        API_AUTH["/api/auth (JWT + Bcrypt)"]
+        API_EXP["/api/expenses (CRUD & Date Range Filter)"]
+        API_CAT["/api/categories (Budgets & Allocations)"]
+        API_STAT["/api/analytics (Rolling Trends & Metrics)"]
+        API_EXP_CSV["/api/export/csv (Fast-CSV Streamer)"]
+        API_EXP_PDF["/api/export/pdf (PDFKit Document Builder)"]
+        API_HEALTH["/api/health (System Diagnostics)"]
+    end
+
+    subgraph Database ["Persistence Layer (SQLite with WAL Mode)"]
+        DB_USERS[("users Table (Auth & Profile)")]
+        DB_EXP[("expenses Table (Integer Cents)")]
+        DB_CATS[("categories Table (Icons & Colors)")]
+        DB_BUDGETS[("budgets Table (Monthly Thresholds)")]
+    end
+
+    %% Frontend to Backend Flows
+    TIME -->|"Query Horizon (e.g., 2026 / 10-Yr)"| API_EXP
+    CATS -->|"Fetch & Update Budget Limits"| API_CAT
+    DASH -->|"Retrieve Aggregated Time Series"| API_STAT
+    MODAL -->|"Post Expense (Integer Cents)"| API_EXP
+    MODAL -->|"Stream Filtered CSV"| API_EXP_CSV
+    MODAL -->|"Download Executive PDF"| API_EXP_PDF
+
+    %% Backend to Database Flows
+    API_AUTH --> DB_USERS
+    API_EXP --> DB_EXP
+    API_CAT --> DB_CATS
+    API_CAT --> DB_BUDGETS
+    API_STAT --> DB_EXP
+    API_EXP_CSV --> DB_EXP
+    API_EXP_PDF --> DB_EXP
+    API_EXP_PDF --> DB_CATS
+```
+
+---
+
+## 🚀 Key Features
+
+- **Dynamic 10-Year Rolling Calendar Horizon**: Auto-updating rolling horizon (`get tenYearList()`) that dynamically recalculates from system time without manual code updates.
+- **High-Precision Financial Engine**: All monetary calculations execute with integer cents (`amount_cents`) to eliminate IEEE-754 floating-point inaccuracies.
+- **Hand-Crafted Zero-Dependency SVG Charts**: High-performance SVG trend polylines and category distribution bars with smooth CSS transitions.
+- **Budget Threshold Alerts**: Real-time multi-tier threshold indicators (`safe` < 80%, `warning` 80-99%, `exceeded` ≥ 100%) with visual warning badges.
+- **Streaming Export Pipelines**: Server-side streamed CSV via `fast-csv` (constant memory) and formatted PDF summaries with KPI metrics via `pdfkit`.
+- **Offline Resilience & Sync**: Local storage transaction queue with optimistic UI updates and versioned reconciliation conflict detection (`409 Conflict` & `207 Multi-Status`).
+- **Interactive Guided Onboarding Tour**: 4-step walk-through highlighting key dashboard widgets with local storage dismissal persistence.
+
+
+---
+
+## 🛠️ Tech Stack
 
 | Layer | Technology | Notes |
 |---|---|---|
@@ -32,7 +102,7 @@ data export, guided onboarding, and resilience against real-world edge cases
 
 ---
 
-## 2. Quick start
+## ⚡ Quickstart
 
 ```powershell
 # ── Terminal 1: Backend (port 3001) ─────────────────────────────
@@ -91,7 +161,7 @@ so the browser never sees CORS or token-less cross-origin calls in development.
 | `DB_PATH` | `../db/expense-tracker.db` | SQLite file location |
 | `SEED_TZ` | `America/New_York` | Timezone used when seeding demo data |
 
-## 4. Production Deployment Guide (GitHub, Render, Vercel)
+## 🌐 Production Deployment Guide (GitHub, Render, Vercel)
 
 The application follows a decoupled production architecture:
 - **Backend API (Node.js/Express + SQLite)**: Deployed to **Render** as a managed Web Service.
@@ -225,7 +295,7 @@ The application follows a decoupled production architecture:
 
 ---
 
-## 5. API endpoint reference
+## 📡 API Endpoint Reference
 
 Base URL: `http://localhost:3001/api` (browser calls arrive via the `:4200` proxy).
 
