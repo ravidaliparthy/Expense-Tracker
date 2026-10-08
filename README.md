@@ -2,86 +2,102 @@
 
 # ⚡ Expense Tracker & Financial Analytics
 
+[![PWA Ready](https://img.shields.io/badge/PWA-INSTALLABLE-3178C6?style=for-the-badge&logo=pwa&logoColor=white)](https://web.dev/progressive-web-apps/)
+[![Offline First](https://img.shields.io/badge/OFFLINE-ENABLED-22C55E?style=for-the-badge&logo=pwa&logoColor=white)](#-offline-first-support-does-it-require-internet)
 [![Frontend](https://img.shields.io/badge/FRONTEND-ANGULAR%2016-DD0031?style=for-the-badge&logo=angular&logoColor=white)](https://angular.io/)
 [![Backend](https://img.shields.io/badge/BACKEND-NODE.JS%20%26%20EXPRESS-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
 [![Database](https://img.shields.io/badge/DATABASE-SQLITE%20(WAL)-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](https://sqlite.org/)
-[![TypeScript](https://img.shields.io/badge/TYPESCRIPT-5.X-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-<br />
-[![Container](https://img.shields.io/badge/CONTAINER-DOCKER-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
 [![Deployment](https://img.shields.io/badge/DEPLOYMENT-VERCEL%20%2B%20RENDER-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://vercel.com/)
 [![License](https://img.shields.io/badge/LICENSE-MIT-007ACC?style=for-the-badge)](LICENSE)
 
 <br />
 
-**A real-world full-stack financial analytics platform benchmarked against modern fintech standards, featuring integer-cent double-entry precision, dynamic 10-year rolling calendar horizon filtering, responsive SVG analytics, and streamed CSV/PDF financial export pipelines.**
+**A full-stack, offline-first personal financial management platform built with Angular 16, Node.js/Express, SQLite WAL, and Progressive Web App (PWA) architecture. Features integer-cent precision, interactive 7-step guided onboarding, dynamic financial trends, and automatic background sync.**
 
 <br />
 
-[Key Features](#-key-features) • [Architecture](#-architecture--system-flow) • [Quickstart](#-quickstart) • [Deployment](#-production-deployment-guide) • [API Reference](#-api-endpoint-reference)
+🔗 **Live Application**: [https://expense-tracker-ochre-eight-80.vercel.app](https://expense-tracker-ochre-eight-80.vercel.app)  
+🔌 **API Backend**: [https://expense-tracker-ai6g.onrender.com](https://expense-tracker-ai6g.onrender.com)  
+👤 **Demo Account**: `demo@expense.test` / `demo1234`
+
+<br />
+
+[📱 Mobile & PWA](#-mobile-app--pwa-installation) • [🌐 Offline Support](#-offline-first-support-does-it-require-internet) • [✨ Guided Tour](#-interactive-guided-tour) • [Architecture](#-architecture--system-flow) • [Quickstart](#-quickstart) • [API Reference](#-api-endpoint-reference)
 
 </div>
 
 ---
 
-## 🏛️ Architecture & System Flow
+## 📱 Mobile App & PWA Installation
 
-```mermaid
-graph TD
-    subgraph Frontend ["Frontend (Angular 16 + Custom SCSS Design System)"]
-        DASH["Visual Analytics & Dashboard (Hand-rolled SVG Trends)"]
-        CATS["Category Allocation & Budget Threshold Cards"]
-        TIME["10-Year Rolling Calendar Horizon Filter (Auto-Updating)"]
-        MODAL["Transaction Management & Batch Import / Export"]
-    end
+This application is a full **Progressive Web App (PWA)** that can be installed directly onto your iPhone, Android device, or desktop without an App Store or Play Store download. It runs **full-screen with zero browser address bar**, native splash screens, and custom high-resolution icons.
 
-    subgraph Backend ["Backend (Node.js & Express 4 Engine)"]
-        API_AUTH["/api/auth (JWT + Bcrypt)"]
-        API_EXP["/api/expenses (CRUD & Date Range Filter)"]
-        API_CAT["/api/categories (Budgets & Allocations)"]
-        API_STAT["/api/analytics (Rolling Trends & Metrics)"]
-        API_EXP_CSV["/api/export/csv (Fast-CSV Streamer)"]
-        API_EXP_PDF["/api/export/pdf (PDFKit Document Builder)"]
-        API_HEALTH["/api/health (System Diagnostics)"]
-    end
+### 📲 How to Install on Android (Chrome / Brave / Edge)
+1. Open [https://expense-tracker-ochre-eight-80.vercel.app](https://expense-tracker-ochre-eight-80.vercel.app) in Chrome.
+2. Tap the **📲 Install** button in the top navigation bar (or choose **"Add to Home screen"** from Chrome's three-dot menu `⋮`).
+3. Tap **Install** — the app icon will appear on your home screen and in your app drawer!
 
-    subgraph Database ["Persistence Layer (SQLite with WAL Mode)"]
-        DB_USERS[("users Table (Auth & Profile)")]
-        DB_EXP[("expenses Table (Integer Cents)")]
-        DB_CATS[("categories Table (Icons & Colors)")]
-        DB_BUDGETS[("budgets Table (Monthly Thresholds)")]
-    end
+### 🍏 How to Install on iPhone (Safari)
+1. Open [https://expense-tracker-ochre-eight-80.vercel.app](https://expense-tracker-ochre-eight-80.vercel.app) in **Safari**.
+2. Tap the **Share** button (box with an upward arrow `⎋`) at the bottom of the screen.
+3. Scroll down and tap **"Add to Home Screen"** (`⊞`).
+4. Tap **Add** in the top right corner.
+5. Tap the new **ExpenseTracker** app icon on your home screen to launch in full-screen standalone mode!
 
-    %% Frontend to Backend Flows
-    TIME -->|"Query Horizon (e.g., 2026 / 10-Yr)"| API_EXP
-    CATS -->|"Fetch & Update Budget Limits"| API_CAT
-    DASH -->|"Retrieve Aggregated Time Series"| API_STAT
-    MODAL -->|"Post Expense (Integer Cents)"| API_EXP
-    MODAL -->|"Stream Filtered CSV"| API_EXP_CSV
-    MODAL -->|"Download Executive PDF"| API_EXP_PDF
+---
 
-    %% Backend to Database Flows
-    API_AUTH --> DB_USERS
-    API_EXP --> DB_EXP
-    API_CAT --> DB_CATS
-    API_CAT --> DB_BUDGETS
-    API_STAT --> DB_EXP
-    API_EXP_CSV --> DB_EXP
-    API_EXP_PDF --> DB_EXP
-    API_EXP_PDF --> DB_CATS
-```
+## 🌐 Offline-First Support: Does It Require Internet?
+
+### **Short Answer: NO! Once logged in, the app does NOT require an internet connection.**
+
+The app uses an **offline-first local-storage queue architecture**:
+
+| Action | Without Internet (Offline) | When Internet Returns (Online) |
+|---|---|---|
+| **Opening App** | Launches in `<0.3s` from device cache via Service Worker (`ngsw-worker.js`) | Always loads from local cache |
+| **Authentication** | You remain permanently logged in (`localStorage` session persistence) | Token verified in background |
+| **Viewing Dashboard** | All your loaded expenses, categories, KPIs, and budgets display instantly | Silently syncs with server |
+| **Status Banner** | Header indicates `● Offline — saving locally` | Standard controls displayed |
+| **Logging Expenses** | Allowed! Automatically queued in `et.offlineQueue`, header shows `⟳ X pending` | Automatically flushed to `/api/sync/batch` |
+| **Cloud Sync** | Queue safely survives phone reboots and app closures | Merged into SQLite DB idempotently; UI refreshes |
+
+> *Note: Only the very first registration (creating a new account for the first time) requires internet to reach the database.*
+
+---
+
+## ⚡ Zero Cold-Start Lag (Keep-Alive Heartbeat)
+
+On free cloud hosting tiers (like Render), backend servers typically spin down into deep sleep after 15 minutes of inactivity. We engineered a dual-layer keep-alive solution in `KeepAliveService`:
+1. **Automated 10-Minute Heartbeat**: While the app or browser tab is open, the app sends a lightweight `/api/health` ping every 10 minutes, resetting the inactivity timer so **the server never spins down**.
+2. **Instant Pre-Warm on Phone Unlock**: The instant you unlock your phone or switch back to the app (`visibilitychange` / `focus`), a background pre-warming request is fired immediately, ensuring the server is hot before you even tap an action.
+
+---
+
+## ✨ Interactive Guided Tour (Mobile & Desktop)
+
+Tap the **✨ Tour** button in the header at any time to launch a 7-step interactive walkthrough:
+1. **✨ 1 · Log Expenses & Income**: Add transactions with categories, dates, and notes.
+2. **📅 2 · Date Filters & Chart Views**: 1-click presets ("Today", "This week", "This month") and grouping.
+3. **📊 3 · Deep Spending Breakdown**: Inspect spending by Day of Week, Week, Month, or Year.
+4. **↕️ 4 · Sorting & Quick Edits**: Ascending/descending sorting by Date and Amount.
+5. **📋 5 · Full Transactions Hub**: Search receipts, filter by range, and paginate.
+6. **◑ 6 · Smart Budget Guardrails**: Color-coded gauges with 80%, 90%, and 100% threshold warnings.
+7. **⤓ 7 · Instant PDF & CSV Reports**: Download spreadsheets and PDF reports anytime.
+
+*Mobile Optimized: On smartphones, the tour docks as an ergonomic bottom sheet (or top card for bottom-bar navigation), smoothly auto-scrolling with 60fps tracking and zero extra taps required.*
 
 ---
 
 ## 🚀 Key Features
 
-- **Dynamic 10-Year Rolling Calendar Horizon**: Auto-updating rolling horizon (`get tenYearList()`) that dynamically recalculates from system time without manual code updates.
+- **Progressive Web App (PWA)**: Installable, full-screen standalone mobile experience with high-resolution app icons.
+- **Offline-First Resilience**: Log expenses offline; automatic background batch synchronization with idempotent UUIDs.
+- **Dynamic 10-Year Rolling Horizon**: Auto-updating rolling calendar horizon dynamically recalculating from system time.
 - **High-Precision Financial Engine**: All monetary calculations execute with integer cents (`amount_cents`) to eliminate IEEE-754 floating-point inaccuracies.
-- **Hand-Crafted Zero-Dependency SVG Charts**: High-performance SVG trend polylines and category distribution bars with smooth CSS transitions.
-- **Budget Threshold Alerts**: Real-time multi-tier threshold indicators (`safe` < 80%, `warning` 80-99%, `exceeded` ≥ 100%) with visual warning badges.
-- **Streaming Export Pipelines**: Server-side streamed CSV via `fast-csv` (constant memory) and formatted PDF summaries with KPI metrics via `pdfkit`.
-- **Offline Resilience & Sync**: Local storage transaction queue with optimistic UI updates and versioned reconciliation conflict detection (`409 Conflict` & `207 Multi-Status`).
-- **Interactive Guided Onboarding Tour**: 4-step walk-through highlighting key dashboard widgets with local storage dismissal persistence.
-
+- **Zero-Dependency SVG Charts**: Hand-rolled SVG trend polylines, category distribution bars, and donut charts.
+- **Budget Threshold Alerts**: Real-time multi-tier threshold indicators (`safe` < 80%, `warning` 80-99%, `exceeded` ≥ 100%).
+- **Streaming Export Pipelines**: Server-side streamed CSV via `fast-csv` and formatted PDF summaries via `pdfkit`.
+- **Zero Inactivity Lag**: Automated keep-alive pinging prevents cloud instance sleep.
 
 ---
 
@@ -89,16 +105,15 @@ graph TD
 
 | Layer | Technology | Notes |
 |---|---|---|
-| Frontend | **Angular 16.2** | Standalone components, signals, `effect()`, lazy `loadComponent` routes, functional HTTP interceptor, guards |
-| UI styling | **Custom SCSS design system** | No component-library dependency — see [§9](#9-angular-material--ui-stack) |
-| Charts | **Hand-rolled SVG** | Trend polyline + category bars, zero chart dependencies |
-| Backend | **Node.js + Express 4** | Modular routes: auth / categories / expenses / budgets / analytics / export / sync |
-| Database | **better-sqlite3** | Synchronous, WAL mode, file `db/expense-tracker.db` |
-| Validation | **zod** | Request body/query schemas → 400 with field details |
-| CSV export | **fast-csv** | Streamed row-by-row — constant memory on large exports |
-| PDF export | **pdfkit** | KPI cards, colored budget bars, paginated transaction table |
-| Auth | **jsonwebtoken + bcryptjs** | 7-day JWT, `Authorization: Bearer` |
-| Money | **integer cents** | `amount_cents` everywhere; floating dollars only at the JSON boundary |
+| Frontend | **Angular 16.2 (Standalone)** | Standalone components, signals, `effect()`, lazy routes, functional interceptors |
+| PWA & Offline | **@angular/service-worker** | Static shell caching, Web App Manifest, auto-update notifier |
+| UI Styling | **Custom SCSS Design System** | Dark/Light themes, glassmorphism, responsive bottom nav, iOS safe areas |
+| Charts | **Hand-rolled SVG** | Zero external chart libraries; pure responsive SVG mathematics |
+| Backend | **Node.js + Express 4** | Modular architecture (auth, categories, expenses, budgets, analytics, export, sync) |
+| Database | **better-sqlite3** | Synchronous WAL mode, auto-indexing, ACID compliance |
+| Validation | **zod** | Strict schema validation with human-readable error messages |
+| Exports | **fast-csv & pdfkit** | Constant-memory streaming CSV and executive multi-page PDF generation |
+| Auth | **jsonwebtoken + bcryptjs** | 7-day JWT, persistent session storage in localStorage |
 
 ---
 
