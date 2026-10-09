@@ -1,27 +1,56 @@
-# Client
+# 📱 Expense Tracker Client (Frontend SPA & PWA)
 
-This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 16.2.16.
+The frontend client is an offline-first, standalone Angular 16 application utilizing reactive Signals, a custom SCSS design system, hand-crafted SVG data visualizations, and Progressive Web App (PWA) architecture.
 
-## Development server
+---
 
-Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The application will automatically reload if you change any of the source files.
+## ⚡ Architecture Highlights
 
-## Code scaffolding
+- **Framework**: Angular 16 Standalone Components (Zero `NgModule` boilerplate).
+- **Reactivity Model**: Fine-grained reactive Angular Signals (`signal`, `computed`, `effect`).
+- **Styling**: Vanilla SCSS Design System with CSS Custom Properties, glassmorphism, responsive navigation dock, and light/dark theme switching.
+- **Charts**: Zero third-party chart dependencies. Trend polylines, category distribution bars, and donut charts are built from pure mathematical SVG coordinate calculations.
+- **Offline Resilience**:
+  - Service Worker (`@angular/service-worker`) shell caching.
+  - `OfflineQueueService` queues mutations locally in `localStorage` (`et.offlineQueue`) with client-generated UUIDs.
+  - Automatic background synchronization via `POST /api/sync/batch` when internet connectivity restores.
+- **Keep-Alive Engine**:
+  - `KeepAliveService` sends lightweight 10-minute heartbeat pings to prevent free-tier backend sleep.
+  - Fires an instant pre-warm request when the user unlocks their device (`window.focus` / `visibilitychange`).
+- **Onboarding Tour**:
+  - 7-step interactive coach-mark tour with progress indicators, smooth auto-scrolling, mobile bottom-sheet docking, and keyboard controls.
 
-Run `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.
+---
 
-## Build
+## 🛠️ Local Development
 
-Run `ng build` to build the project. The build artifacts will be stored in the `dist/` directory.
+```powershell
+# Install client dependencies
+npm install
 
-## Running unit tests
+# Start local development server with proxy configuration
+npm start
+# App available at http://localhost:4200 (proxies /api/* to http://localhost:3001)
+```
 
-Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).
+---
 
-## Running end-to-end tests
+## 🧪 Unit Testing & Building
 
-Run `ng e2e` to execute the end-to-end tests via a platform of your choice. To use this command, you need to first add a package that implements end-to-end testing capabilities.
+```powershell
+# Run client unit test suite (Karma / Headless Chrome)
+npm test
 
-## Further help
+# Build production bundle
+npm run build
+# Outputs tree-shaken, gzipped production assets to dist/client
+```
 
-To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI Overview and Command Reference](https://angular.io/cli) page.
+---
+
+## 🌐 Production Deployment (Vercel)
+
+The client is configured for zero-configuration deployment on **Vercel**:
+- Configuration file: [`vercel.json`](file:///c:/Users/Ravi%20Daliparthy/Desktop/expense%20tracker/client/vercel.json)
+- Automatic SPA routing rewrites to `/index.html`.
+- Edge reverse proxy routing `/api/(.*)` to the production Render backend (`https://expense-tracker-ai6g.onrender.com/api/$1`), completely eliminating browser CORS friction.
