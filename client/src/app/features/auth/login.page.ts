@@ -34,8 +34,16 @@ import { AuthService } from '../../core/auth.service';
           <label>{{ mode() === 'forgot' ? 'New password' : 'Password' }}</label>
           <input name="password" type="password" [(ngModel)]="password" required minlength="8"
                  placeholder="At least 8 characters" />
-          <div *ngIf="mode() === 'login'" class="forgot-row">
+          <div *ngIf="mode() === 'login'" class="session-opts-row">
+            <label class="remember-label" title="Uncheck on PC/shared computers to log out automatically when closing the browser">
+              <input type="checkbox" [(ngModel)]="rememberMe" name="rememberMe" />
+              <span>Remember me</span>
+            </label>
             <span class="forgot-link" (click)="setMode('forgot')">Forgot password?</span>
+          </div>
+          <div class="session-badge-pill" *ngIf="mode() === 'login'">
+            <span *ngIf="!rememberMe">🔒 <strong>Session-only:</strong> Logs out automatically when you close the browser/tab.</span>
+            <span *ngIf="rememberMe">💾 <strong>Remembered:</strong> Stays signed in across browser sessions on this device.</span>
           </div>
           <ng-container *ngIf="mode() === 'register'">
             <label>Timezone</label>
@@ -66,7 +74,12 @@ import { AuthService } from '../../core/auth.service';
     .brand span:last-child { color:#6366F1; }
     h2 { margin:0 0 4px; }
     .hint { color:#64748B; font-size:13px; margin:0 0 10px; }
-    .forgot-row { text-align:right; margin:-4px 0 10px; }
+    .session-opts-row { display:flex; justify-content:space-between; align-items:center; margin:-2px 0 10px; font-size:12px; }
+    .remember-label { display:flex; align-items:center; gap:6px; color:#475569; cursor:pointer; user-select:none; font-weight:500; }
+    .remember-label input { width:auto; margin:0; cursor:pointer; accent-color:#6366F1; }
+    .remember-label:hover { color:#1E1B4B; }
+    .session-badge-pill { font-size:11.5px; padding:6px 10px; border-radius:6px; background:#F8FAFC; border:1px solid #E2E8F0; color:#64748B; margin-bottom:14px; line-height:1.4; }
+    .session-badge-pill strong { color:#334155; }
     .forgot-link { font-size:12px; color:#6366F1; cursor:pointer; }
     .forgot-link:hover { text-decoration:underline; }
     .demo { margin-top:14px; font-size:12px; color:#6366F1; cursor:pointer; text-align:center; }
@@ -83,6 +96,7 @@ export class LoginPage {
   error = signal('');
 
   email = ''; password = ''; displayName = ''; recoveryPin = '';
+  rememberMe = typeof window !== 'undefined' ? (window.innerWidth <= 820 ? true : false) : false;
   timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
   timezones = [this.timezone, 'UTC', 'America/New_York', 'America/Los_Angeles',
                'Europe/London', 'Asia/Kolkata', 'Asia/Tokyo', 'Australia/Sydney'];
@@ -115,11 +129,11 @@ export class LoginPage {
     this.error.set('');
     try {
       if (this.mode() === 'login') {
-        await this.auth.login(this.email, this.password);
+        await this.auth.login(this.email, this.password, this.rememberMe);
       } else if (this.mode() === 'register') {
-        await this.auth.register(this.email, this.password, this.displayName, this.timezone);
+        await this.auth.register(this.email, this.password, this.displayName, this.timezone, this.rememberMe);
       } else {
-        await this.auth.resetPassword(this.email, this.recoveryPin, this.password);
+        await this.auth.resetPassword(this.email, this.recoveryPin, this.password, this.rememberMe);
       }
       const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') || '/dashboard';
       void this.router.navigateByUrl(returnUrl);

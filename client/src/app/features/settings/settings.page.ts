@@ -106,6 +106,50 @@ const COMMON_TIMEZONES = [
           <button class="btn-secondary" (click)="savePin()" [disabled]="savingPin">Save recovery PIN</button>
         </div>
       </div>
+
+      <!-- Session & Device Security -->
+      <div class="card form">
+        <div class="card-header">
+          <span class="card-icon">🛡️</span>
+          <div>
+            <h2 class="card-title">Session & Device Security</h2>
+            <p class="card-subtitle">Manage browser session persistence and account logout</p>
+          </div>
+        </div>
+
+        <div class="session-info-box">
+          <div class="session-info-row">
+            <span class="info-label">Active Account:</span>
+            <span class="info-val"><strong>{{ auth.user()?.displayName }}</strong></span>
+          </div>
+          <div class="session-info-row">
+            <span class="info-label">Email:</span>
+            <span class="info-val">{{ auth.user()?.email }}</span>
+          </div>
+          <div class="session-info-row">
+            <span class="info-label">Session Mode:</span>
+            <span class="badge-status" [class.badge-session-only]="!auth.isRemembered()">
+              {{ auth.isRemembered() ? '💾 Remembered on device' : '⏱ Session-only (auto-logout on close)' }}
+            </span>
+          </div>
+        </div>
+
+        <p class="pin-desc">
+          In <strong>Session-only mode</strong>, closing your browser window or tab will automatically end your session and log you out. Recommended for shared PCs and work devices.
+        </p>
+
+        <div class="session-action-group">
+          <button type="button" class="btn-secondary" (click)="toggleSessionPersistence()">
+            {{ auth.isRemembered() ? 'Switch to Session-only mode' : 'Keep me signed in on this PC' }}
+          </button>
+        </div>
+
+        <div class="danger-zone">
+          <button type="button" class="btn-danger" (click)="auth.logout()">
+            🚪 Sign Out of ExpenseTracker
+          </button>
+        </div>
+      </div>
     </div>
   `,
   styles: [`
@@ -129,6 +173,17 @@ const COMMON_TIMEZONES = [
     .pin-status { padding: 10px 14px; border-radius: 8px; font-size: 0.85rem; margin-bottom: 12px; background: rgba(234, 179, 8, 0.15); color: #FDE047; border: 1px solid rgba(234, 179, 8, 0.3); }
     .pin-status.configured { background: rgba(34, 197, 94, 0.15); color: #86EFAC; border-color: rgba(34, 197, 94, 0.3); }
     .pin-desc { font-size: 0.82rem; color: #94A3B8; line-height: 1.4; margin: 0 0 14px; }
+    .session-info-box { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 12px 14px; margin-bottom: 12px; }
+    .session-info-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; margin-bottom: 8px; }
+    .session-info-row:last-child { margin-bottom: 0; }
+    .info-label { color: #94A3B8; }
+    .info-val { color: #E2E8F0; }
+    .badge-status { padding: 3px 8px; border-radius: 999px; font-size: 0.75rem; font-weight: 600; background: rgba(34, 197, 94, 0.2); color: #86EFAC; border: 1px solid rgba(34, 197, 94, 0.3); }
+    .badge-status.badge-session-only { background: rgba(234, 179, 8, 0.2); color: #FDE047; border-color: rgba(234, 179, 8, 0.3); }
+    .session-action-group { margin-top: 10px; margin-bottom: 16px; }
+    .danger-zone { border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 16px; margin-top: 16px; display: flex; justify-content: flex-end; }
+    .btn-danger { background: rgba(239, 68, 68, 0.15); color: #FCA5A5; border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 8px; padding: 10px 18px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+    .btn-danger:hover { background: #EF4444; color: #FFFFFF; }
     .flash { padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; font-size: 0.9rem; font-weight: 500; }
     .flash.ok { background: rgba(34, 197, 94, 0.2); color: #86EFAC; border: 1px solid rgba(34, 197, 94, 0.4); }
     .flash.err { background: rgba(239, 68, 68, 0.2); color: #FCA5A5; border: 1px solid rgba(239, 68, 68, 0.4); }
@@ -217,5 +272,16 @@ export class SettingsPage {
     } finally {
       this.savingPin = false;
     }
+  }
+
+  toggleSessionPersistence(): void {
+    const current = this.auth.isRemembered();
+    this.auth.setRememberMe(!current);
+    this.flash = {
+      type: 'ok',
+      text: !current
+        ? 'Session persistence enabled — your session will be remembered across browser restarts.'
+        : 'Session-only mode active — closing your browser window or tab will log you out automatically.'
+    };
   }
 }

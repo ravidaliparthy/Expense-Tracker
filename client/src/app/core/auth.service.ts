@@ -6,13 +6,14 @@ import { User } from './models';
 
 const TOKEN_KEY = 'et.token';
 const USER_KEY = 'et.user';
+const REMEMBER_KEY = 'et.remember_me';
 
 function getStoredToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
+  return sessionStorage.getItem(TOKEN_KEY) || localStorage.getItem(TOKEN_KEY);
 }
 
 function getStoredUser(): User | null {
-  const raw = localStorage.getItem(USER_KEY) || sessionStorage.getItem(USER_KEY);
+  const raw = sessionStorage.getItem(USER_KEY) || localStorage.getItem(USER_KEY);
   if (!raw) return null;
   try {
     return JSON.parse(raw) as User;
@@ -27,31 +28,61 @@ export class AuthService {
   readonly user = this._user.asReadonly();
   readonly isLoggedIn = signal<boolean>(!!getStoredToken());
 
-  constructor(private http: HttpClient, private router: Router) {}
+  constructor(private http: HttpClient, private router: Router) {
+    if (typeof window !== 'undefined') {
+      const localTok = localStorage.getItem(TOKEN_KEY);
+      const localUser = localStorage.getItem(USER_KEY);
+      if (localTok && !sessionStorage.getItem(TOKEN_KEY)) {
+        sessionStorage.setItem(TOKEN_KEY, localTok);
+      }
+      if (localUser && !sessionStorage.getItem(USER_KEY)) {
+        sessionStorage.setItem(USER_KEY, localUser);
+      }
+    }
+  }
 
   get token(): string | null { return getStoredToken(); }
 
-  async login(email: string, password: string): Promise<void> {
+  isRemembered(): boolean {
+    return typeof window !== 'undefined' && !!localStorage.getItem(TOKEN_KEY);
+  }
+
+  setRememberMe(remember: boolean): void {
+    const token = this.token;
+    const u = this._user();
+    if (!token || !u) return;
+    if (remember) {
+      localStorage.setItem(TOKEN_KEY, token);
+      localStorage.setItem(USER_KEY, JSON.stringify(u));
+      localStorage.setItem(REMEMBER_KEY, '1');
+    } else {
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(USER_KEY);
+      localStorage.removeItem(REMEMBER_KEY);
+    }
+  }
+
+  async login(email: string, password: string, rememberMe = false): Promise<void> {
     const res = await firstValueFrom(
       this.http.post<{ token: string; user: User }>('/api/auth/login', { email, password })
     );
-    this.persist(res);
+    this.persist(res, rememberMe);
   }
 
-  async register(email: string, password: string, displayName: string, timezone: string): Promise<void> {
+  async register(email: string, password: string, displayName: string, timezone: string, rememberMe = false): Promise<void> {
     const res = await firstValueFrom(
       this.http.post<{ token: string; user: User }>('/api/auth/register',
         { email, password, displayName, timezone })
     );
-    this.persist(res);
+    this.persist(res, rememberMe);
   }
 
-  async resetPassword(email: string, recoveryPin: string, newPassword: string): Promise<void> {
+  async resetPassword(email: string, recoveryPin: string, newPassword: string, rememberMe = false): Promise<void> {
     const res = await firstValueFrom(
       this.http.post<{ token: string; user: User }>('/api/auth/reset-password',
         { email, recoveryPin, newPassword })
     );
-    this.persist(res);
+    this.persist(res, rememberMe);
   }
 
   async changePassword(currentPassword: string, newPassword: string): Promise<void> {
@@ -88,21 +119,38 @@ export class AuthService {
     sessionStorage.removeItem(USER_KEY);
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
+    localStorage.removeItem(REMEMBER_KEY);
+    try {
+      localStorage.removeItem('et.cachedExpenses');
+      localStorage.removeItem('et.cachedSummary');
+      localStorage.removeItem('et.categories');
+    } catch {}
     this._user.set(null);
     this.isLoggedIn.set(false);
-    this.router.navigate(['/login']);
+    void this.router.navigate(['/login']);
   }
 
-  private persist(res: { token: string; user: User }): void {
-    localStorage.setItem(TOKEN_KEY, res.token);
+  private persist(res: { token: string; user: User }, rememberMe = false): void {
     sessionStorage.setItem(TOKEN_KEY, res.token);
-    this.persistUser(res.user);
+    sessionStorage.setItem(USER_KEY, JSON.stringify(res.user));
+    if (rememberMe) {
+      localStorage.setItem(TOKEN_KEY, res.token);
+      localStorage.setItem(USER_KEY, JSON.stringify(res.user));
+      localStorage.setItem(REMEMBER_KEY, '1');
+    } else {
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(USER_KEY);
+      localStorage.removeItem(REMEMBER_KEY);
+    }
+    this._user.set(res.user);
     this.isLoggedIn.set(true);
   }
 
   private persistUser(u: User): void {
-    localStorage.setItem(USER_KEY, JSON.stringify(u));
     sessionStorage.setItem(USER_KEY, JSON.stringify(u));
+    if (localStorage.getItem(TOKEN_KEY)) {
+      localStorage.setItem(USER_KEY, JSON.stringify(u));
+    }
     this._user.set(u);
   }
 

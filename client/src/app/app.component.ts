@@ -40,32 +40,53 @@ import { KeepAliveService } from './core/keep-alive.service';
           <button class="ghost" (click)="replayTour()" title="Replay guided tour">✨ Tour</button>
           <button class="ghost" (click)="toggleTheme()" title="Toggle dark mode">{{ dark() ? '☀️ Light' : '🌙 Dark' }}</button>
           <span class="user">{{ auth.user()?.displayName }}</span>
-          <button class="ghost" (click)="auth.logout()">Sign out</button>
+          <button class="ghost btn-topbar-signout" (click)="auth.logout()" title="Sign out and end session">
+            <span>🚪</span> Sign out
+          </button>
         </div>
       </header>
 
       <div class="shell">
         <nav class="sidenav">
-          <a routerLink="/dashboard" routerLinkActive="active">
-            <span class="nav-ico">◫</span>
-            <span class="nav-lbl">Dashboard</span>
-          </a>
-          <a routerLink="/transactions" routerLinkActive="active" data-tour="transactions-nav">
-            <span class="nav-ico">📋</span>
-            <span class="nav-lbl">Transactions</span>
-          </a>
-          <a routerLink="/budgets" routerLinkActive="active" data-tour="budgets-nav">
-            <span class="nav-ico">◐</span>
-            <span class="nav-lbl">Budgets</span>
-          </a>
-          <a routerLink="/categories" routerLinkActive="active" data-tour="categories-nav">
-            <span class="nav-ico">▦</span>
-            <span class="nav-lbl">Categories</span>
-          </a>
-          <a routerLink="/settings" routerLinkActive="active">
-            <span class="nav-ico">⚙</span>
-            <span class="nav-lbl">Settings</span>
-          </a>
+          <div class="sidenav-links">
+            <a routerLink="/dashboard" routerLinkActive="active">
+              <span class="nav-ico">◫</span>
+              <span class="nav-lbl">Dashboard</span>
+            </a>
+            <a routerLink="/transactions" routerLinkActive="active" data-tour="transactions-nav">
+              <span class="nav-ico">📋</span>
+              <span class="nav-lbl">Transactions</span>
+            </a>
+            <a routerLink="/budgets" routerLinkActive="active" data-tour="budgets-nav">
+              <span class="nav-ico">◐</span>
+              <span class="nav-lbl">Budgets</span>
+            </a>
+            <a routerLink="/categories" routerLinkActive="active" data-tour="categories-nav">
+              <span class="nav-ico">▦</span>
+              <span class="nav-lbl">Categories</span>
+            </a>
+            <a routerLink="/settings" routerLinkActive="active">
+              <span class="nav-ico">⚙</span>
+              <span class="nav-lbl">Settings</span>
+            </a>
+          </div>
+
+          <!-- PC Desktop Sidenav Footer: User badge & dedicated Sign Out option -->
+          <div class="sidenav-pc-footer">
+            <div class="sidenav-user-card" *ngIf="auth.user() as u" [title]="u.email">
+              <div class="user-avatar-badge">{{ u.displayName ? u.displayName[0].toUpperCase() : 'U' }}</div>
+              <div class="user-meta">
+                <span class="user-name">{{ u.displayName }}</span>
+                <span class="session-badge" [class.session-only]="!auth.isRemembered()">
+                  {{ auth.isRemembered() ? '● Remembered' : '⏱ Session only' }}
+                </span>
+              </div>
+            </div>
+            <button class="pc-signout-btn" (click)="auth.logout()" title="Sign out of your account and end session">
+              <span class="nav-ico">🚪</span>
+              <span class="nav-lbl">Sign Out</span>
+            </button>
+          </div>
         </nav>
         <main class="content">
           <router-outlet />
@@ -163,17 +184,37 @@ import { KeepAliveService } from './core/keep-alive.service';
     .badge.warn { background:#422006; color:#FBBF24; }
     .badge.off { background:#450A0A; color:#F87171; }
     .shell { display:flex; min-height:calc(100vh - 56px); }
-    .sidenav { width:200px; background:#111827; padding:16px 10px; display:flex;
-      flex-direction:column; gap:4px; position:sticky; top:56px; height:calc(100vh - 56px); flex-shrink:0; }
+    .sidenav { width:210px; background:#111827; padding:16px 12px; display:flex;
+      flex-direction:column; justify-content:space-between; position:sticky; top:56px; height:calc(100vh - 56px); flex-shrink:0; box-sizing:border-box; }
+    .sidenav-links { display:flex; flex-direction:column; gap:4px; }
     .sidenav a { display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:8px; color:#94A3B8;
       text-decoration:none; font-size:14px; }
     .sidenav a:hover { background:#1E293B; color:#E2E8F0; }
     .sidenav a.active { background:#1E1B4B; color:#A5B4FC; font-weight:600; }
     .nav-ico { font-size:16px; display:inline-block; }
     .nav-lbl { display:inline-block; }
+    .sidenav-pc-footer { display:flex; flex-direction:column; gap:10px; padding-top:14px; border-top:1px solid rgba(255,255,255,0.08); }
+    .sidenav-user-card { display:flex; align-items:center; gap:10px; padding:8px 10px; background:rgba(30,41,59,0.5); border:1px solid rgba(255,255,255,0.06); border-radius:8px; }
+    .user-avatar-badge { width:32px; height:32px; border-radius:50%; background:linear-gradient(135deg,#6366F1,#4F46E5); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; flex-shrink:0; }
+    .user-meta { display:flex; flex-direction:column; min-width:0; overflow:hidden; }
+    .user-name { color:#E2E8F0; font-size:12.5px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .session-badge { font-size:10.5px; color:#10B981; font-weight:500; }
+    .session-badge.session-only { color:#F59E0B; }
+    .pc-signout-btn { display:flex; align-items:center; gap:10px; width:100%; padding:9px 12px; border-radius:8px; border:1px solid rgba(239,68,68,0.25); background:rgba(239,68,68,0.08); color:#F87171; font-size:13px; font-weight:600; cursor:pointer; transition:all 0.2s ease; text-align:left; box-sizing:border-box; }
+    .pc-signout-btn:hover { background:rgba(239,68,68,0.22); border-color:#EF4444; color:#fff; }
+    .btn-topbar-signout { border-color:rgba(239,68,68,0.35); color:#FCA5A5; display:inline-flex; align-items:center; gap:5px; }
+    .btn-topbar-signout:hover { background:rgba(239,68,68,0.18); border-color:#EF4444; color:#fff; }
     .content { flex:1; padding:24px; background:#F1F5F9; min-width:0; }
 
     @media (max-width: 820px) {
+      .sidenav-pc-footer { display: none !important; }
+      .sidenav-links {
+        display: flex !important;
+        flex-direction: row !important;
+        justify-content: space-around !important;
+        align-items: center !important;
+        width: 100% !important;
+      }
       .shell {
         display: block !important;
         min-height: calc(100vh - 56px) !important;
