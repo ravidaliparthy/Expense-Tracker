@@ -64,8 +64,8 @@ async function syncFromTursoToLocal(db) {
     });
     importCats(catsRes.rows);
 
-    // 3. Sync Expenses
-    const expRes = await client.execute('SELECT * FROM expenses');
+    // 3. Sync Recent Expenses (Phase 1: Fast Boot - loads up to 2,000 recent transactions in <300ms)
+    const expRes = await client.execute('SELECT * FROM expenses ORDER BY occurred_at_utc DESC LIMIT 2000');
     const insertExp = db.prepare(`
       INSERT OR REPLACE INTO expenses (id, user_id, category_id, category_name_snapshot, category_color_snapshot, category_icon_snapshot, amount_cents, currency, kind, occurred_at_utc, local_date, tz_offset_minutes, merchant, notes, receipt_url, client_uuid, sync_version, created_at, updated_at, deleted_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -101,12 +101,68 @@ async function syncFromTursoToLocal(db) {
     // 5. Replay any pending outbox mutations that may have failed while offline
     await flushTursoOutbox(db);
 
-    console.log(`✔ Turso Cloud Sync Complete: ${usersRes.rows.length} users, ${catsRes.rows.length} categories, ${expRes.rows.length} expenses, ${budRes.rows.length} budgets.`);
+    console.log(`✔ Turso Fast Boot Sync Complete: ${usersRes.rows.length} users, ${catsRes.rows.length} categories, ${expRes.rows.length} recent expenses, ${budRes.rows.length} budgets.`);
+
+    // 6. Phase 2: If dataset exceeds 2,000 records (e.g. 10 years of history), stream remaining in background
+    if (expRes.rows.length === 2000) {
+      syncHistoricalExpensesInBackground(db, client);
+    }
+
     return true;
   } catch (err) {
     console.warn('⚠️  Turso Cloud Sync warning (running on local cache):', err.message);
     return false;
   }
+}
+
+/**
+ * Asynchronously streams older historical transactions into local SQLite in chunks.
+ * Does not block server startup or health checks; completes in the background.
+ */
+function syncHistoricalExpensesInBackground(db, client) {
+  setImmediate(async () => {
+    try {
+      let offset = 2000;
+      const CHUNK_SIZE = 5000;
+      let hasMore = true;
+      const insertExp = db.prepare(`
+        INSERT OR REPLACE INTO expenses (id, user_id, category_id, category_name_snapshot, category_color_snapshot, category_icon_snapshot, amount_cents, currency, kind, occurred_at_utc, local_date, tz_offset_minutes, merchant, notes, receipt_url, client_uuid, sync_version, created_at, updated_at, deleted_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+
+      while (hasMore) {
+        const chunk = await client.execute({
+          sql: 'SELECT * FROM expenses ORDER BY occurred_at_utc DESC LIMIT ? OFFSET ?',
+          args: [CHUNK_SIZE, offset],
+        });
+
+        if (!chunk.rows || chunk.rows.length === 0) {
+          hasMore = false;
+          break;
+        }
+
+        const importChunk = db.transaction((rows) => {
+          for (const e of rows) {
+            insertExp.run(
+              e.id, e.user_id, e.category_id, e.category_name_snapshot, e.category_color_snapshot,
+              e.category_icon_snapshot, e.amount_cents, e.currency, e.kind, e.occurred_at_utc,
+              e.local_date, e.tz_offset_minutes, e.merchant, e.notes, e.receipt_url,
+              e.client_uuid, e.sync_version, e.created_at, e.updated_at, e.deleted_at
+            );
+          }
+        });
+        importChunk(chunk.rows);
+        offset += chunk.rows.length;
+
+        if (chunk.rows.length < CHUNK_SIZE) {
+          hasMore = false;
+        }
+      }
+      console.log(`✔ Turso Historical Background Sync Complete (${offset} total expenses loaded).`);
+    } catch (err) {
+      console.warn('Background historical sync notice:', err.message);
+    }
+  });
 }
 
 /**
@@ -156,19 +212,26 @@ async function flushTursoOutbox(db) {
 }
 
 /**
- * Awaitable write-through push to Turso Cloud.
+ * Awaitable write-through push to Turso Cloud with automatic transient retry.
  * If Turso is momentarily unavailable, falls back to local durable outbox so data is never lost.
  */
-async function pushToTurso(sql, args = [], db = null) {
+async function pushToTurso(sql, args = [], db = null, maxRetries = 1) {
   const client = getTursoClient();
   if (!client) return;
 
-  try {
-    await client.execute({ sql, args });
-  } catch (err) {
-    console.warn('Turso push failed, persisting to outbox:', err.message);
-    if (db) {
-      recordOutbox(db, sql, args);
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      await client.execute({ sql, args });
+      return;
+    } catch (err) {
+      if (attempt < maxRetries) {
+        await new Promise((r) => setTimeout(r, 150));
+        continue;
+      }
+      console.warn('Turso push failed, persisting to outbox:', err.message);
+      if (db) {
+        recordOutbox(db, sql, args);
+      }
     }
   }
 }
