@@ -37,7 +37,7 @@ const batchSchema = z.object({
  * - Everything applies inside ONE transaction per batch, but each item reports
  *   its own result so one bad row can't poison the whole queue.
  */
-router.post('/batch', (req, res, next) => {
+router.post('/batch', async (req, res, next) => {
   try {
     const body = validate(batchSchema, req.body);
     const db = getDb();
@@ -136,7 +136,7 @@ router.post('/batch', (req, res, next) => {
         if (resItem.status === 'created' || resItem.status === 'updated') {
           const row = db.prepare(`SELECT * FROM expenses WHERE id = ?`).get(resItem.id);
           if (row) {
-            pushToTurso(
+            await pushToTurso(
               `INSERT OR REPLACE INTO expenses (id, user_id, category_id, category_name_snapshot, category_color_snapshot, category_icon_snapshot, amount_cents, currency, kind, occurred_at_utc, local_date, tz_offset_minutes, merchant, notes, receipt_url, client_uuid, sync_version, created_at, updated_at, deleted_at)
                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
               [
@@ -144,15 +144,17 @@ router.post('/batch', (req, res, next) => {
                 row.category_icon_snapshot, row.amount_cents, row.currency, row.kind, row.occurred_at_utc,
                 row.local_date, row.tz_offset_minutes, row.merchant, row.notes, row.receipt_url,
                 row.client_uuid, row.sync_version, row.created_at, row.updated_at, row.deleted_at
-              ]
+              ],
+              db
             );
           }
         } else if (resItem.status === 'deleted') {
           const row = db.prepare(`SELECT * FROM expenses WHERE user_id = ? AND client_uuid = ?`).get(req.user.id, m.clientUuid);
           if (row) {
-            pushToTurso(
+            await pushToTurso(
               `UPDATE expenses SET deleted_at = ?, updated_at = ? WHERE id = ?`,
-              [row.deleted_at, row.updated_at, row.id]
+              [row.deleted_at, row.updated_at, row.id],
+              db
             );
           }
         }

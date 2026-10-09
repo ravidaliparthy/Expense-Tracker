@@ -87,7 +87,7 @@ router.get('/', (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-router.post('/', (req, res, next) => {
+router.post('/', async (req, res, next) => {
   try {
     const body = validate(expenseCreateSchema, req.body);
     const db = getDb();
@@ -125,7 +125,7 @@ router.post('/', (req, res, next) => {
     audit(req.user.id, 'expense', info.lastInsertRowid, 'create', { amountCents: body.amountCents, kind: body.kind });
     const createdExp = db.prepare(`SELECT * FROM expenses WHERE id = ?`).get(info.lastInsertRowid);
     if (createdExp) {
-      pushToTurso(
+      await pushToTurso(
         `INSERT OR REPLACE INTO expenses (id, user_id, category_id, category_name_snapshot, category_color_snapshot, category_icon_snapshot, amount_cents, currency, kind, occurred_at_utc, local_date, tz_offset_minutes, merchant, notes, receipt_url, client_uuid, sync_version, created_at, updated_at, deleted_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
@@ -133,14 +133,15 @@ router.post('/', (req, res, next) => {
           createdExp.category_icon_snapshot, createdExp.amount_cents, createdExp.currency, createdExp.kind, createdExp.occurred_at_utc,
           createdExp.local_date, createdExp.tz_offset_minutes, createdExp.merchant, createdExp.notes, createdExp.receipt_url,
           createdExp.client_uuid, createdExp.sync_version, createdExp.created_at, createdExp.updated_at, createdExp.deleted_at
-        ]
+        ],
+        db
       );
     }
     res.status(201).json(db.prepare(`${SELECT_EXP} WHERE e.id = ?`).get(info.lastInsertRowid));
   } catch (err) { next(err); }
 });
 
-router.patch('/:id', (req, res, next) => {
+router.patch('/:id', async (req, res, next) => {
   try {
     const body = validate(expensePatchSchema, req.body);
     const db = getDb();
@@ -176,13 +177,13 @@ router.patch('/:id', (req, res, next) => {
 
     sets.push('sync_version = sync_version + 1', `updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now')`);
     db.prepare(`UPDATE expenses SET ${sets.join(', ')} WHERE id = ?`).run(...args, existing.id);
-    pushToTurso(`UPDATE expenses SET ${sets.join(', ')} WHERE id = ?`, [...args, existing.id]);
+    await pushToTurso(`UPDATE expenses SET ${sets.join(', ')} WHERE id = ?`, [...args, existing.id], db);
     audit(req.user.id, 'expense', existing.id, 'update', body);
     res.json(db.prepare(`${SELECT_EXP} WHERE e.id = ?`).get(existing.id));
   } catch (err) { next(err); }
 });
 
-router.delete('/:id', (req, res, next) => {
+router.delete('/:id', async (req, res, next) => {
   try {
     const db = getDb();
     const now = new Date().toISOString();
@@ -190,21 +191,27 @@ router.delete('/:id', (req, res, next) => {
       `UPDATE expenses SET deleted_at = ?, updated_at = ? WHERE id = ? AND user_id = ? AND deleted_at IS NULL`
     ).run(now, now, req.params.id, req.user.id);
     if (info.changes === 0) return res.status(204).end();
-    pushToTurso(
+    await pushToTurso(
       `UPDATE expenses SET deleted_at = ?, updated_at = ? WHERE id = ? AND user_id = ? AND deleted_at IS NULL`,
-      [now, now, req.params.id, req.user.id]
+      [now, now, req.params.id, req.user.id],
+      db
     );
     audit(req.user.id, 'expense', Number(req.params.id), 'soft_delete');
     res.status(204).end();
   } catch (err) { next(err); }
 });
 
-router.post('/restore/:id', (req, res, next) => {
+router.post('/restore/:id', async (req, res, next) => {
   try {
     const db = getDb();
     const now = new Date().toISOString();
     db.prepare(`UPDATE expenses SET deleted_at = NULL, updated_at = ? WHERE id = ? AND user_id = ?`)
       .run(now, req.params.id, req.user.id);
+    await pushToTurso(
+      `UPDATE expenses SET deleted_at = NULL, updated_at = ? WHERE id = ? AND user_id = ?`,
+      [now, req.params.id, req.user.id],
+      db
+    );
     const row = db.prepare(`${SELECT_EXP} WHERE e.id = ? AND e.user_id = ?`).get(req.params.id, req.user.id);
     if (!row) return res.status(404).json({ error: 'Transaction not found' });
     audit(req.user.id, 'expense', row.id, 'restore');

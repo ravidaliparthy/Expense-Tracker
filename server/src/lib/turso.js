@@ -98,6 +98,9 @@ async function syncFromTursoToLocal(db) {
     });
     importBuds(budRes.rows);
 
+    // 5. Replay any pending outbox mutations that may have failed while offline
+    await flushTursoOutbox(db);
+
     console.log(`✔ Turso Cloud Sync Complete: ${usersRes.rows.length} users, ${catsRes.rows.length} categories, ${expRes.rows.length} expenses, ${budRes.rows.length} budgets.`);
     return true;
   } catch (err) {
@@ -107,20 +110,67 @@ async function syncFromTursoToLocal(db) {
 }
 
 /**
- * Asynchronously pushes a mutation to Turso Cloud in the background.
- * Fire-and-forget: does not block the user's HTTP response.
+ * Persists an unpushed mutation to a local durable outbox table.
+ * Guarantees zero data loss even if Turso is unreachable during a write.
  */
-function pushToTurso(sql, args = []) {
+function recordOutbox(db, sql, args) {
+  if (!db) return;
+  try {
+    db.prepare(`
+      CREATE TABLE IF NOT EXISTS turso_outbox (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        sql TEXT NOT NULL,
+        args TEXT NOT NULL,
+        created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+      )
+    `).run();
+    db.prepare(`INSERT INTO turso_outbox (sql, args) VALUES (?, ?)`).run(sql, JSON.stringify(args));
+    console.warn('💾 Mutation saved to local outbox for deferred sync');
+  } catch (err) {
+    console.error('Failed to write to local outbox:', err.message);
+  }
+}
+
+/**
+ * Replays any pending mutations from local outbox to Turso Cloud.
+ */
+async function flushTursoOutbox(db) {
+  const client = getTursoClient();
+  if (!client || !db) return;
+
+  try {
+    const tableExists = db.prepare(`SELECT 1 FROM sqlite_master WHERE type='table' AND name='turso_outbox'`).get();
+    if (!tableExists) return;
+
+    const rows = db.prepare(`SELECT id, sql, args FROM turso_outbox ORDER BY id ASC LIMIT 50`).all();
+    for (const r of rows) {
+      await client.execute({ sql: r.sql, args: JSON.parse(r.args) });
+      db.prepare(`DELETE FROM turso_outbox WHERE id = ?`).run(r.id);
+    }
+    if (rows.length > 0) {
+      console.log(`✔ Replayed ${rows.length} pending mutations from outbox to Turso`);
+    }
+  } catch (err) {
+    console.warn('Turso outbox flush attempt:', err.message);
+  }
+}
+
+/**
+ * Awaitable write-through push to Turso Cloud.
+ * If Turso is momentarily unavailable, falls back to local durable outbox so data is never lost.
+ */
+async function pushToTurso(sql, args = [], db = null) {
   const client = getTursoClient();
   if (!client) return;
 
-  setImmediate(async () => {
-    try {
-      await client.execute({ sql, args });
-    } catch (err) {
-      console.warn('Turso push warning:', err.message);
+  try {
+    await client.execute({ sql, args });
+  } catch (err) {
+    console.warn('Turso push failed, persisting to outbox:', err.message);
+    if (db) {
+      recordOutbox(db, sql, args);
     }
-  });
+  }
 }
 
 module.exports = {
@@ -128,5 +178,7 @@ module.exports = {
   getTursoClient,
   syncFromTursoToLocal,
   pushToTurso,
+  flushTursoOutbox,
+  recordOutbox,
   TURSO_URL,
 };

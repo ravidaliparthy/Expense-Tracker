@@ -24,7 +24,7 @@ router.get('/', (req, res, next) => {
 });
 
 /** POST — dynamic custom category creation (e.g. "Vacation 2023"). */
-router.post('/', (req, res, next) => {
+router.post('/', async (req, res, next) => {
   try {
     const body = validate(categoryCreateSchema, req.body);
     const db = getDb();
@@ -40,10 +40,11 @@ router.post('/', (req, res, next) => {
     audit(req.user.id, 'category', info.lastInsertRowid, 'create', body);
     const catRow = db.prepare(`SELECT * FROM categories WHERE id = ?`).get(info.lastInsertRowid);
     if (catRow) {
-      pushToTurso(
+      await pushToTurso(
         `INSERT OR REPLACE INTO categories (id, user_id, name, color_hex, icon, is_system, is_archived, created_at, updated_at, deleted_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [catRow.id, catRow.user_id, catRow.name, catRow.color_hex, catRow.icon, catRow.is_system, catRow.is_archived, catRow.created_at, catRow.updated_at, catRow.deleted_at]
+        [catRow.id, catRow.user_id, catRow.name, catRow.color_hex, catRow.icon, catRow.is_system, catRow.is_archived, catRow.created_at, catRow.updated_at, catRow.deleted_at],
+        db
       );
     }
     res.status(201).json({
@@ -54,7 +55,7 @@ router.post('/', (req, res, next) => {
 });
 
 /** PATCH — rename / recolor / archive toggle. */
-router.patch('/:id', (req, res, next) => {
+router.patch('/:id', async (req, res, next) => {
   try {
     const body = validate(categoryPatchSchema, req.body);
     const db = getDb();
@@ -78,7 +79,7 @@ router.patch('/:id', (req, res, next) => {
 
     sets.push(`updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now')`);
     db.prepare(`UPDATE categories SET ${sets.join(', ')} WHERE id = ?`).run(...args, cat.id);
-    pushToTurso(`UPDATE categories SET ${sets.join(', ')} WHERE id = ?`, [...args, cat.id]);
+    await pushToTurso(`UPDATE categories SET ${sets.join(', ')} WHERE id = ?`, [...args, cat.id], db);
 
     audit(req.user.id, 'category', cat.id, body.isArchived !== undefined ? 'archive' : 'update', body);
     const updated = db.prepare(
@@ -95,7 +96,7 @@ router.patch('/:id', (req, res, next) => {
  *  2) expenses carry category_name_snapshot, so even a hard purge can't blank history.
  * Idempotent: an already-deleted category returns 204 again.
  */
-router.delete('/:id', (req, res, next) => {
+router.delete('/:id', async (req, res, next) => {
   try {
     const db = getDb();
     const cat = db.prepare(
@@ -109,6 +110,11 @@ router.delete('/:id', (req, res, next) => {
       `UPDATE categories SET deleted_at = ?, is_archived = 1,
               updated_at = ? WHERE id = ?`
     ).run(now, now, cat.id);
+    await pushToTurso(
+      `UPDATE categories SET deleted_at = ?, is_archived = 1, updated_at = ? WHERE id = ?`,
+      [now, now, cat.id],
+      db
+    );
 
     audit(req.user.id, 'category', cat.id, 'soft_delete', { name: cat.name });
     res.status(204).end();

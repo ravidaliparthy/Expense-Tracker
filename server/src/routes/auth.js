@@ -22,7 +22,7 @@ function publicUser(u) {
   };
 }
 
-router.post('/register', (req, res, next) => {
+router.post('/register', async (req, res, next) => {
   try {
     const body = validate(registerSchema, req.body);
     const safeTz = normalizeTimezone(body.timezone);
@@ -62,16 +62,18 @@ router.post('/register', (req, res, next) => {
     const userCats = db.prepare(`SELECT * FROM categories WHERE user_id = ?`).all(userId);
     persistUserToSeed(rawUser, userCats);
 
-    pushToTurso(
+    await pushToTurso(
       `INSERT OR REPLACE INTO users (id, email, password_hash, display_name, base_currency, timezone, is_first_login, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [rawUser.id, rawUser.email, rawUser.password_hash, rawUser.display_name, rawUser.base_currency, rawUser.timezone, rawUser.is_first_login, rawUser.created_at, rawUser.updated_at]
+      [rawUser.id, rawUser.email, rawUser.password_hash, rawUser.display_name, rawUser.base_currency, rawUser.timezone, rawUser.is_first_login, rawUser.created_at, rawUser.updated_at],
+      db
     );
     for (const cat of userCats) {
-      pushToTurso(
+      await pushToTurso(
         `INSERT OR REPLACE INTO categories (id, user_id, name, color_hex, icon, is_system, is_archived, created_at, updated_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [cat.id, cat.user_id, cat.name, cat.color_hex, cat.icon, cat.is_system, cat.is_archived, cat.created_at, cat.updated_at]
+        [cat.id, cat.user_id, cat.name, cat.color_hex, cat.icon, cat.is_system, cat.is_archived, cat.created_at, cat.updated_at],
+        db
       );
     }
 
@@ -99,7 +101,7 @@ router.post('/login', (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-router.post('/reset-password', (req, res, next) => {
+router.post('/reset-password', async (req, res, next) => {
   try {
     const { email, newPassword } = req.body || {};
     if (!email || !newPassword || typeof newPassword !== 'string' || newPassword.length < 8) {
@@ -114,7 +116,7 @@ router.post('/reset-password', (req, res, next) => {
     db.prepare('UPDATE users SET password_hash = ?, updated_at = strftime("%Y-%m-%dT%H:%M:%fZ", "now") WHERE id = ?').run(hash, user.id);
     const updated = db.prepare('SELECT * FROM users WHERE id = ?').get(user.id);
     persistUserToSeed(updated);
-    pushToTurso('UPDATE users SET password_hash = ?, updated_at = strftime("%Y-%m-%dT%H:%M:%fZ", "now") WHERE id = ?', [hash, user.id]);
+    await pushToTurso('UPDATE users SET password_hash = ?, updated_at = strftime("%Y-%m-%dT%H:%M:%fZ", "now") WHERE id = ?', [hash, user.id], db);
     res.json({ token: signToken(updated), user: publicUser(updated), message: 'Password reset successful' });
   } catch (err) { next(err); }
 });
@@ -124,7 +126,7 @@ router.get('/me', requireAuth, (req, res) => {
 });
 
 /** PATCH /api/auth/profile — update displayName / timezone / baseCurrency. */
-router.patch('/profile', requireAuth, (req, res, next) => {
+router.patch('/profile', requireAuth, async (req, res, next) => {
   try {
     const body = validate(profileSchema, req.body);
     const db = getDb();
@@ -143,17 +145,22 @@ router.patch('/profile', requireAuth, (req, res, next) => {
     ).get(req.user.id);
     const rawUser = db.prepare(`SELECT * FROM users WHERE id = ?`).get(req.user.id);
     if (rawUser) persistUserToSeed(rawUser);
-    pushToTurso(`UPDATE users SET ${sets.join(', ')} WHERE id = ?`, [...args, req.user.id]);
+    await pushToTurso(`UPDATE users SET ${sets.join(', ')} WHERE id = ?`, [...args, req.user.id], db);
     res.json({ user: publicUser(user) });
   } catch (err) { next(err); }
 });
 
 /** Marks onboarding as complete (called by the tour's final step). */
-router.post('/onboarding/complete', requireAuth, (req, res, next) => {
+router.post('/onboarding/complete', requireAuth, async (req, res, next) => {
   try {
-    getDb()
-      .prepare(`UPDATE users SET is_first_login = 0, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id = ?`)
+    const db = getDb();
+    db.prepare(`UPDATE users SET is_first_login = 0, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id = ?`)
       .run(req.user.id);
+    await pushToTurso(
+      `UPDATE users SET is_first_login = 0, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id = ?`,
+      [req.user.id],
+      db
+    );
     res.json({ ok: true });
   } catch (err) { next(err); }
 });

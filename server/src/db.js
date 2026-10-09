@@ -14,7 +14,7 @@ const SEED_DATA_PATH = fs.existsSync(path.join(ROOT, 'db', 'seed-data.json'))
       ? path.join(__dirname, '..', 'seed-data.json')
       : (fs.existsSync(path.join(__dirname, 'seed-data.json')) ? path.join(__dirname, 'seed-data.json') : path.join(ROOT, 'db', 'seed-data.json')));
 
-const { syncFromTursoToLocal, pushToTurso } = require('./lib/turso');
+const { syncFromTursoToLocal, pushToTurso, flushTursoOutbox } = require('./lib/turso');
 
 let db = null;
 
@@ -25,6 +25,7 @@ function init() {
   migrate();                                               // idempotent ALTERs for older DBs
   restoreSeedData(db);
   ensureDemoUser();
+  scheduleBackgroundTasks();
   syncFromTursoToLocal(db).catch(err => console.warn('Background Turso sync:', err.message));
   return db;
 }
@@ -110,14 +111,34 @@ function persistUserToSeed(user, categories = []) {
 
 function ensureDemoUser() {
   try {
-    const exists = db.prepare(`SELECT 1 FROM users WHERE email = ?`).get('demo@expense.test');
-    if (!exists) {
+    const user = db.prepare(`SELECT id FROM users WHERE email = ?`).get('demo@expense.test');
+    if (!user) {
       const { seedDemoUser } = require('./seed');
       seedDemoUser(db, true);
+    } else {
+      // Auto-heal demo account: if visitor wiped demo transactions, restore baseline demo data
+      const count = db.prepare(`SELECT COUNT(*) as c FROM expenses WHERE user_id = ? AND deleted_at IS NULL`).get(user.id).c;
+      if (count < 10) {
+        console.log('🔄 Auto-restoring demo baseline expenses from seed-data.json...');
+        restoreSeedData(db);
+      }
     }
   } catch (err) {
     console.error('Auto-seed check error:', err);
   }
+}
+
+function scheduleBackgroundTasks() {
+  if (process.env.NODE_ENV === 'test') return;
+  // Periodic demo account baseline sanity check (every 2 hours)
+  setInterval(() => {
+    ensureDemoUser();
+  }, 2 * 60 * 60 * 1000).unref();
+
+  // Periodic flush of any pending outbox mutations (every 60s)
+  setInterval(() => {
+    flushTursoOutbox(db).catch(() => {});
+  }, 60 * 1000).unref();
 }
 
 /** Adds columns introduced after a DB file was first created. Safe to rerun. */

@@ -37,7 +37,7 @@ router.get('/', (req, res, next) => {
  * PUT /api/budgets — upsert. categoryId: number = per-category, null = GLOBAL.
  * One row per scope per period (enforced by the unique index).
  */
-router.put('/', (req, res, next) => {
+router.put('/', async (req, res, next) => {
   try {
     const body = validate(budgetSchema, req.body);
     const db = getDb();
@@ -66,7 +66,7 @@ router.put('/', (req, res, next) => {
     );
 
     audit(req.user.id, 'budget', body.categoryId ?? 0, 'update', body);
-    pushToTurso(
+    await pushToTurso(
       `INSERT INTO budgets (user_id, category_id, period, period_year, period_month,
                             amount_cents, warn_pct, crit_pct, over_pct)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -77,7 +77,8 @@ router.put('/', (req, res, next) => {
                      over_pct = excluded.over_pct,
                      category_id = excluded.category_id,
                      updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now')`,
-      [req.user.id, body.categoryId, body.period, body.periodYear, body.periodMonth, body.amountCents, body.warnPct, body.critPct, body.overPct]
+      [req.user.id, body.categoryId, body.period, body.periodYear, body.periodMonth, body.amountCents, body.warnPct, body.critPct, body.overPct],
+      db
     );
     const row = db.prepare(
       `${SELECT_BUDGET}
@@ -88,11 +89,12 @@ router.put('/', (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-router.delete('/:id', (req, res, next) => {
+router.delete('/:id', async (req, res, next) => {
   try {
-    getDb().prepare(`DELETE FROM budgets WHERE id = ? AND user_id = ?`)
+    const db = getDb();
+    db.prepare(`DELETE FROM budgets WHERE id = ? AND user_id = ?`)
       .run(req.params.id, req.user.id);
-    pushToTurso(`DELETE FROM budgets WHERE id = ? AND user_id = ?`, [req.params.id, req.user.id]);
+    await pushToTurso(`DELETE FROM budgets WHERE id = ? AND user_id = ?`, [req.params.id, req.user.id], db);
     res.status(204).end();
   } catch (err) { next(err); }
 });

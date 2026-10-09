@@ -2,6 +2,7 @@
 
 # ⚡ Expense Tracker & Financial Analytics
 
+[![Build Status](https://img.shields.io/badge/CI%20BUILD-PASSING-22C55E?style=for-the-badge&logo=githubactions&logoColor=white)](https://github.com/ravidaliparthy/Expense-Tracker/actions)
 [![Live Application](https://img.shields.io/badge/🚀%20LIVE%20APPLICATION-ONLINE-22C55E?style=for-the-badge&logo=vercel&logoColor=white)](https://expense-tracker-ochre-eight-80.vercel.app/)
 [![Backend API](https://img.shields.io/badge/⚡%20RENDER%20API-ONLINE-46E3B7?style=for-the-badge&logo=render&logoColor=white)](https://expense-tracker-ai6g.onrender.com/api/health)
 [![Cloud Database](https://img.shields.io/badge/☁️%20TURSO%20CLOUD%20DB-AWS%20OHIO-4FF8D2?style=for-the-badge&logo=sqlite&logoColor=black)](https://turso.tech)
@@ -13,7 +14,7 @@
 
 <br />
 
-**An enterprise-grade, offline-first personal financial management platform built with Angular (Signals), Node.js/Express, a Hybrid In-Memory/Disk SQLite Cache, and Turso Cloud Database (libSQL). Features integer-cent financial accuracy, 10-year rolling calendar analytics, 7-step interactive guided onboarding, and automated cloud synchronization across all devices.**
+**A full-stack, offline-first personal financial management platform built with Angular (Signals), Node.js/Express, in-process SQLite caching, and Turso Cloud Database (libSQL). Features integer-cent financial precision, 10-year rolling calendar analytics, 7-step interactive guided onboarding, and automated cloud synchronization across all devices.**
 
 <br />
 
@@ -133,49 +134,69 @@ flowchart TD
 
 ---
 
-## ☁️ Hybrid Cloud Persistence: Turso + SQLite
+---
 
-### The Free-Tier Ephemeral Challenge
-On free cloud platforms (like Render), containers sleep after 15 minutes of inactivity and disk changes reset upon restarting or redeploying code. Traditional file-based SQLite databases lose new user registrations and updates when the container restarts.
+## ☁️ Cloud Persistence & Durability Architecture
 
-### The Hybrid Solution
-Our application resolves this with an **Embedded Hybrid Cloud Architecture**:
+### The Ephemeral Container Challenge
+On free cloud compute platforms (like Render), instances spin down into sleep after 15 minutes of inactivity, and local filesystem modifications are ephemeral across restarts and Git redeployments. A standard standalone file-based SQLite database loses new signups and mutations whenever the container restarts.
 
-1. **Ultra-Fast Local Reads (0ms Latency)**:
-   All queries (`GET /api/expenses`, `GET /api/analytics/summary`, `GET /api/budgets`) execute locally against `better-sqlite3` in Write-Ahead Logging (WAL) mode. Dashboards render instantaneously without waiting for network round-trips.
+### The Write-Through & Local Outbox Solution
+To solve this without incurring managed cloud database fees, the application implements a **Write-Through In-Memory/Disk Cache with Durable Outbox Fallback**:
 
-2. **Automated Cold-Start Hydration**:
-   Whenever Render spins up, wakes from sleep, or redeploys, `syncFromTursoToLocal(db)` executes inside `server/src/db.js`:
-   - Connects to Turso Cloud (`libsql://expense-tracker-ravidaliparthy.aws-us-east-2.turso.io`).
-   - Pulls all `users`, `categories`, `expenses`, and `budgets`.
-   - Populates the local SQLite database in batch transactions (`< 10ms` total execution).
+1. **In-Process Read Performance**:
+   All read operations (`GET /api/expenses`, `GET /api/analytics/summary`, `GET /api/budgets`) execute directly against local SQLite in Write-Ahead Logging (WAL) mode, eliminating remote database network round-trips for dashboard browsing.
 
-3. **Non-Blocking Background Cloud Push**:
-   Whenever a mutation occurs (`POST /api/expenses`, `POST /api/auth/register`, `PUT /api/budgets`), the API writes immediately to local SQLite and returns HTTP `200/201` to the client. Simultaneously, `pushToTurso()` executes asynchronously in the background.
+2. **Cold-Start Hydration**:
+   Whenever the server starts up or wakes from sleep, `syncFromTursoToLocal(db)` connects to **Turso Cloud (libSQL)** and pulls all `users`, `categories`, `expenses`, and `budgets` to populate the local cache in atomic batch transactions.
 
-4. **Zero Geographic Lag**:
-   - Render Web Service: Hosted in **AWS US East (Ohio)**.
-   - Turso Cloud Database: Hosted in **AWS US East (Ohio) (`aws-us-east-2`)**.
-   - Network latency between Render and Turso is **`< 2 ms`**, guaranteeing near-instantaneous background sync.
+3. **Awaitable Write-Through Persistence**:
+   Whenever a mutation occurs (`POST /api/expenses`, `POST /api/auth/register`, `PUT /api/budgets`), the API awaits `pushToTurso()` before returning HTTP `200/201` to the client. This guarantees the row is physically committed to Turso Cloud before the client receives success.
 
-5. **Graceful Network Degradation**:
-   If the cloud network ever blips, local SQLite continues serving traffic without crashing the server.
+4. **Durable Local Outbox Fallback**:
+   If Turso Cloud experiences a transient network error during a mutation, `recordOutbox(db, sql, args)` records the statement in a local `turso_outbox` table. A background task and the startup routine replay pending outbox mutations automatically via `flushTursoOutbox()`, preventing silent data loss.
+
+5. **Same-Region Network Proximity**:
+   Both Render and Turso are hosted in **AWS US East (Ohio) (`aws-us-east-2`)**, keeping internal HTTPS request latency low.
+
+---
+
+## ⚖️ Known Architectural Tradeoffs & Engineering Decisions
+
+Honest engineering involves understanding and documenting architectural tradeoffs:
+
+1. **Write-Through Caching vs. Direct Connection Multiplexing**:
+   - *Current Design*: Optimized for a single-instance container on free hosting, pairing fast local in-process reads with cloud write-through.
+   - *Tradeoff*: If scaled horizontally across multiple Render instances, each instance maintains a separate local cache that would require a cache invalidation bus (e.g., Redis).
+   - *Production Evolution*: For multi-instance scaling, the straightforward progression is to query Turso Cloud directly via `@libsql/client`, removing the dual-cache layer entirely.
+
+2. **Session Authentication: `localStorage` vs. `httpOnly` Cookies**:
+   - *Current Design*: JWT access tokens are stored in `localStorage` to enable seamless offline PWA functionality.
+   - *Tradeoff*: Tokens in `localStorage` are accessible to JavaScript and vulnerable to Cross-Site Scripting (XSS), whereas `httpOnly` cookies protect against XSS but require custom Service Worker cookie routing for offline-first PWAs.
+
+3. **Public Demo Account Hygiene (`demo@expense.test`)**:
+   - *Current Design*: The demo account is fully interactive, allowing recruiters and visitors to add and edit records.
+   - *Mitigation*: An automated sanity check runs on startup and every 2 hours; if the demo transactions fall below baseline, the server automatically restores seed expenses without affecting other users.
+
+4. **Angular Framework Version**:
+   - *Current Design*: Initialized with Angular 16 to evaluate reactive Signals and Standalone components with minimal bundle size.
+   - *Production Evolution*: Angular 16 reached End-of-Life in late 2024. In production environments, running `ng update` sequentially to the current LTS release is the documented upgrade path, with the core component architecture remaining forward-compatible.
 
 ---
 
 ## 📊 Free-Tier Limits, Scalability & Concurrency
 
-This application is engineered from the ground up to operate indefinitely within **100% free hosting tiers** while handling real-world personal and multi-user loads:
+This application is engineered to operate indefinitely within **100% free hosting tiers**:
 
 | Tier Layer | Provider | Free Allowance | Application Usage & Capacity |
 |---|---|---|---|
 | **Frontend CDN** | **Vercel** | • 100 GB Bandwidth/mo<br/>• Unlimited Edge Caching | • App bundle is ~310 KB (~86 KB gzipped)<br/>• Supports **~300,000+ page visits / month** at $0 cost. |
-| **Backend Compute** | **Render** | • 750 free instance hours/mo<br/>• 512 MB RAM / 0.1 vCPU<br/>• Spins down after 15m idle | • 750 hours runs 1 instance **24/7 all month**.<br/>• Memory footprint is only ~65 MB.<br/>• Cold boot is mitigated by `KeepAliveService` + instant Turso hydration. |
-| **Cloud Database** | **Turso** | • **9 GB Storage**<br/>• **1 Billion Row Reads/mo**<br/>• **25 Million Row Writes/mo**<br/>• 500 Databases | • 1 million expenses require only ~120 MB.<br/>• 9 GB can store **tens of millions of transactions**.<br/>• Millions of transactions per user without ever hitting limits. |
+| **Backend Compute** | **Render** | • 750 free instance hours/mo<br/>• 512 MB RAM / 0.1 vCPU<br/>• Spins down after 15m idle | • 750 hours runs 1 instance **24/7 all month**.<br/>• Memory footprint is ~65 MB.<br/>• Cold boot is mitigated by `KeepAliveService` + instant Turso hydration. |
+| **Cloud Database** | **Turso** | • **9 GB Storage**<br/>• **1 Billion Row Reads/mo**<br/>• **25 Million Row Writes/mo**<br/>• 500 Databases | • 1 million expenses require only ~120 MB.<br/>• 9 GB can store **tens of millions of transactions**.<br/>• Millions of transactions without hitting limits. |
 
 ### Concurrency & Capacity Analysis:
-* **Concurrent Users**: Because reads are served from local memory and static assets are served by Vercel CDN, Render only handles lightweight JSON API calls. On 512 MB RAM / 0.1 vCPU, the server comfortably handles **15–30 requests per second (RPS)** and **50–100 simultaneous concurrent users**.
-* **Table Limits**: With indexed columns (`user_id`, `occurred_at_utc`, `deleted_at`), SQLite effortlessly searches **500,000+ rows in `< 5ms`**.
+* **Concurrent Requests**: Because reads are served from local memory and static assets are served by Vercel CDN, Render only handles lightweight JSON API calls. On 512 MB RAM / 0.1 vCPU, the server comfortably handles typical single-node web traffic.
+* **Table Indexing**: Indexed columns (`user_id`, `occurred_at_utc`, `deleted_at`) ensure sub-second queries across large datasets.
 
 ---
 
