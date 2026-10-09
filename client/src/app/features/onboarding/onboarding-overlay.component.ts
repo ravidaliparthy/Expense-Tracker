@@ -237,6 +237,9 @@ export class OnboardingOverlayComponent implements OnDestroy {
     } else if (sel.includes('view-transactions')) {
       node = (document.querySelector('[data-tour="view-transactions"]') ||
               document.querySelector('[data-tour="transactions-nav"]')) as HTMLElement | null;
+    } else if (sel.includes('categories-nav')) {
+      node = (document.querySelector('[data-tour="categories-nav"]') ||
+              document.querySelector('[data-tour="category-breakdown"]')) as HTMLElement | null;
     } else {
       node = document.querySelector(sel) as HTMLElement | null;
     }

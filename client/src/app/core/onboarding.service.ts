@@ -42,19 +42,25 @@ export const TOUR_STEPS: TourStep[] = [
     cta: 'Next',
   },
   {
-    title: '⤓ 6 · Instant PDF & CSV Reports',
+    title: '▦ 6 · Categories & Custom Tags',
+    body: 'Organize finances with custom categories, icons, and color palettes. Tailor spending tags, set default expense types, or archive old ones anytime.',
+    target: '[data-tour="categories-nav"]',
+    cta: 'Next',
+  },
+  {
+    title: '⤓ 7 · Instant PDF & CSV Reports',
     body: 'Export spreadsheet-ready CSV tables or download formatted PDF summaries matching your active filters anytime for tax prep or archiving.',
     target: '[data-tour="export-menu"]',
     cta: 'Next',
   },
   {
-    title: '🛡️ 7 · Session Security & Auto-Logout',
+    title: '🛡️ 8 · Session Security & Auto-Logout',
     body: 'Default Session Mode automatically logs you out when you close your browser or tab for maximum privacy on shared PCs. Easily toggle Remember Me or click Sign Out anytime.',
     target: '[data-tour="session-controls"]',
     cta: 'Next',
   },
   {
-    title: '⚙️ 8 · Settings, Recovery PIN & Offline PWA',
+    title: '⚙️ 9 · Settings, Recovery PIN & Offline PWA',
     body: 'Configure your Secret Recovery PIN for zero-dependency password resets, switch currency/timezone, toggle Dark Mode, or install as a full-screen PWA on mobile.',
     target: '[data-tour="settings-nav"]',
     cta: 'Finish tour 🎉',

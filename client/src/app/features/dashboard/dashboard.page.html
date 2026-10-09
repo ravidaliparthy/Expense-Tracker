@@ -201,7 +201,11 @@
       </table>
     </div>
   </div>
-  <div class="card"><h3>Expense breakdown by category</h3>
+  <div class="card" data-tour="category-breakdown">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <h3 style="margin:0">🏷️ Category Spending Breakdown</h3>
+      <a routerLink="/categories" class="btn-ghost" style="font-size:12px;padding:4px 10px;text-decoration:none;border-radius:6px;font-weight:600">Manage ▦</a>
+    </div>
     <div class="donutrow" *ngIf="donutSegments().length">
       <svg viewBox="0 0 120 120" class="donut">
         <circle cx="60" cy="60" r="42" fill="none" stroke="#E2E8F0" stroke-width="14"/>
@@ -212,7 +216,17 @@
       <div class="donutlegend">
         <div *ngFor="let s of donutSegments().slice(0, 6)"><i class="dot" [style.background]="s.color"></i>{{ s.icon }} {{ s.name }} <strong>{{ s.pct }}%</strong></div>
       </div>
-    </div><div class="catbar" *ngFor="let row of byCategory()"><span class="name" [title]="row.name">{{ row.icon }} {{ row.name }}</span><span class="bar"><div [style.width.%]="row.pct" [style.background]="row.color"></div></span><span class="val">{{ money(row.cents, currency()) }}</span></div><p *ngIf="byCategory().length === 0" style="color:#94A3B8">No expense transactions in this filter.</p></div>
+    </div>
+    <div class="catbar" *ngFor="let row of byCategory()"><span class="name" [title]="row.name">{{ row.icon }} {{ row.name }}</span><span class="bar"><div [style.width.%]="row.pct" [style.background]="row.color"></div></span><span class="val">{{ money(row.cents, currency()) }}</span></div>
+    <div *ngIf="byCategory().length === 0" style="padding:14px 0;text-align:center">
+      <p style="color:#94A3B8;margin:0 0 10px;font-size:13px">No expense transactions logged in this filter.</p>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:6px" *ngIf="categories().length">
+        <span *ngFor="let c of categories().slice(0, 8)" class="chip" [style.background]="hex(c.colorHex, .14)" [style.color]="c.colorHex">
+          {{ c.icon || '🏷️' }} {{ c.name }}
+        </span>
+      </div>
+    </div>
+  </div>
 </div>
 
 <app-expense-form *ngIf="formOpen()" [expense]="editing()" [categories]="categories()" [currency]="currency()" (save)="onSave($event)" (createCategory)="onCreateCategory($event)" (close)="formOpen.set(false)"></app-expense-form>
