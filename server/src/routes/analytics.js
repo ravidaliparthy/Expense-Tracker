@@ -223,8 +223,9 @@ router.get('/insights', (req, res, next) => {
       weekdayDistribution[(dow + 6) % 7] += e.amountCents;
     }
     let longestStreak = 0; let run = 0;
-    for (let t = d0; t <= d1; t += 86400000) {
-      const iso = new Date(t).toISOString().slice(0, 10);
+    const maxDaysToScan = Math.min(spanDays, 366);
+    for (let i = 0; i < maxDaysToScan; i++) {
+      const iso = new Date(d0 + i * 86400000).toISOString().slice(0, 10);
       if (spendDays.has(iso)) { run += 1; longestStreak = Math.max(longestStreak, run); } else run = 0;
     }
 

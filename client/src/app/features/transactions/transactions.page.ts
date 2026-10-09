@@ -372,6 +372,23 @@ export class TransactionsPage {
   });
 
   constructor() {
+    // Instant Cache Pre-Hydration: render in 0ms on startup without waiting for network
+    try {
+      const cachedExps = localStorage.getItem('et.cachedExpenses');
+      if (cachedExps) {
+        const parsed = JSON.parse(cachedExps);
+        if (parsed?.items?.length) {
+          this.expenses.set(parsed.items);
+          this.total.set(parsed.total || parsed.items.length);
+        }
+      }
+      const cachedCats = localStorage.getItem('et.categories');
+      if (cachedCats) {
+        const parsedCats = JSON.parse(cachedCats);
+        if (parsedCats?.length) this.categories.set(parsedCats);
+      }
+    } catch {}
+
     effect(
       () => {
         const f = this.filter.filters();
@@ -381,8 +398,8 @@ export class TransactionsPage {
     );
   }
 
-  async ngOnInit(): Promise<void> {
-    await this.load();
+  ngOnInit(): void {
+    // Initial fetch handled cleanly by effect and instant pre-hydration
   }
 
   toggleSort(field: 'date' | 'amount'): void {

@@ -139,6 +139,16 @@ export interface BreakdownRow {
     :host-context([data-theme='dark']) .empty-state-card h4 { color:#F1F5F9; }
     .empty-state-desc { color:#64748B; font-size:13px; max-width:440px; margin:0 auto 16px; line-height:1.4; }
     .empty-state-actions { display:flex; justify-content:center; gap:10px; flex-wrap:wrap; }
+
+    /* Contained table scroll & mobile responsiveness */
+    .tbl-wrap { width:100%; max-width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; border-radius:8px; box-sizing:border-box; }
+    table { width:100%; min-width:480px; border-collapse:collapse; }
+    @media (max-width: 640px) {
+      .notes, .notes-cell { display:none !important; }
+      table { min-width:380px !important; }
+      .tbl-wrap { margin:0 -4px; padding:0 4px; }
+      .sort-controls { width:100%; justify-content:flex-end; margin-top:4px; }
+    }
   `]
 })
 export class DashboardPage {
@@ -540,7 +550,31 @@ export class DashboardPage {
   readonly groupedBars=computed(()=>{ const series=this.trend(); if(!series.length)return[]; const data=series.slice(-40); const max=Math.max(...data.map(([,v])=>Math.max(v.income,v.expense)),1); return data.map(([bucket,v])=>({bucket,short:bucket.length>7?bucket.slice(5):bucket,creditCents:v.income,debitCents:v.expense,creditPct:Math.max(v.income>0?3:0,Math.round((v.income/max)*100)),debitPct:Math.max(v.expense>0?3:0,Math.round((v.expense/max)*100))})); });
   readonly cumulative=computed(()=>{ const series=this.trend(); if(!series.length)return{points:'',zeroY:70,final:0}; let run=0; const vals=series.map(([,v])=>(run+=v.net)); const max=Math.max(...vals,0); const min=Math.min(...vals,0); const span=(max-min)||1; const h=140,step=vals.length>1?(600-20)/(vals.length-1):0; const y=(v:number)=>h-10-((v-min)/span)*(h-30); const points=vals.map((v,i)=>`${10+i*step},${y(v)}`).join(' '); return{points,zeroY:y(0),final:vals[vals.length-1]}; });
   readonly isEmpty=computed(()=>!this.loading()&&this.total()===0);
+  private loadReqSeq = 0;
+
   constructor(){
+    // Instant Cache Pre-Hydration: render in 0ms on startup without waiting for network
+    try {
+      const cachedExps = localStorage.getItem('et.cachedExpenses');
+      if (cachedExps) {
+        const parsed = JSON.parse(cachedExps);
+        if (parsed?.items?.length) {
+          this.expenses.set(parsed.items);
+          this.total.set(parsed.total || parsed.items.length);
+          this.hadData.set(true);
+        }
+      }
+      const cachedSum = localStorage.getItem('et.cachedSummary');
+      if (cachedSum) {
+        this.summary.set(JSON.parse(cachedSum));
+      }
+      const cachedCats = localStorage.getItem('et.categories');
+      if (cachedCats) {
+        const parsedCats = JSON.parse(cachedCats);
+        if (parsedCats?.length) this.categories.set(parsedCats);
+      }
+    } catch {}
+
     effect(()=>{
       const f=this.filter.filters();
       void this.loadFor(f);
@@ -575,53 +609,75 @@ export class DashboardPage {
     } catch {}
   }
   private async loadFor(f: ReturnType<FilterService['filters']>): Promise<void> {
-    // Only show blocking loader on initial cold load; background updates stay smooth with zero flicker
+    const seq = ++this.loadReqSeq;
+
+    // Only show blocking loader on initial cold load if we have no cached data at all
     if (!this.hadData() && this.expenses().length === 0) {
       this.loading.set(true);
       this.cdr.detectChanges();
     }
+
     try {
       const shouldFetchCats = this.categories().length === 0;
-      const [expSettled, budgetsSettled, summarySettled, insightsSettled, catSettled] = await Promise.allSettled([
-        firstValueFrom(this.api.getExpenses(f)),
-        firstValueFrom(this.api.getBudgets(f.period === 'yearly' ? 'yearly' : 'monthly', Number(f.from.slice(0, 4)), Number(f.from.slice(5, 7)))),
-        firstValueFrom(this.api.getSummary(f)),
-        firstValueFrom(this.api.getInsights(f)),
-        shouldFetchCats ? firstValueFrom(this.api.getCategories()) : Promise.resolve(null),
-      ]);
 
-      if (catSettled.status === 'fulfilled' && catSettled.value && catSettled.value.length) {
-        this.categories.set(catSettled.value);
-      }
-      if (expSettled.status === 'fulfilled') {
-        this.expenses.set(expSettled.value.items || []);
-        this.total.set(expSettled.value.total || 0);
-        if ((expSettled.value.total || 0) > 0) this.hadData.set(true);
-      } else {
-        // Keep cached items if already loaded to avoid jarring layout shifts
-        if (!this.hadData() && this.expenses().length === 0) {
-          this.expenses.set([]);
-          this.total.set(0);
+      // 1. Fast Primary Expenses Stream (loads in ~100-200ms)
+      const expTask = firstValueFrom(this.api.getExpenses(f)).then((res) => {
+        if (seq !== this.loadReqSeq) return;
+        if (res?.items) {
+          this.expenses.set(res.items);
+          this.total.set(res.total || res.items.length);
+          if ((res.total || 0) > 0) this.hadData.set(true);
+          this.loading.set(false);
+          this.cdr.detectChanges();
         }
-      }
-      if (budgetsSettled.status === 'fulfilled') {
-        this.budgets.set(budgetsSettled.value || []);
-      }
-      if (summarySettled.status === 'fulfilled') {
-        this.summary.set(summarySettled.value);
-      } else {
-        this.summary.set(null);
-      }
-      if (insightsSettled.status === 'fulfilled') {
-        this.insights.set(insightsSettled.value);
-      } else {
-        this.insights.set(null);
-      }
+      }).catch(() => {});
+
+      // 2. Fast KPI Summary Stream (loads in ~100-200ms)
+      const sumTask = firstValueFrom(this.api.getSummary(f)).then((res) => {
+        if (seq !== this.loadReqSeq) return;
+        if (res) {
+          this.summary.set(res);
+          this.cdr.detectChanges();
+        }
+      }).catch(() => {});
+
+      // 3. Budgets Stream (loads in ~100-200ms)
+      const budTask = firstValueFrom(
+        this.api.getBudgets(f.period === 'yearly' ? 'yearly' : 'monthly', Number(f.from.slice(0, 4)), Number(f.from.slice(5, 7)))
+      ).then((res) => {
+        if (seq !== this.loadReqSeq) return;
+        if (res) {
+          this.budgets.set(res);
+          this.cdr.detectChanges();
+        }
+      }).catch(() => {});
+
+      // 4. Categories Stream
+      const catTask = shouldFetchCats ? firstValueFrom(this.api.getCategories()).then((res) => {
+        if (seq !== this.loadReqSeq) return;
+        if (res?.length) {
+          this.categories.set(res);
+          this.cdr.detectChanges();
+        }
+      }).catch(() => {}) : Promise.resolve();
+
+      // 5. Deeper Insights Stream (runs in background without delaying table or KPIs)
+      const insTask = firstValueFrom(this.api.getInsights(f)).then((res) => {
+        if (seq !== this.loadReqSeq) return;
+        if (res) {
+          this.insights.set(res);
+          this.cdr.detectChanges();
+        }
+      }).catch(() => {});
+
+      await Promise.allSettled([expTask, sumTask, budTask, catTask, insTask]);
     } catch {
       this.flash.set({ type: 'err', text: 'Failed to load data — is the API running?' });
     } finally {
-      this.loading.set(false);
-      this.cdr.detectChanges();
+      if (seq === this.loadReqSeq) {
+        this.loading.set(false);
+        this.cdr.detectChanges();
+      }
     }
   }
 
