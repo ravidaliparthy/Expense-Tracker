@@ -14,7 +14,7 @@
 
 <br />
 
-**A full-stack, offline-first personal financial management platform built with Angular (Signals), Node.js/Express, in-process SQLite caching, and Turso Cloud Database (libSQL). Features integer-cent financial precision, 10-year rolling calendar analytics, 7-step interactive guided onboarding, and automated cloud synchronization across all devices.**
+**A full-stack, offline-first personal financial management platform built with Angular (Signals), Node.js/Express, in-process SQLite caching, and Turso Cloud Database (libSQL). Features integer-cent financial precision, 10-year rolling calendar analytics, 9-step interactive guided onboarding, session-first security, and automated cloud synchronization across all devices.**
 
 <br />
 
@@ -275,16 +275,18 @@ Render free tier instances spin down after 15 minutes of inactivity. The applica
 
 ## ✨ Interactive Guided Tour
 
-Tap the **✨ Tour** button in the header at any time to launch a 7-step interactive walkthrough:
-1. **✨ 1 · Log Expenses & Income**: Add transactions with categories, dates, and notes.
-2. **📅 2 · Date Filters & Chart Views**: 1-click presets ("Today", "This week", "This month") and grouping.
-3. **📊 3 · Deep Spending Breakdown**: Inspect spending by Day of Week, Week, Month, or Year.
-4. **↕️ 4 · Sorting & Quick Edits**: Ascending/descending sorting by Date and Amount.
-5. **📋 5 · Full Transactions Hub**: Search receipts, filter by range, and paginate.
-6. **◑ 6 · Smart Budget Guardrails**: Color-coded gauges with 80%, 90%, and 100% threshold warnings.
-7. **⤓ 7 · Instant PDF & CSV Reports**: Download spreadsheets and PDF reports anytime.
+Tap the **✨ Tour** button in the header at any time to launch a 9-step interactive walkthrough:
+1. **✨ 1 · Log Expenses & Income**: Add transactions with categories, dates, and notes. Offline mode syncs automatically when reconnected.
+2. **📅 2 · Smart Filters & 10-Year Range**: 1-click presets ("Today", "This week", "This month") and dynamic Day, Week, or Month chart view grouping.
+3. **📊 3 · Deep Spending Breakdown & Drill-Downs**: Inspect spending by Day of Week, Week, Month, or Year with interactive daily sub-total drill-downs.
+4. **↕️ 4 · Instant Sorting & Quick Edits**: Ascending/descending sorting by Date and Amount with inline edit and delete actions.
+5. **◐ 5 · Smart Budget Guardrails**: Color-coded gauges with 80%, 90%, and 100% threshold warnings.
+6. **▦ 6 · Categories & Custom Tags**: Manage custom emoji icons, brand color swatches, default categories, and departmental tags.
+7. **⤓ 7 · Instant PDF & CSV Reports**: Export spreadsheet-ready CSV tables and formatted executive PDF summaries matching active filters.
+8. **🛡️ 8 · Session Security & Auto-Logout**: Universal session mode defaults with auto-logout on browser close and 1-click Sign Out for shared PCs.
+9. **⚙️ 9 · Settings, Recovery PIN & Offline PWA**: Secret Recovery PIN for zero-dependency resets, theme/currency switcher, and PWA installation.
 
-*Mobile Optimized: On smartphones, the tour docks as an ergonomic bottom sheet, smoothly auto-scrolling with 60fps tracking and keyboard navigation support (`ArrowRight`, `ArrowLeft`, `Enter`, `Escape`).*
+*Intelligent Cross-Device Positioning: On desktop PCs, spotlights anchor securely with clamped right-side tooltips and directional SVG arrows. On smartphones and tablets (Android & iOS Safari), the tour docks dynamically to top or bottom sheets to avoid viewport clipping, featuring smooth center-scrolling, clickable step progress pills, and full keyboard navigation (`ArrowRight`, `ArrowLeft`, `Enter`, `Escape`).*
 
 ---
 
@@ -293,6 +295,9 @@ Tap the **✨ Tour** button in the header at any time to launch a 7-step interac
 * **Progressive Web App (PWA)**: Installable, full-screen standalone mobile experience with high-resolution app icons.
 * **Hybrid Cloud Persistence**: In-process SQLite for sub-millisecond local reads + Turso Cloud (libSQL) for permanent multi-device sync.
 * **Offline-First Resilience**: Log expenses offline; automatic background batch synchronization with idempotent UUIDs.
+* **Dedicated Category Spending Breakdown Card & Hub**: Interactive SVG donut chart, percentage spending distribution bars, active category fallback tags, and direct 1-click navigation to the custom category manager.
+* **Session-First Shared Device Protection**: Default session mode clears access credentials on tab/browser close to protect shared PCs, with an optional "Remember me" toggle and prominent Sign Out buttons in the sidebar and topbar.
+* **Secret Recovery PIN Integration**: Cryptographically hashed (bcrypt) 4–8 digit recovery PIN configured directly during account registration or in Settings for zero-email, instant password resets.
 * **Dynamic 10-Year Rolling Horizon**: Auto-updating rolling calendar horizon dynamically recalculating from system clock.
 * **High-Precision Financial Engine**: All monetary calculations execute with integer cents (`amount_cents`) to eliminate IEEE-754 floating-point inaccuracies.
 * **Zero-Dependency SVG Charts**: Hand-rolled responsive SVG trend polylines, category distribution bars, and donut charts.
@@ -373,7 +378,7 @@ All endpoints except `POST /auth/register`, `POST /auth/login`, and `GET /health
 ### 2. Authentication (`/api/auth`)
 | Method | Endpoint | Payload | Response |
 |---|---|---|---|
-| `POST` | `/auth/register` | `{ email, password>=8, displayName, timezone, baseCurrency }` | `201 { token, user }` (Auto-seeds system categories) |
+| `POST` | `/auth/register` | `{ email, password>=8, displayName, recoveryPin?, timezone, baseCurrency }` | `201 { token, user }` (Auto-seeds system categories + optional recovery PIN) |
 | `POST` | `/auth/login` | `{ email, password }` | `200 { token, user }` |
 | `GET` | `/auth/me` | — | `200 { user }` |
 | `PATCH` | `/auth/profile` | `{ displayName?, timezone?, baseCurrency? }` | `200 { user }` (Updates user preferences) |
@@ -439,7 +444,7 @@ users 1───* categories 1───* expenses *───1 categories (ON DEL
 
 | Table | Primary Columns | Purpose & Design Constraints |
 |---|---|---|
-| `users` | `id`, `email`, `password_hash`, `timezone`, `base_currency`, `is_first_login`, `deleted_at` | Primary account record. Timezone drives timezone-safe `local_date` derivation. |
+| `users` | `id`, `email`, `password_hash`, `recovery_pin_hash`, `timezone`, `base_currency`, `is_first_login`, `deleted_at` | Primary account record. Timezone drives timezone-safe `local_date` derivation. |
 | `categories` | `id`, `user_id`, `name`, `color_hex`, `icon`, `is_system`, `is_archived`, `deleted_at` | User and system departments. Soft-deleted with partial uniqueness index. |
 | `expenses` | `id`, `user_id`, `category_id`, `category_name_snapshot`, `category_color_snapshot`, `amount_cents`, `currency`, `kind`, `occurred_at_utc`, `local_date`, `tz_offset_minutes`, `merchant`, `notes`, `client_uuid`, `sync_version`, `deleted_at` | Core ledger. Integer cents, dual UTC/local date storage, snapshot resilience, idempotency UUIDs. |
 | `budgets` | `id`, `user_id`, `category_id`, `period`, `period_year`, `period_month`, `amount_cents`, `warn_pct`, `crit_pct`, `over_pct` | Spending caps. Supports both global and per-category limits with custom warning tiers. |
@@ -526,7 +531,7 @@ expense-tracker/
                 ├── auth/login.page.ts
                 ├── dashboard/    ← page, filter-bar (10-yr calendar, horizontal categories), table, form
                 ├── transactions/transactions.page.ts ← Dedicated transaction manager with sort/search
-                ├── onboarding/onboarding-overlay.component.ts ← 7-step interactive coach mark tour
+                ├── onboarding/onboarding-overlay.component.ts ← 9-step interactive coach mark tour with adaptive positioning
                 ├── categories/categories.page.ts    ← Custom categories with emoji picker & color swatches
                 ├── budgets/budgets.page.ts          ← Monthly/yearly budgets with interactive gauges
                 └── settings/settings.page.ts        ← Preferences, password change, and secret recovery PIN setup
@@ -555,7 +560,7 @@ Every engineering architecture makes deliberate tradeoffs. Here are the operatio
    - *Architectural Rationale*: In decoupled environments (`*.vercel.app` frontend and `*.onrender.com` backend), `localStorage` is required to prevent third-party cross-site cookie blocking enforced by Safari ITP, Firefox ETP, and Chrome. It also enables the PWA to inspect user identity and render cached offline views in airplane mode without network roundtrips.
 
 5. **Self-Recovery PIN vs. Email Providers**:
-   - Password recovery uses a cryptographically hashed (bcrypt, 10 rounds) Secret Recovery PIN configured in Settings rather than transactional email tokens.
+   - Password recovery uses a cryptographically hashed (bcrypt, 10 rounds) Secret Recovery PIN configured directly during account registration or in Settings rather than transactional email tokens.
    - *Tradeoff*: Eliminates vendor lock-in, credit-card requirements, and SPF/DKIM DNS configuration from third-party email providers (SendGrid/Resend) while completely eliminating unauthenticated account-takeover attacks.
 
 ---
