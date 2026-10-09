@@ -135,12 +135,12 @@ const COMMON_TIMEZONES = [
         </div>
 
         <p class="pin-desc">
-          In <strong>Session-only mode</strong>, closing your browser window or tab will automatically end your session and log you out. Recommended for shared PCs and work devices.
+          In <strong>Session-only mode</strong>, closing your browser window or tab will automatically end your session and log you out. Recommended for shared devices and maximum privacy.
         </p>
 
         <div class="session-action-group">
           <button type="button" class="btn-secondary" (click)="toggleSessionPersistence()">
-            {{ auth.isRemembered() ? 'Switch to Session-only mode' : 'Keep me signed in on this PC' }}
+            {{ auth.isRemembered() ? 'Switch to Session-only mode' : 'Keep me signed in on this device' }}
           </button>
         </div>
 

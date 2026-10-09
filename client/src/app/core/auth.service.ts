@@ -44,7 +44,7 @@ export class AuthService {
   get token(): string | null { return getStoredToken(); }
 
   isRemembered(): boolean {
-    return typeof window !== 'undefined' && !!localStorage.getItem(TOKEN_KEY);
+    return typeof window !== 'undefined' && localStorage.getItem(REMEMBER_KEY) === '1';
   }
 
   setRememberMe(remember: boolean): void {
@@ -69,10 +69,25 @@ export class AuthService {
     this.persist(res, rememberMe);
   }
 
-  async register(email: string, password: string, displayName: string, timezone: string, rememberMe = false): Promise<void> {
+  async register(
+    email: string,
+    password: string,
+    displayName: string,
+    timezone: string,
+    recoveryPin?: string,
+    rememberMe = false
+  ): Promise<void> {
+    const payload: { email: string; password: string; displayName: string; timezone: string; recoveryPin?: string } = {
+      email,
+      password,
+      displayName,
+      timezone,
+    };
+    if (recoveryPin && recoveryPin.trim()) {
+      payload.recoveryPin = recoveryPin.trim();
+    }
     const res = await firstValueFrom(
-      this.http.post<{ token: string; user: User }>('/api/auth/register',
-        { email, password, displayName, timezone })
+      this.http.post<{ token: string; user: User }>('/api/auth/register', payload)
     );
     this.persist(res, rememberMe);
   }

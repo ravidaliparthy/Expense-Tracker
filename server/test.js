@@ -86,11 +86,13 @@ async function runTests() {
           displayName: 'Test User',
           timezone: 'America/New_York',
           baseCurrency: 'USD',
+          recoveryPin: 'secret1234',
         },
       });
       assert.strictEqual(res.status, 201);
       assert.ok(res.body.token);
       assert.strictEqual(res.body.user.email, testEmail);
+      assert.strictEqual(res.body.user.hasRecoveryPin, true);
       authToken = res.body.token;
       userId = res.body.user.id;
     });

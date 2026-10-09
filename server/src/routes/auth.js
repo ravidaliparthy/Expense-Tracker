@@ -34,12 +34,15 @@ router.post('/register', async (req, res, next) => {
     }
 
     const hash = bcrypt.hashSync(body.password, 10);
+    const pinHash = body.recoveryPin && body.recoveryPin.trim()
+      ? bcrypt.hashSync(body.recoveryPin.trim(), 10)
+      : null;
     const info = db
       .prepare(
-        `INSERT INTO users (email, password_hash, display_name, timezone, base_currency)
-         VALUES (?, ?, ?, ?, ?)`
+        `INSERT INTO users (email, password_hash, display_name, timezone, base_currency, recovery_pin_hash)
+         VALUES (?, ?, ?, ?, ?, ?)`
       )
-      .run(body.email, hash, body.displayName, safeTz, body.baseCurrency);
+      .run(body.email, hash, body.displayName, safeTz, body.baseCurrency, pinHash);
 
     const userId = info.lastInsertRowid;
     const insertCat = db.prepare(

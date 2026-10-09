@@ -34,23 +34,29 @@ import { AuthService } from '../../core/auth.service';
           <label>{{ mode() === 'forgot' ? 'New password' : 'Password' }}</label>
           <input name="password" type="password" [(ngModel)]="password" required minlength="8"
                  placeholder="At least 8 characters" />
-          <div *ngIf="mode() === 'login'" class="session-opts-row">
-            <label class="remember-label" title="Uncheck on PC/shared computers to log out automatically when closing the browser">
-              <input type="checkbox" [(ngModel)]="rememberMe" name="rememberMe" />
-              <span>Remember me</span>
-            </label>
-            <span class="forgot-link" (click)="setMode('forgot')">Forgot password?</span>
-          </div>
-          <div class="session-badge-pill" *ngIf="mode() === 'login'">
-            <span *ngIf="!rememberMe">🔒 <strong>Session-only:</strong> Logs out automatically when you close the browser/tab.</span>
-            <span *ngIf="rememberMe">💾 <strong>Remembered:</strong> Stays signed in across browser sessions on this device.</span>
-          </div>
+          <ng-container *ngIf="mode() === 'register'">
+            <label>Secret Recovery PIN <span class="opt-label">(optional, recommended)</span></label>
+            <input name="recoveryPin" type="password" [(ngModel)]="recoveryPin"
+                   placeholder="4–16 digits or passphrase (e.g. 849201)" />
+            <p class="field-hint">Enables zero-dependency password recovery if you ever forget your password.</p>
+          </ng-container>
           <ng-container *ngIf="mode() === 'register'">
             <label>Timezone</label>
             <select name="timezone" [(ngModel)]="timezone">
               <option *ngFor="let tz of timezones" [value]="tz">{{ tz }}</option>
             </select>
           </ng-container>
+          <div class="session-opts-row">
+            <label class="remember-label" title="Uncheck to stay in Session-only mode (logs out when closing browser/tab)">
+              <input type="checkbox" [(ngModel)]="rememberMe" name="rememberMe" />
+              <span>Remember me on this device</span>
+            </label>
+            <span *ngIf="mode() === 'login'" class="forgot-link" (click)="setMode('forgot')">Forgot password?</span>
+          </div>
+          <div class="session-badge-pill">
+            <span *ngIf="!rememberMe">🔒 <strong>Session-only (Default):</strong> Logs out automatically when you close the browser tab.</span>
+            <span *ngIf="rememberMe">💾 <strong>Remembered:</strong> Stays signed in across browser sessions on this device.</span>
+          </div>
           <div class="modal-actions">
             <button type="button" class="btn-ghost" (click)="toggle()">
               {{ mode() === 'login' ? 'Need an account?' : (mode() === 'register' ? 'Have an account?' : 'Back to sign in') }}
@@ -74,6 +80,8 @@ import { AuthService } from '../../core/auth.service';
     .brand span:last-child { color:#6366F1; }
     h2 { margin:0 0 4px; }
     .hint { color:#64748B; font-size:13px; margin:0 0 10px; }
+    .opt-label { font-size:11px; color:#94A3B8; font-weight:normal; margin-left:4px; }
+    .field-hint { font-size:11px; color:#64748B; margin:3px 0 10px; line-height:1.35; }
     .session-opts-row { display:flex; justify-content:space-between; align-items:center; margin:-2px 0 10px; font-size:12px; }
     .remember-label { display:flex; align-items:center; gap:6px; color:#475569; cursor:pointer; user-select:none; font-weight:500; }
     .remember-label input { width:auto; margin:0; cursor:pointer; accent-color:#6366F1; }
@@ -96,7 +104,7 @@ export class LoginPage {
   error = signal('');
 
   email = ''; password = ''; displayName = ''; recoveryPin = '';
-  rememberMe = typeof window !== 'undefined' ? (window.innerWidth <= 820 ? true : false) : false;
+  rememberMe = false;
   timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
   timezones = [this.timezone, 'UTC', 'America/New_York', 'America/Los_Angeles',
                'Europe/London', 'Asia/Kolkata', 'Asia/Tokyo', 'Australia/Sydney'];
@@ -131,7 +139,7 @@ export class LoginPage {
       if (this.mode() === 'login') {
         await this.auth.login(this.email, this.password, this.rememberMe);
       } else if (this.mode() === 'register') {
-        await this.auth.register(this.email, this.password, this.displayName, this.timezone, this.rememberMe);
+        await this.auth.register(this.email, this.password, this.displayName, this.timezone, this.recoveryPin, this.rememberMe);
       } else {
         await this.auth.resetPassword(this.email, this.recoveryPin, this.password, this.rememberMe);
       }

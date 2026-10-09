@@ -40,7 +40,7 @@ import { KeepAliveService } from './core/keep-alive.service';
           <button class="ghost" (click)="replayTour()" title="Replay guided tour">✨ Tour</button>
           <button class="ghost" (click)="toggleTheme()" title="Toggle dark mode">{{ dark() ? '☀️ Light' : '🌙 Dark' }}</button>
           <span class="user">{{ auth.user()?.displayName }}</span>
-          <button class="ghost btn-topbar-signout" (click)="auth.logout()" title="Sign out and end session">
+          <button class="ghost btn-topbar-signout" data-tour="session-controls" (click)="auth.logout()" title="Sign out and end session">
             <span>🚪</span> Sign out
           </button>
         </div>
@@ -65,7 +65,7 @@ import { KeepAliveService } from './core/keep-alive.service';
               <span class="nav-ico">▦</span>
               <span class="nav-lbl">Categories</span>
             </a>
-            <a routerLink="/settings" routerLinkActive="active">
+            <a routerLink="/settings" routerLinkActive="active" data-tour="settings-nav">
               <span class="nav-ico">⚙</span>
               <span class="nav-lbl">Settings</span>
             </a>
@@ -82,7 +82,7 @@ import { KeepAliveService } from './core/keep-alive.service';
                 </span>
               </div>
             </div>
-            <button class="pc-signout-btn" (click)="auth.logout()" title="Sign out of your account and end session">
+            <button class="pc-signout-btn" data-tour="session-controls" (click)="auth.logout()" title="Sign out of your account and end session">
               <span class="nav-ico">🚪</span>
               <span class="nav-lbl">Sign Out</span>
             </button>

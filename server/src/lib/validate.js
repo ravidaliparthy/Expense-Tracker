@@ -22,6 +22,7 @@ const registerSchema = z.object({
   displayName: z.string().min(1).max(120),
   timezone: z.string().min(1).default('UTC'),
   baseCurrency: currency.default('USD'),
+  recoveryPin: z.string().min(4).max(64).optional(),
 });
 
 const loginSchema = z.object({
