@@ -32,10 +32,13 @@
   <div class="card"><h3>Projected savings</h3><div class="value" style="font-size:22px" [class.positive]="cashflowBreakdown().projectedNet >= 0" [class.negative]="cashflowBreakdown().projectedNet < 0">{{ signedMoney(cashflowBreakdown().projectedNet, currency()) }}</div><p class="mini">If today's burn rate continues.</p></div>
   <div class="card"><h3>Safe to spend/day</h3><div class="value" style="font-size:22px">{{ money(cashflowBreakdown().safeToday, currency()) }}</div><p class="mini">For {{ cashflowBreakdown().daysLeft }} days left in this range.</p></div>
 </div>
-<div class="grid-2" *ngIf="insights()">
+<div class="grid-2">
   <div class="card"><h3>🧠 Money insights</h3>
-  <div class="insight" *ngFor="let m of insightMessages()"><span class="ico">{{ m.icon }}</span><span class="txt" [class.pos]="m.tone === 'pos'" [class.neg]="m.tone === 'neg'">{{ m.text }}</span></div>
-  <p *ngIf="insightMessages().length === 0" style="color:#94A3B8">Add transactions to unlock automatic insights.</p>
+  <ng-container *ngIf="insights()">
+    <div class="insight" *ngFor="let m of insightMessages()"><span class="ico">{{ m.icon }}</span><span class="txt" [class.pos]="m.tone === 'pos'" [class.neg]="m.tone === 'neg'">{{ m.text }}</span></div>
+    <p *ngIf="insightMessages().length === 0" style="color:#94A3B8">Add transactions to unlock automatic insights.</p>
+  </ng-container>
+  <p *ngIf="!insights()" style="color:#94A3B8">Analyzing transaction trends...</p>
 </div>
 <div class="card" data-tour="spending-breakdown">
   <div class="card-head-flex">

@@ -201,21 +201,17 @@ export class OnboardingOverlayComponent implements OnDestroy {
     const start = performance.now();
     const poll = () => {
       this.locate(false);
-      if (performance.now() - start < 800) {
+      if (performance.now() - start < 900) {
         requestAnimationFrame(poll);
       }
     };
     requestAnimationFrame(poll);
 
     if (typeof window !== 'undefined') {
-      const onScrollEnd = () => {
-        this.locate(false);
-        window.removeEventListener('scrollend', onScrollEnd);
-      };
-      window.addEventListener('scrollend', onScrollEnd, { once: true });
-      setTimeout(() => this.locate(false), 200);
-      setTimeout(() => this.locate(false), 450);
-      setTimeout(() => this.locate(false), 750);
+      setTimeout(() => this.locate(false), 120);
+      setTimeout(() => this.locate(false), 280);
+      setTimeout(() => this.locate(false), 500);
+      setTimeout(() => this.locate(false), 850);
     }
   }
 
@@ -227,10 +223,22 @@ export class OnboardingOverlayComponent implements OnDestroy {
       return;
     }
     const sel = this.tour.currentStep().target;
-    let node = document.querySelector(sel) as HTMLElement | null;
-    // Fallback if dedicated toolbar button is not present
-    if (!node && sel.includes('view-transactions')) {
-      node = document.querySelector('[data-tour="transactions-nav"]') as HTMLElement | null;
+    const isMobile = window.innerWidth <= 820;
+    let node: HTMLElement | null = null;
+
+    if (sel.includes('session-controls')) {
+      const pcBtn = document.querySelector('.pc-signout-btn') as HTMLElement | null;
+      const topBtn = document.querySelector('.btn-topbar-signout') as HTMLElement | null;
+      if (!isMobile && pcBtn && pcBtn.offsetParent !== null) {
+        node = pcBtn;
+      } else if (topBtn && topBtn.offsetParent !== null) {
+        node = topBtn;
+      }
+    } else if (sel.includes('view-transactions')) {
+      node = (document.querySelector('[data-tour="view-transactions"]') ||
+              document.querySelector('[data-tour="transactions-nav"]')) as HTMLElement | null;
+    } else {
+      node = document.querySelector(sel) as HTMLElement | null;
     }
 
     if (!node) {
@@ -240,34 +248,13 @@ export class OnboardingOverlayComponent implements OnDestroy {
       return;
     }
 
-    const isMobile = window.innerWidth <= 820;
-
     if (shouldScroll) {
-      if (isMobile) {
-        if (sel.includes('budgets-nav') || sel.includes('categories-nav')) {
-          // Bottom bar items are fixed at the bottom of the viewport; no scroll needed
-        } else if (sel.includes('add-expense') || sel.includes('view-transactions') || sel.includes('export-menu')) {
-          // Top toolbar actions: scroll to very top smoothly
-          if (window.scrollY > 0) {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }
-        } else {
-          // Cards (spending-breakdown, transactions-table, filter-bar):
-          // Position cleanly 68px below topbar
-          const rect = node.getBoundingClientRect();
-          const targetY = Math.max(0, window.scrollY + rect.top - 68);
-          window.scrollTo({ top: targetY, behavior: 'smooth' });
-        }
-      } else {
-        if (sel.includes('add-expense') || sel.includes('view-transactions') || sel.includes('export-menu') || sel.includes('filter-bar')) {
-          if (window.scrollY > 0) {
-            window.scrollTo({ top: 0, behavior: 'instant' });
-          }
-        } else if (sel.includes('spending-breakdown') || sel.includes('transactions-table')) {
-          const rect = node.getBoundingClientRect();
-          const currentY = window.scrollY;
-          const targetScrollY = Math.max(0, currentY + rect.top - 310);
-          window.scrollTo({ top: targetScrollY, behavior: 'instant' });
+      const isFixed = !!node.closest('.topbar') || (isMobile && !!node.closest('.sidenav'));
+      if (!isFixed) {
+        const rect = node.getBoundingClientRect();
+        const inView = rect.top >= 75 && rect.bottom <= (window.innerHeight - 75);
+        if (!inView) {
+          node.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
         }
       }
     }
@@ -294,33 +281,33 @@ export class OnboardingOverlayComponent implements OnDestroy {
     const cardWidth = Math.min(360, window.innerWidth - 24);
     const cardHeight = 220;
 
-    // MOBILE LAYOUT (Android & iOS)
+    // MOBILE LAYOUT (Android & iOS Safari)
     if (isMobile) {
-      // If target is in the bottom bar (e.g. budgets-nav), dock card at top so bottom bar is 100% visible
-      const isTargetAtBottom = r.top > (window.innerHeight - 120);
+      const isTargetAtBottom = r.top > (window.innerHeight / 2);
 
       if (isTargetAtBottom) {
         this.placement.set('bottom');
         this.coachStyle.set({
+          position: 'fixed',
           top: '64px',
           bottom: 'auto',
           left: '12px',
           right: '12px',
           width: 'calc(100vw - 24px)',
-          maxWidth: '460px',
+          maxWidth: '440px',
           margin: '0 auto',
           transform: 'none',
         });
       } else {
-        // Dock card right above bottom navigation bar
         this.placement.set('top');
         this.coachStyle.set({
+          position: 'fixed',
           top: 'auto',
           bottom: 'calc(env(safe-area-inset-bottom, 0px) + 64px)',
           left: '12px',
           right: '12px',
           width: 'calc(100vw - 24px)',
-          maxWidth: '460px',
+          maxWidth: '440px',
           margin: '0 auto',
           transform: 'none',
         });
@@ -329,74 +316,84 @@ export class OnboardingOverlayComponent implements OnDestroy {
       return;
     }
 
-    // DESKTOP LAYOUT
-    // 1. Sidebar target (e.g. items on the left side, r.left < 220)
+    // DESKTOP LAYOUT (PC)
+    // 1. Sidebar target (e.g. left side items, r.left < 220)
     if (r.left < 220) {
       const left = Math.round(r.right + 16);
       const targetCenterY = r.top + r.height / 2;
-      const top = Math.max(68, Math.min(Math.round(targetCenterY - 60), window.innerHeight - cardHeight - 20));
+      let top = Math.round(targetCenterY - cardHeight / 2);
+      top = Math.max(68, Math.min(top, window.innerHeight - cardHeight - 20));
 
       this.placement.set('left');
       this.coachStyle.set({
         left: `${left}px`,
         top: `${top}px`,
         width: `${cardWidth}px`,
+        transform: 'none',
       });
 
       const arrowTop = Math.max(16, Math.min(Math.round(targetCenterY - top - 10), cardHeight - 30));
       this.arrowStyle.set({
         top: `${arrowTop}px`,
         left: '-8px',
+        display: 'block',
       });
       return;
     }
 
-    // 2. Standard content target (dashboard toolbar, cards, tables)
+    // 2. Main content target
     const targetCenterX = r.left + r.width / 2;
     const idealLeft = Math.round(targetCenterX - cardWidth / 2);
-    const left = Math.max(16, Math.min(idealLeft, window.innerWidth - cardWidth - 16));
-    const arrowLeft = Math.max(20, Math.min(Math.round(targetCenterX - left - 10), cardWidth - 40));
+    const left = Math.max(226, Math.min(idealLeft, window.innerWidth - cardWidth - 20));
+    const arrowLeft = Math.max(24, Math.min(Math.round(targetCenterX - left - 10), cardWidth - 44));
 
-    // Determine whether to place ABOVE or BELOW target without ever overlapping:
-    const roomAbove = (r.top - 14 - cardHeight) >= 64;
-    const roomBelow = (r.bottom + 14 + cardHeight) <= (window.innerHeight - 10);
+    const spaceBelow = window.innerHeight - r.bottom;
+    const spaceAbove = r.top - 68;
+    let top: number;
 
-    if (roomAbove && !roomBelow) {
-      // Place ABOVE target
-      const top = Math.max(68, Math.round(r.top - cardHeight - 14));
-      this.placement.set('bottom');
-      this.coachStyle.set({
-        left: `${left}px`,
-        top: `${top}px`,
-        width: `${cardWidth}px`,
-      });
-      this.arrowStyle.set({
-        bottom: '-8px',
-        left: `${arrowLeft}px`,
-      });
-    } else {
-      // Default: Place BELOW target (toolbar, filter bar, etc.)
-      const top = Math.round(r.bottom + 14);
+    if (spaceBelow >= cardHeight + 20) {
+      top = Math.round(r.bottom + 14);
       this.placement.set('top');
-      this.coachStyle.set({
-        left: `${left}px`,
-        top: `${top}px`,
-        width: `${cardWidth}px`,
-      });
       this.arrowStyle.set({
         top: '-8px',
+        bottom: 'auto',
         left: `${arrowLeft}px`,
+        display: 'block',
       });
+    } else if (spaceAbove >= cardHeight + 20) {
+      top = Math.round(r.top - cardHeight - 14);
+      this.placement.set('bottom');
+      this.arrowStyle.set({
+        top: 'auto',
+        bottom: '-8px',
+        left: `${arrowLeft}px`,
+        display: 'block',
+      });
+    } else {
+      // Tall/large card filling most of screen — float card cleanly inside visible viewport
+      top = window.innerHeight - cardHeight - 24;
+      this.placement.set('none');
+      this.arrowStyle.set({ display: 'none' });
     }
+
+    // Hard boundary guarantee: card is NEVER cut off top or bottom
+    top = Math.max(68, Math.min(top, window.innerHeight - cardHeight - 20));
+
+    this.coachStyle.set({
+      left: `${left}px`,
+      top: `${top}px`,
+      width: `${cardWidth}px`,
+      transform: 'none',
+    });
   }
 
   spotStyle(): Record<string, string> {
     const r = this.targetRect();
     if (!r) return { display: 'none' };
-    if (r.bottom < 50 || r.top > window.innerHeight) return { display: 'none' };
+    if (r.bottom < 54 || r.top > window.innerHeight) return { display: 'none' };
 
     const isMobile = window.innerWidth <= 820;
-    const padding = isMobile ? 3 : 6;
+    const padding = isMobile ? 4 : 8;
 
     return {
       left: `${Math.max(0, Math.round(r.left - padding))}px`,

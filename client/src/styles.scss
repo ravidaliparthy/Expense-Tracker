@@ -234,6 +234,8 @@ tr.deleting td {
   padding: 16px 18px 12px;
   width: 360px;
   max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 80px);
+  overflow-y: auto;
   box-shadow: 0 24px 60px -10px rgba(0, 0, 0, 0.7),
               0 0 0 1px rgba(129, 140, 248, 0.35),
               0 10px 30px -5px rgba(99, 102, 241, 0.3);
