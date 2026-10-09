@@ -37,6 +37,18 @@
       "created_at": "2026-10-09T03:09:02.016Z",
       "updated_at": "2026-10-09T03:09:02.016Z",
       "deleted_at": null
+    },
+    {
+      "id": 31,
+      "email": "test_1791515789326@expense.test",
+      "password_hash": "$2a$10$ZSq8VlZlT5oA/GQTCpPZUuLRMBET5Zk9.NycRtgwBw/d4Va7X4STK",
+      "display_name": "Test User",
+      "base_currency": "USD",
+      "timezone": "America/New_York",
+      "is_first_login": 1,
+      "created_at": "2026-10-09T03:16:29.501Z",
+      "updated_at": "2026-10-09T03:16:29.501Z",
+      "deleted_at": null
     }
   ],
   "categories": [
@@ -374,6 +386,114 @@
       "is_archived": 0,
       "created_at": "2026-10-09T03:09:02.016Z",
       "updated_at": "2026-10-09T03:09:02.016Z",
+      "deleted_at": null
+    },
+    {
+      "id": 299,
+      "user_id": 31,
+      "name": "Food",
+      "color_hex": "#F97316",
+      "icon": "🍔",
+      "is_system": 1,
+      "is_archived": 0,
+      "created_at": "2026-10-09T03:16:29.503Z",
+      "updated_at": "2026-10-09T03:16:29.503Z",
+      "deleted_at": null
+    },
+    {
+      "id": 300,
+      "user_id": 31,
+      "name": "Travel",
+      "color_hex": "#3B82F6",
+      "icon": "✈️",
+      "is_system": 1,
+      "is_archived": 0,
+      "created_at": "2026-10-09T03:16:29.503Z",
+      "updated_at": "2026-10-09T03:16:29.503Z",
+      "deleted_at": null
+    },
+    {
+      "id": 301,
+      "user_id": 31,
+      "name": "Shopping",
+      "color_hex": "#EC4899",
+      "icon": "🛍️",
+      "is_system": 1,
+      "is_archived": 0,
+      "created_at": "2026-10-09T03:16:29.503Z",
+      "updated_at": "2026-10-09T03:16:29.503Z",
+      "deleted_at": null
+    },
+    {
+      "id": 302,
+      "user_id": 31,
+      "name": "Utilities",
+      "color_hex": "#F59E0B",
+      "icon": "💡",
+      "is_system": 1,
+      "is_archived": 0,
+      "created_at": "2026-10-09T03:16:29.503Z",
+      "updated_at": "2026-10-09T03:16:29.503Z",
+      "deleted_at": null
+    },
+    {
+      "id": 303,
+      "user_id": 31,
+      "name": "Health",
+      "color_hex": "#10B981",
+      "icon": "💊",
+      "is_system": 1,
+      "is_archived": 0,
+      "created_at": "2026-10-09T03:16:29.503Z",
+      "updated_at": "2026-10-09T03:16:29.503Z",
+      "deleted_at": null
+    },
+    {
+      "id": 304,
+      "user_id": 31,
+      "name": "Entertainment",
+      "color_hex": "#8B5CF6",
+      "icon": "🎬",
+      "is_system": 1,
+      "is_archived": 0,
+      "created_at": "2026-10-09T03:16:29.503Z",
+      "updated_at": "2026-10-09T03:16:29.503Z",
+      "deleted_at": null
+    },
+    {
+      "id": 305,
+      "user_id": 31,
+      "name": "Salary",
+      "color_hex": "#22C55E",
+      "icon": "💰",
+      "is_system": 1,
+      "is_archived": 0,
+      "created_at": "2026-10-09T03:16:29.503Z",
+      "updated_at": "2026-10-09T03:16:29.503Z",
+      "deleted_at": null
+    },
+    {
+      "id": 306,
+      "user_id": 31,
+      "name": "Freelance",
+      "color_hex": "#06B6D4",
+      "icon": "🧑‍💻",
+      "is_system": 1,
+      "is_archived": 0,
+      "created_at": "2026-10-09T03:16:29.503Z",
+      "updated_at": "2026-10-09T03:16:29.503Z",
+      "deleted_at": null
+    },
+    {
+      "id": 307,
+      "user_id": 31,
+      "name": "Bonus",
+      "color_hex": "#EAB308",
+      "icon": "🎉",
+      "is_system": 1,
+      "is_archived": 0,
+      "created_at": "2026-10-09T03:16:29.503Z",
+      "updated_at": "2026-10-09T03:16:29.503Z",
       "deleted_at": null
     }
   ],

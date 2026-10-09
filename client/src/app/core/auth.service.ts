@@ -46,6 +46,14 @@ export class AuthService {
     this.persist(res);
   }
 
+  async resetPassword(email: string, newPassword: string): Promise<void> {
+    const res = await firstValueFrom(
+      this.http.post<{ token: string; user: User }>('/api/auth/reset-password',
+        { email, newPassword })
+    );
+    this.persist(res);
+  }
+
   async completeOnboarding(): Promise<void> {
     await firstValueFrom(this.http.post('/api/auth/onboarding/complete', {}));
     const u = this._user();

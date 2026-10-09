@@ -12,7 +12,9 @@ import { AuthService } from '../../core/auth.service';
     <div class="auth-wrap">
       <div class="card auth-card">
         <div class="brand"><span class="logo">◆</span> Expense<span>Tracker</span></div>
-        <h2>{{ mode() === 'login' ? 'Welcome back' : 'Create your account' }}</h2>
+        <h2>
+          {{ mode() === 'login' ? 'Welcome back' : (mode() === 'register' ? 'Create your account' : 'Reset password') }}
+        </h2>
         <p class="hint">Budget-aware expense analytics with offline resilience.</p>
 
         <div class="flash err" *ngIf="error()">{{ error() }}</div>
@@ -24,9 +26,12 @@ import { AuthService } from '../../core/auth.service';
           </ng-container>
           <label>Email</label>
           <input name="email" type="email" [(ngModel)]="email" required placeholder="you@company.com" />
-          <label>Password</label>
+          <label>{{ mode() === 'forgot' ? 'New password' : 'Password' }}</label>
           <input name="password" type="password" [(ngModel)]="password" required minlength="8"
                  placeholder="At least 8 characters" />
+          <div *ngIf="mode() === 'login'" class="forgot-row">
+            <span class="forgot-link" (click)="setMode('forgot')">Forgot password?</span>
+          </div>
           <ng-container *ngIf="mode() === 'register'">
             <label>Timezone</label>
             <select name="timezone" [(ngModel)]="timezone">
@@ -35,10 +40,10 @@ import { AuthService } from '../../core/auth.service';
           </ng-container>
           <div class="modal-actions">
             <button type="button" class="btn-ghost" (click)="toggle()">
-              {{ mode() === 'login' ? 'Need an account?' : 'Have an account?' }}
+              {{ mode() === 'login' ? 'Need an account?' : (mode() === 'register' ? 'Have an account?' : 'Back to sign in') }}
             </button>
             <button class="btn-primary" [disabled]="f.invalid || busy()">
-              {{ mode() === 'login' ? 'Sign in' : 'Create account' }}
+              {{ mode() === 'login' ? 'Sign in' : (mode() === 'register' ? 'Create account' : 'Reset & Sign in') }}
             </button>
           </div>
         </form>
@@ -56,6 +61,9 @@ import { AuthService } from '../../core/auth.service';
     .brand span:last-child { color:#6366F1; }
     h2 { margin:0 0 4px; }
     .hint { color:#64748B; font-size:13px; margin:0 0 10px; }
+    .forgot-row { text-align:right; margin:-4px 0 10px; }
+    .forgot-link { font-size:12px; color:#6366F1; cursor:pointer; }
+    .forgot-link:hover { text-decoration:underline; }
     .demo { margin-top:14px; font-size:12px; color:#6366F1; cursor:pointer; text-align:center; }
     .demo:hover { text-decoration:underline; }
   `],
@@ -65,7 +73,7 @@ export class LoginPage {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
 
-  mode = signal<'login' | 'register'>('login');
+  mode = signal<'login' | 'register' | 'forgot'>('login');
   busy = signal(false);
   error = signal('');
 
@@ -80,9 +88,17 @@ export class LoginPage {
     }
   }
 
-  toggle(): void { this.mode.update((m) => (m === 'login' ? 'register' : 'login')); this.error.set(''); }
+  setMode(m: 'login' | 'register' | 'forgot'): void { this.mode.set(m); this.error.set(''); }
 
-  fillDemo(): void { this.mode.set('login'); this.email = 'demo@expense.test'; this.password = 'demo1234'; }
+  toggle(): void {
+    if (this.mode() === 'forgot') {
+      this.setMode('login');
+    } else {
+      this.setMode(this.mode() === 'login' ? 'register' : 'login');
+    }
+  }
+
+  fillDemo(): void { this.setMode('login'); this.email = 'demo@expense.test'; this.password = 'demo1234'; }
 
   async submit(): Promise<void> {
     this.busy.set(true);
@@ -90,8 +106,10 @@ export class LoginPage {
     try {
       if (this.mode() === 'login') {
         await this.auth.login(this.email, this.password);
-      } else {
+      } else if (this.mode() === 'register') {
         await this.auth.register(this.email, this.password, this.displayName, this.timezone);
+      } else {
+        await this.auth.resetPassword(this.email, this.password);
       }
       const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') || '/dashboard';
       void this.router.navigateByUrl(returnUrl);
@@ -99,7 +117,7 @@ export class LoginPage {
       const e = err as { error?: { error?: string; details?: string[] } };
       const msg = e.error?.details?.join('; ') || e.error?.error || 'Authentication failed';
       if (msg.toLowerCase().includes('invalid email or password')) {
-        this.error.set('Invalid email or password. Please verify your password or tap "Need an account?" to register.');
+        this.error.set('Invalid email or password. Please verify your password or tap "Forgot password?" / "Need an account?".');
       } else {
         this.error.set(msg);
       }

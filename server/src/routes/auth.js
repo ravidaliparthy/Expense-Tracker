@@ -86,6 +86,25 @@ router.post('/login', (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+router.post('/reset-password', (req, res, next) => {
+  try {
+    const { email, newPassword } = req.body || {};
+    if (!email || !newPassword || typeof newPassword !== 'string' || newPassword.length < 8) {
+      return res.status(400).json({ error: 'Valid email and new password (min 8 characters) required' });
+    }
+    const db = getDb();
+    const user = db.prepare('SELECT * FROM users WHERE email = ? AND deleted_at IS NULL').get(email);
+    if (!user) {
+      return res.status(404).json({ error: 'No account found with this email' });
+    }
+    const hash = bcrypt.hashSync(newPassword, 10);
+    db.prepare('UPDATE users SET password_hash = ?, updated_at = strftime("%Y-%m-%dT%H:%M:%fZ", "now") WHERE id = ?').run(hash, user.id);
+    const updated = db.prepare('SELECT * FROM users WHERE id = ?').get(user.id);
+    persistUserToSeed(updated);
+    res.json({ token: signToken(updated), user: publicUser(updated), message: 'Password reset successful' });
+  } catch (err) { next(err); }
+});
+
 router.get('/me', requireAuth, (req, res) => {
   res.json({ user: req.user });
 });
