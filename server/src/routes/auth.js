@@ -1,7 +1,7 @@
 'use strict';
 const express = require('express');
 const bcrypt = require('bcryptjs');
-const { getDb, audit } = require('../db');
+const { getDb, audit, persistUserToSeed } = require('../db');
 const { signToken, requireAuth } = require('../middleware/auth');
 const { validate, registerSchema, loginSchema, profileSchema } = require('../lib/validate');
 const { normalizeTimezone } = require('../lib/time');
@@ -58,6 +58,10 @@ router.post('/register', (req, res, next) => {
       )
       .get(userId);
 
+    const rawUser = db.prepare(`SELECT * FROM users WHERE id = ?`).get(userId);
+    const userCats = db.prepare(`SELECT * FROM categories WHERE user_id = ?`).all(userId);
+    persistUserToSeed(rawUser, userCats);
+
     res.status(201).json({ token: signToken(user), user: publicUser(user) });
   } catch (err) { next(err); }
 });
@@ -104,6 +108,8 @@ router.patch('/profile', requireAuth, (req, res, next) => {
               timezone, is_first_login AS isFirstLogin, created_at AS createdAt
        FROM users WHERE id = ?`
     ).get(req.user.id);
+    const rawUser = db.prepare(`SELECT * FROM users WHERE id = ?`).get(req.user.id);
+    if (rawUser) persistUserToSeed(rawUser);
     res.json({ user: publicUser(user) });
   } catch (err) { next(err); }
 });

@@ -74,6 +74,12 @@ export class LoginPage {
   timezones = [this.timezone, 'UTC', 'America/New_York', 'America/Los_Angeles',
                'Europe/London', 'Asia/Kolkata', 'Asia/Tokyo', 'Australia/Sydney'];
 
+  constructor() {
+    if (this.route.snapshot.queryParamMap.get('expired') === '1') {
+      this.error.set('Your session has expired. Please sign in again.');
+    }
+  }
+
   toggle(): void { this.mode.update((m) => (m === 'login' ? 'register' : 'login')); this.error.set(''); }
 
   fillDemo(): void { this.mode.set('login'); this.email = 'demo@expense.test'; this.password = 'demo1234'; }
@@ -91,7 +97,12 @@ export class LoginPage {
       void this.router.navigateByUrl(returnUrl);
     } catch (err: unknown) {
       const e = err as { error?: { error?: string; details?: string[] } };
-      this.error.set(e.error?.details?.join('; ') || e.error?.error || 'Authentication failed');
+      const msg = e.error?.details?.join('; ') || e.error?.error || 'Authentication failed';
+      if (msg.toLowerCase().includes('invalid email or password')) {
+        this.error.set('Invalid email or password. Please verify your password or tap "Need an account?" to register.');
+      } else {
+        this.error.set(msg);
+      }
     } finally {
       this.busy.set(false);
     }

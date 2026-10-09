@@ -8,6 +8,11 @@ const DB_PATH = process.env.DB_PATH || path.join(ROOT, 'db', 'expense-tracker.db
 const SCHEMA_PATH = fs.existsSync(path.join(ROOT, 'db', 'schema.sql'))
   ? path.join(ROOT, 'db', 'schema.sql')
   : (fs.existsSync(path.join(__dirname, '..', 'schema.sql')) ? path.join(__dirname, '..', 'schema.sql') : path.join(__dirname, 'schema.sql'));
+const SEED_DATA_PATH = fs.existsSync(path.join(ROOT, 'db', 'seed-data.json'))
+  ? path.join(ROOT, 'db', 'seed-data.json')
+  : (fs.existsSync(path.join(__dirname, '..', 'seed-data.json'))
+      ? path.join(__dirname, '..', 'seed-data.json')
+      : (fs.existsSync(path.join(__dirname, 'seed-data.json')) ? path.join(__dirname, 'seed-data.json') : path.join(ROOT, 'db', 'seed-data.json')));
 
 let db = null;
 
@@ -16,8 +21,88 @@ function init() {
   const sql = fs.readFileSync(SCHEMA_PATH, 'utf8');
   db.exec(sql);                                            // idempotent (IF NOT EXISTS)
   migrate();                                               // idempotent ALTERs for older DBs
+  restoreSeedData(db);
   ensureDemoUser();
   return db;
+}
+
+function restoreSeedData(dbInstance) {
+  if (!fs.existsSync(SEED_DATA_PATH)) return false;
+  try {
+    const raw = JSON.parse(fs.readFileSync(SEED_DATA_PATH, 'utf8'));
+    const insertUser = dbInstance.prepare(`
+      INSERT OR IGNORE INTO users (id, email, password_hash, display_name, base_currency, timezone, is_first_login, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    const insertCategory = dbInstance.prepare(`
+      INSERT OR IGNORE INTO categories (id, user_id, name, color_hex, icon, is_system, is_archived, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    const insertExpense = dbInstance.prepare(`
+      INSERT OR IGNORE INTO expenses (id, user_id, category_id, category_name_snapshot, category_color_snapshot, category_icon_snapshot, amount_cents, currency, kind, occurred_at_utc, local_date, tz_offset_minutes, merchant, notes, client_uuid, sync_version, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    const insertBudget = dbInstance.prepare(`
+      INSERT OR IGNORE INTO budgets (id, user_id, category_id, period, period_year, period_month, amount_cents, warn_pct, crit_pct, over_pct, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    const runAll = dbInstance.transaction(() => {
+      for (const u of (raw.users || [])) {
+        insertUser.run(u.id, u.email, u.password_hash, u.display_name, u.base_currency || 'USD', u.timezone || 'UTC', u.is_first_login ? 1 : 0, u.created_at, u.updated_at);
+      }
+      for (const c of (raw.categories || [])) {
+        insertCategory.run(c.id, c.user_id, c.name, c.color_hex, c.icon, c.is_system ? 1 : 0, c.is_archived ? 1 : 0, c.created_at, c.updated_at);
+      }
+      for (const e of (raw.expenses || [])) {
+        insertExpense.run(
+          e.id, e.user_id, e.category_id, e.category_name_snapshot, e.category_color_snapshot,
+          e.category_icon_snapshot || null, e.amount_cents, e.currency || 'USD', e.kind || 'expense',
+          e.occurred_at_utc, e.local_date, e.tz_offset_minutes || 0, e.merchant, e.notes,
+          e.client_uuid, e.sync_version || 1, e.created_at, e.updated_at
+        );
+      }
+      for (const b of (raw.budgets || [])) {
+        insertBudget.run(
+          b.id, b.user_id, b.category_id, b.period, b.period_year, b.period_month,
+          b.amount_cents, b.warn_pct || 80, b.crit_pct || 90, b.over_pct || 100, b.created_at, b.updated_at
+        );
+      }
+    });
+
+    runAll();
+    console.log(`✔ Restored persistent seed data (${(raw.users || []).length} users) from ${path.basename(SEED_DATA_PATH)}`);
+    return true;
+  } catch (err) {
+    console.error('Seed restore warning:', err);
+    return false;
+  }
+}
+
+function persistUserToSeed(user, categories = []) {
+  try {
+    let data = { version: 1, users: [], categories: [], expenses: [], budgets: [] };
+    if (fs.existsSync(SEED_DATA_PATH)) {
+      data = JSON.parse(fs.readFileSync(SEED_DATA_PATH, 'utf8'));
+    }
+    const existingIndex = (data.users || []).findIndex(u => u.email === user.email);
+    if (existingIndex >= 0) {
+      data.users[existingIndex] = { ...data.users[existingIndex], ...user };
+    } else {
+      (data.users = data.users || []).push(user);
+    }
+    if (categories && categories.length) {
+      data.categories = data.categories || [];
+      for (const cat of categories) {
+        if (!data.categories.some(c => c.id === cat.id && c.user_id === cat.user_id)) {
+          data.categories.push(cat);
+        }
+      }
+    }
+    fs.writeFileSync(SEED_DATA_PATH, JSON.stringify(data, null, 2), 'utf8');
+  } catch (err) {
+    console.warn('Could not update seed-data.json:', err.message);
+  }
 }
 
 function ensureDemoUser() {
@@ -129,4 +214,4 @@ if (require.main === module) {
   console.log('✔ SQLite database initialized at', DB_PATH);
 }
 
-module.exports = { getDb, closeDb, audit, DB_PATH };
+module.exports = { getDb, closeDb, audit, DB_PATH, persistUserToSeed };
