@@ -128,11 +128,9 @@ flowchart TD
     V_PROXY -->|TLS Forwarding| API
 
     %% Backend to Turso Sync Connections
-    LOCAL_SQLITE -.->|On Server Startup: Pull Latest State| TURSO
-    ENGINES -.->|On Write Mutations: Awaited Write-Through Push| TURSO
+    TURSO -.->|On Server Startup: Boot Hydration Pull| LOCAL_SQLITE
+    ENGINES -->|On Write Mutations: Awaited Write-Through Push| TURSO
 ```
-
----
 
 ---
 
