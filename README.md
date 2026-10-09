@@ -109,7 +109,7 @@ flowchart TD
             EXP_STR["Export Pipelines (Streaming CSV & PDFKit)"]
         end
 
-        LOCAL_SQLITE[("Local SQLite Cache<br/>better-sqlite3 WAL Mode<br/>0ms Read Latency")]
+        LOCAL_SQLITE[("Local SQLite Cache<br/>better-sqlite3 WAL Mode<br/>Sub-Millisecond Read Latency")]
 
         API --> MW --> ZOD --> ENGINES
         ENGINES <-->|Instant Synchronous Reads/Writes| LOCAL_SQLITE
@@ -129,7 +129,7 @@ flowchart TD
 
     %% Backend to Turso Sync Connections
     LOCAL_SQLITE -.->|On Server Startup: Pull Latest State| TURSO
-    ENGINES -.->|On Write Mutations: Async Push in Background| TURSO
+    ENGINES -.->|On Write Mutations: Awaited Write-Through Push| TURSO
 ```
 
 ---
@@ -232,7 +232,7 @@ sequenceDiagram
     API-->>UI: HTTP 200 OK: { results: [{ clientUuid, status: 'created' }] }
     deactivate API
 
-    API--)TURSO: Background pushToTurso() persists to cloud
+    API->>TURSO: Await pushToTurso() persists to cloud (with local outbox fallback)
     UI->>LS: Purges successfully synced items from queue
     UI->>UI: Refreshes Dashboard KPIs & displays "● Online"
     UI-->>User: Visual sync confirmation badge
@@ -261,11 +261,12 @@ The application is a full **Progressive Web App (PWA)** that installs directly t
 
 ---
 
-## ⚡ Zero Cold-Start Lag (Keep-Alive Heartbeat)
+## ⚡ Cold-Start Mitigation & Keep-Alive Infrastructure
 
-Render free tier instances spin down after 15 minutes of inactivity. To ensure your app is always hot and responsive:
-1. **Automated 10-Minute Heartbeat**: While the web app is open in any tab, `KeepAliveService` sends a lightweight `/api/health` ping every 10 minutes, resetting Render's timer so **the server never spins down during use**.
-2. **Instant Pre-Warm on Phone Unlock**: When you unlock your phone or switch back to the app (`visibilitychange` / `window.focus`), a background pre-warming request is fired immediately, ensuring the API is awake before you tap any buttons.
+Render free tier instances spin down after 15 minutes of inactivity. The application mitigates this across three layers:
+1. **Automated 10-Minute Cloud Ping**: An external cron monitor (e.g., `cron-job.org`) pings `/api/health` every 10 minutes (`*/10 * * * *`), keeping the Render web service permanently warm and eliminating cold starts 24/7.
+2. **Tab Focus & Phone Unlock Pre-Warm**: While the app is open, `KeepAliveService` fires immediate background health pings on `visibilitychange` and `window.focus`, ensuring the container is hot when users resume interaction.
+3. **Graceful Wakeup UI Indicator**: If an API request ever takes $>2.5$ seconds (such as during container redeployment), the client displays a floating notification banner: `Connecting to cloud server... (Render instance waking up from sleep)`, eliminating user perception of a frozen screen.
 
 ---
 

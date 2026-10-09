@@ -12,6 +12,12 @@ import { KeepAliveService } from './core/keep-alive.service';
   standalone: true,
   imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive],
   template: `
+    <!-- Cold-Start Wakeup Notification Banner -->
+    <div class="cold-start-banner" *ngIf="keepAlive.wakingUp()">
+      <span class="cold-start-icon">⚡</span>
+      <span>Connecting to cloud server... (Render instance waking up from sleep)</span>
+    </div>
+
     <!-- PWA Update Notification Banner -->
     <div class="pwa-update-bar" *ngIf="pwa.updateAvailable()">
       <span>🚀 A new update is ready!</span>
@@ -125,6 +131,24 @@ import { KeepAliveService } from './core/keep-alive.service';
     </ng-template>
   `,
   styles: [`
+    .cold-start-banner {
+      background: linear-gradient(90deg, #1E1B4B 0%, #312E81 50%, #1E1B4B 100%);
+      color: #E0E7FF;
+      border-bottom: 1px solid rgba(99, 102, 241, 0.4);
+      padding: 9px 16px;
+      font-size: 13px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    }
+    .cold-start-icon { font-size: 14px; animation: bounce 1s infinite alternate; }
+    @keyframes bounce { from { transform: scale(0.9); } to { transform: scale(1.15); } }
     .topbar { display:flex; justify-content:space-between; align-items:center; height:56px;
       padding:0 20px; background:#0F172A; color:#E2E8F0; position:sticky; top:0; z-index:20; }
     .brand { font-weight:700; font-size:16px; letter-spacing:.3px; }
@@ -440,7 +464,7 @@ export class AppComponent {
   readonly queue = inject(OfflineQueueService);
   readonly onboarding = inject(OnboardingService);
   readonly pwa = inject(PwaService);
-  private readonly keepAlive = inject(KeepAliveService);
+  readonly keepAlive = inject(KeepAliveService);
   /** Theme preference — persisted so the app opens in your chosen mode. */
   readonly dark = signal(readStoredTheme());
 

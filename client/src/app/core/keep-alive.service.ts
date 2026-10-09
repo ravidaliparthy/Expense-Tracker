@@ -1,19 +1,39 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 
 /**
  * KeepAliveService
  * 
- * Prevents backend cold-starts and eliminating the 15-minute inactivity lag:
+ * Prevents backend cold-starts and handles slow connection indicators:
  * 1. Sends a lightweight ping to /api/health every 10 minutes (Render sleeps after 15 min of zero traffic).
- * 2. Immediately sends a pre-warming ping whenever the user unlocks their phone, switches back to the tab,
- *    or reconnects to the network.
+ * 2. Immediately sends a pre-warming ping whenever user unlocks phone or tab refocuses.
+ * 3. Tracks slow in-flight requests (>2.5s) to trigger graceful "Waking up server..." UI banner.
  */
 @Injectable({ providedIn: 'root' })
 export class KeepAliveService {
   private readonly http = inject(HttpClient);
   private heartbeatTimer: any = null;
   private lastPingTime = Date.now();
+  private pendingCount = 0;
+
+  readonly wakingUp = signal(false);
+
+  startRequest(): () => void {
+    this.pendingCount++;
+    const timer = setTimeout(() => {
+      if (this.pendingCount > 0) {
+        this.wakingUp.set(true);
+      }
+    }, 2500);
+
+    return () => {
+      clearTimeout(timer);
+      this.pendingCount = Math.max(0, this.pendingCount - 1);
+      if (this.pendingCount === 0) {
+        this.wakingUp.set(false);
+      }
+    };
+  }
 
   init(): void {
     if (typeof window === 'undefined') return;

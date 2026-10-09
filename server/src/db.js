@@ -18,6 +18,8 @@ const { syncFromTursoToLocal, pushToTurso, flushTursoOutbox } = require('./lib/t
 
 let db = null;
 
+let initPromise = null;
+
 function init() {
   fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
   const sql = fs.readFileSync(SCHEMA_PATH, 'utf8');
@@ -26,8 +28,17 @@ function init() {
   restoreSeedData(db);
   ensureDemoUser();
   scheduleBackgroundTasks();
-  syncFromTursoToLocal(db).catch(err => console.warn('Background Turso sync:', err.message));
   return db;
+}
+
+async function initDbAsync() {
+  getDb();
+  if (!initPromise) {
+    initPromise = syncFromTursoToLocal(db).catch((err) => {
+      console.warn('Startup Turso sync warning:', err.message);
+    });
+  }
+  return initPromise;
 }
 
 function restoreSeedData(dbInstance) {
@@ -248,4 +259,4 @@ if (require.main === module) {
   console.log('✔ SQLite database initialized at', DB_PATH);
 }
 
-module.exports = { getDb, closeDb, audit, DB_PATH, persistUserToSeed, pushToTurso };
+module.exports = { getDb, initDbAsync, closeDb, audit, DB_PATH, persistUserToSeed, pushToTurso };

@@ -58,7 +58,25 @@ export class ApiService {
   deleteCategory(id: number): Observable<void> { return this.http.delete<void>(`/api/categories/${id}`); }
 
   getExpenses(f: Filters, page = 1, pageSize = 200): Observable<ExpensePage> {
-    return this.http.get<ExpensePage>('/api/expenses', { params: this.filterParams(f).set('page', page).set('pageSize', pageSize) });
+    return this.http.get<ExpensePage>('/api/expenses', { params: this.filterParams(f).set('page', page).set('pageSize', pageSize) }).pipe(
+      tap((res) => {
+        try {
+          if (res && res.items && res.items.length) {
+            localStorage.setItem('et.cachedExpenses', JSON.stringify(res));
+          }
+        } catch {}
+      }),
+      catchError((err) => {
+        try {
+          const cached = localStorage.getItem('et.cachedExpenses');
+          if (cached) {
+            const parsed = JSON.parse(cached) as ExpensePage;
+            if (parsed && parsed.items) return of(parsed);
+          }
+        } catch {}
+        return throwError(() => err);
+      })
+    );
   }
   async createExpense(body: { clientUuid?: string; amountCents: number; occurredAt: string; categoryId: number | null; kind: TransactionKind; merchant?: string | null; notes?: string | null; }): Promise<{ id: number; status?: string } | 'queued'> {
     try { return await firstValueFrom(this.http.post<{ id: number; status?: string }>('/api/expenses', body)); }
@@ -72,7 +90,25 @@ export class ApiService {
   saveBudget(body: Record<string, unknown>): Observable<Budget> { return this.http.put<Budget>('/api/budgets', body); }
   deleteBudget(id: number): Observable<void> { return this.http.delete<void>(`/api/budgets/${id}`); }
 
-  getSummary(f: Filters): Observable<SummaryDto> { return this.http.get<SummaryDto>('/api/analytics/summary', { params: this.filterParams(f) }); }
+  getSummary(f: Filters): Observable<SummaryDto> {
+    return this.http.get<SummaryDto>('/api/analytics/summary', { params: this.filterParams(f) }).pipe(
+      tap((sum) => {
+        try {
+          if (sum) localStorage.setItem('et.cachedSummary', JSON.stringify(sum));
+        } catch {}
+      }),
+      catchError((err) => {
+        try {
+          const cached = localStorage.getItem('et.cachedSummary');
+          if (cached) {
+            const parsed = JSON.parse(cached) as SummaryDto;
+            if (parsed) return of(parsed);
+          }
+        } catch {}
+        return throwError(() => err);
+      })
+    );
+  }
   getInsights(f: Filters): Observable<Insights> { return this.http.get<Insights>('/api/analytics/insights', { params: this.filterParams(f) }); }
   getBudgetStatus(f: Filters): Observable<BudgetStatusDto> { return this.http.get<BudgetStatusDto>('/api/analytics/budget-status', { params: this.filterParams({ ...f, kind: 'expense' }) }); }
 

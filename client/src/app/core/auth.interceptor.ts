@@ -1,11 +1,15 @@
 import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { catchError, throwError } from 'rxjs';
+import { catchError, finalize, throwError } from 'rxjs';
+import { KeepAliveService } from './keep-alive.service';
 
-/** Attaches the JWT to every API call and cleans up expired or invalid sessions on 401. */
+/** Attaches the JWT to every API call, tracks cold-start latency, and cleans up expired sessions on 401. */
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const router = inject(Router);
+  const keepAlive = inject(KeepAliveService);
+  const finishReq = req.url.startsWith('/api') && req.url !== '/api/health' ? keepAlive.startRequest() : () => {};
+
   const token = sessionStorage.getItem('et.token') || localStorage.getItem('et.token');
   if (token && req.url.startsWith('/api')) {
     req = req.clone({ setHeaders: { Authorization: `Bearer ${token}` } });
@@ -24,7 +28,8 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
         }
       }
       return throwError(() => err);
-    })
+    }),
+    finalize(() => finishReq())
   );
 };
 

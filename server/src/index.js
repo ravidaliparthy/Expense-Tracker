@@ -79,6 +79,22 @@ function createApp() {
     credentials: true,
   }));
   app.use(express.json({ limit: '1mb' }));
+
+  // Correlation ID & Structured Logging Middleware
+  app.use((req, res, next) => {
+    const start = Date.now();
+    const reqId = req.headers['x-request-id'] || require('crypto').randomUUID();
+    req.id = reqId;
+    res.setHeader('X-Request-Id', reqId);
+    res.on('finish', () => {
+      const ms = Date.now() - start;
+      if (req.path !== '/api/health') {
+        console.log(`[${new Date().toISOString()}] [${reqId.slice(0, 8)}] ${req.method} ${req.originalUrl} ${res.statusCode} ${ms}ms`);
+      }
+    });
+    next();
+  });
+
   app.use('/api', rateLimit);
 
   app.get('/api/health', (_req, res) => res.json({ ok: true, db: 'sqlite', ts: Date.now() }));
@@ -94,17 +110,25 @@ function createApp() {
   app.use((_req, res) => res.status(404).json({ error: 'Not found' }));
 
   // eslint-disable-next-line no-unused-vars
-  app.use((err, _req, res, _next) => {
+  app.use((err, req, res, _next) => {
     const status = err.status || 500;
-    if (status >= 500) console.error(err);
-    res.status(status).json({ error: err.message || 'Server error', details: err.details });
+    if (status >= 500) {
+      console.error(`[ERROR] [${req.id ? req.id.slice(0, 8) : 'sys'}]`, err.stack || err.message);
+    }
+    res.status(status).json({
+      error: err.message || 'Server error',
+      details: err.details,
+      requestId: req.id,
+    });
   });
 
   getDb();                                 // create/open DB at boot (runs migrations + indexes)
   return app;
 }
 
-function startServer(port = PORT) {
+async function startServer(port = PORT) {
+  const { initDbAsync } = require('./db');
+  await initDbAsync();                     // gate incoming requests until cloud sync completes
   const app = createApp();
   const server = app.listen(port, () => {
     console.log(`✔ Expense Tracker API listening on http://localhost:${port} (workers=${WORKERS})`);
