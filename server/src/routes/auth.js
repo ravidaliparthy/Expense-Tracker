@@ -19,6 +19,7 @@ function publicUser(u) {
     id: u.id, email: u.email, displayName: u.displayName,
     baseCurrency: u.baseCurrency, timezone: normalizeTimezone(u.timezone),
     isFirstLogin: !!u.isFirstLogin, createdAt: u.createdAt,
+    hasRecoveryPin: Boolean(u.recovery_pin_hash || u.recoveryPinHash),
   };
 }
 
@@ -53,7 +54,8 @@ router.post('/register', async (req, res, next) => {
     const user = db
       .prepare(
         `SELECT id, email, display_name AS displayName, base_currency AS baseCurrency,
-                timezone, is_first_login AS isFirstLogin, created_at AS createdAt
+                timezone, is_first_login AS isFirstLogin, recovery_pin_hash AS recoveryPinHash,
+                created_at AS createdAt
          FROM users WHERE id = ?`
       )
       .get(userId);
@@ -63,9 +65,9 @@ router.post('/register', async (req, res, next) => {
     persistUserToSeed(rawUser, userCats);
 
     await pushToTurso(
-      `INSERT OR REPLACE INTO users (id, email, password_hash, display_name, base_currency, timezone, is_first_login, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [rawUser.id, rawUser.email, rawUser.password_hash, rawUser.display_name, rawUser.base_currency, rawUser.timezone, rawUser.is_first_login, rawUser.created_at, rawUser.updated_at],
+      `INSERT OR REPLACE INTO users (id, email, password_hash, display_name, base_currency, timezone, is_first_login, recovery_pin_hash, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [rawUser.id, rawUser.email, rawUser.password_hash, rawUser.display_name, rawUser.base_currency, rawUser.timezone, rawUser.is_first_login, rawUser.recovery_pin_hash || null, rawUser.created_at, rawUser.updated_at],
       db
     );
     for (const cat of userCats) {
@@ -89,7 +91,7 @@ router.post('/login', (req, res, next) => {
       .prepare(
         `SELECT id, email, password_hash AS passwordHash, display_name AS displayName,
                 base_currency AS baseCurrency, timezone, is_first_login AS isFirstLogin,
-                created_at AS createdAt
+                recovery_pin_hash AS recoveryPinHash, created_at AS createdAt
          FROM users WHERE email = ? AND deleted_at IS NULL`
       )
       .get(body.email);
@@ -101,22 +103,74 @@ router.post('/login', (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+/**
+ * POST /api/auth/change-password
+ * Authenticated endpoint: allows logged-in user to update their password from Settings.
+ * Requires verifying the existing password for security.
+ */
+router.post('/change-password', requireAuth, async (req, res, next) => {
+  try {
+    const { currentPassword, newPassword } = req.body || {};
+    if (!currentPassword || !newPassword || typeof newPassword !== 'string' || newPassword.length < 8) {
+      return res.status(400).json({ error: 'Current password and new password (min 8 characters) required' });
+    }
+    const db = getDb();
+    const user = db.prepare('SELECT * FROM users WHERE id = ? AND deleted_at IS NULL').get(req.user.id);
+    if (!user || !bcrypt.compareSync(currentPassword, user.password_hash)) {
+      return res.status(401).json({ error: 'Incorrect current password' });
+    }
+    const hash = bcrypt.hashSync(newPassword, 10);
+    db.prepare(`UPDATE users SET password_hash = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?`).run(hash, req.user.id);
+    const updated = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.id);
+    persistUserToSeed(updated);
+    await pushToTurso(`UPDATE users SET password_hash = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?`, [hash, req.user.id], db);
+    res.json({ ok: true, message: 'Password changed successfully' });
+  } catch (err) { next(err); }
+});
+
+/**
+ * POST /api/auth/set-pin
+ * Authenticated endpoint: allows logged-in user to configure or update their Secret Recovery PIN in Settings.
+ */
+router.post('/set-pin', requireAuth, async (req, res, next) => {
+  try {
+    const { pin } = req.body || {};
+    if (!pin || typeof pin !== 'string' || pin.trim().length < 4 || pin.trim().length > 16) {
+      return res.status(400).json({ error: 'Recovery PIN must be between 4 and 16 characters' });
+    }
+    const db = getDb();
+    const pinHash = bcrypt.hashSync(pin.trim(), 10);
+    db.prepare(`UPDATE users SET recovery_pin_hash = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?`).run(pinHash, req.user.id);
+    const updated = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.id);
+    persistUserToSeed(updated);
+    await pushToTurso(`UPDATE users SET recovery_pin_hash = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?`, [pinHash, req.user.id], db);
+    res.json({ ok: true, message: 'Secret recovery PIN saved successfully' });
+  } catch (err) { next(err); }
+});
+
+/**
+ * POST /api/auth/reset-password
+ * Public recovery endpoint: strictly requires the Secret Recovery PIN set in Settings.
+ */
 router.post('/reset-password', async (req, res, next) => {
   try {
-    const { email, newPassword } = req.body || {};
-    if (!email || !newPassword || typeof newPassword !== 'string' || newPassword.length < 8) {
-      return res.status(400).json({ error: 'Valid email and new password (min 8 characters) required' });
+    const { email, recoveryPin, newPassword } = req.body || {};
+    if (!email || !recoveryPin || !newPassword || typeof newPassword !== 'string' || newPassword.length < 8) {
+      return res.status(400).json({ error: 'Email, Secret Recovery PIN, and new password (min 8 characters) required' });
     }
     const db = getDb();
     const user = db.prepare('SELECT * FROM users WHERE email = ? AND deleted_at IS NULL').get(email);
     if (!user) {
       return res.status(404).json({ error: 'No account found with this email' });
     }
+    if (!user.recovery_pin_hash || !bcrypt.compareSync(String(recoveryPin).trim(), user.recovery_pin_hash)) {
+      return res.status(401).json({ error: 'Invalid Secret Recovery PIN. Enter the PIN configured in Settings.' });
+    }
     const hash = bcrypt.hashSync(newPassword, 10);
-    db.prepare('UPDATE users SET password_hash = ?, updated_at = strftime("%Y-%m-%dT%H:%M:%fZ", "now") WHERE id = ?').run(hash, user.id);
+    db.prepare(`UPDATE users SET password_hash = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?`).run(hash, user.id);
     const updated = db.prepare('SELECT * FROM users WHERE id = ?').get(user.id);
     persistUserToSeed(updated);
-    await pushToTurso('UPDATE users SET password_hash = ?, updated_at = strftime("%Y-%m-%dT%H:%M:%fZ", "now") WHERE id = ?', [hash, user.id], db);
+    await pushToTurso(`UPDATE users SET password_hash = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?`, [hash, user.id], db);
     res.json({ token: signToken(updated), user: publicUser(updated), message: 'Password reset successful' });
   } catch (err) { next(err); }
 });

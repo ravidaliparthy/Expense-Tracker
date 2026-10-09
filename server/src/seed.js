@@ -23,11 +23,11 @@ function seedDemoUser(dbInstance, withDemoData = true) {
   let user = db.prepare(`SELECT id FROM users WHERE email = ?`).get('demo@expense.test');
   if (!user) {
     const info = db.prepare(
-      `INSERT INTO users (email, password_hash, display_name, timezone, base_currency, is_first_login)
-       VALUES (?, ?, ?, ?, 'USD', 0)`
-    ).run('demo@expense.test', bcrypt.hashSync('demo1234', 10), 'Demo User', TZ);
+      `INSERT INTO users (email, password_hash, display_name, timezone, base_currency, is_first_login, recovery_pin_hash)
+       VALUES (?, ?, ?, ?, 'USD', 0, ?)`
+    ).run('demo@expense.test', bcrypt.hashSync('demo1234', 10), 'Demo User', TZ, bcrypt.hashSync('demo1234', 10));
     user = { id: info.lastInsertRowid };
-    console.log('✔ Created demo user demo@expense.test / demo1234');
+    console.log('✔ Created demo user demo@expense.test / demo1234 (recovery PIN: demo1234)');
   } else {
     console.log('• Demo user already exists');
   }

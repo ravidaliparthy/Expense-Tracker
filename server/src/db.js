@@ -111,11 +111,17 @@ function persistUserToSeed(user, categories = []) {
 
 function ensureDemoUser() {
   try {
-    const user = db.prepare(`SELECT id FROM users WHERE email = ?`).get('demo@expense.test');
+    const user = db.prepare(`SELECT id, recovery_pin_hash FROM users WHERE email = ?`).get('demo@expense.test');
     if (!user) {
       const { seedDemoUser } = require('./seed');
       seedDemoUser(db, true);
     } else {
+      // Ensure demo account has recovery_pin_hash set (hashed 'demo1234')
+      if (!user.recovery_pin_hash) {
+        const bcrypt = require('bcryptjs');
+        const defaultPinHash = bcrypt.hashSync('demo1234', 10);
+        db.prepare('UPDATE users SET recovery_pin_hash = ? WHERE id = ?').run(defaultPinHash, user.id);
+      }
       // Auto-heal demo account: if visitor wiped demo transactions, restore baseline demo data
       const count = db.prepare(`SELECT COUNT(*) as c FROM expenses WHERE user_id = ? AND deleted_at IS NULL`).get(user.id).c;
       if (count < 10) {
@@ -177,6 +183,10 @@ function migrate() {
   // Profile currency selector: older DB files may not have the user preference.
   if (!userCols.includes('base_currency')) {
     db.exec(`ALTER TABLE users ADD COLUMN base_currency TEXT NOT NULL DEFAULT 'USD'`);
+  }
+  // Secret recovery PIN for password resets (zero external email dependency).
+  if (!userCols.includes('recovery_pin_hash')) {
+    db.exec(`ALTER TABLE users ADD COLUMN recovery_pin_hash TEXT`);
   }
 }
 

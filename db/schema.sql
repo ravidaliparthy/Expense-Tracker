@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS users (
   base_currency  TEXT    NOT NULL DEFAULT 'USD',
   timezone       TEXT    NOT NULL DEFAULT 'UTC',     -- IANA, e.g. 'Asia/Kolkata'
   is_first_login INTEGER NOT NULL DEFAULT 1,         -- drives onboarding (§5)
+  recovery_pin_hash TEXT,
   created_at     TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
   updated_at     TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
   deleted_at     TEXT

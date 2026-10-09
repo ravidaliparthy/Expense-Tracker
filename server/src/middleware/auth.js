@@ -20,11 +20,13 @@ function requireAuth(req, res, next) {
     const user = getDb()
       .prepare(
         `SELECT id, email, display_name AS displayName, base_currency AS baseCurrency,
-                timezone AS timezone, is_first_login AS isFirstLogin, created_at AS createdAt
+                timezone AS timezone, is_first_login AS isFirstLogin,
+                recovery_pin_hash AS recoveryPinHash, created_at AS createdAt
          FROM users WHERE id = ? AND deleted_at IS NULL`
       )
       .get(payload.sub);
     if (!user) return res.status(401).json({ error: 'User not found' });
+    user.hasRecoveryPin = Boolean(user.recoveryPinHash);
     user.timezone = normalizeTimezone(user.timezone);
     req.user = user;
     next();

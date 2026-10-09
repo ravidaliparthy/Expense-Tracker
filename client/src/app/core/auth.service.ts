@@ -46,12 +46,28 @@ export class AuthService {
     this.persist(res);
   }
 
-  async resetPassword(email: string, newPassword: string): Promise<void> {
+  async resetPassword(email: string, recoveryPin: string, newPassword: string): Promise<void> {
     const res = await firstValueFrom(
       this.http.post<{ token: string; user: User }>('/api/auth/reset-password',
-        { email, newPassword })
+        { email, recoveryPin, newPassword })
     );
     this.persist(res);
+  }
+
+  async changePassword(currentPassword: string, newPassword: string): Promise<void> {
+    await firstValueFrom(
+      this.http.post<{ ok: boolean; message: string }>('/api/auth/change-password',
+        { currentPassword, newPassword })
+    );
+  }
+
+  async setRecoveryPin(pin: string): Promise<void> {
+    await firstValueFrom(
+      this.http.post<{ ok: boolean; message: string }>('/api/auth/set-pin',
+        { pin })
+    );
+    const u = this._user();
+    if (u) { this.setUser({ ...u, hasRecoveryPin: true }); }
   }
 
   async completeOnboarding(): Promise<void> {

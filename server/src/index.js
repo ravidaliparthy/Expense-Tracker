@@ -59,9 +59,23 @@ function createApp() {
   const app = express();
   app.set('trust proxy', 1);                          // real client IPs behind nginx/LB
   app.use(helmet());
+  const DEFAULT_ALLOWED_ORIGINS = [
+    'http://localhost:4200',
+    'http://127.0.0.1:4200',
+    'https://expense-tracker-ochre-eight-80.vercel.app',
+  ];
   const corsOrigin = process.env.CORS_ORIGIN;
+  const allowedOrigins = corsOrigin && corsOrigin !== '*'
+    ? corsOrigin.split(',').map((s) => s.trim())
+    : DEFAULT_ALLOWED_ORIGINS;
+
   app.use(cors({
-    origin: corsOrigin ? (corsOrigin === '*' ? true : corsOrigin.split(',').map((s) => s.trim())) : true,
+    origin: (origin, callback) => {
+      if (!origin || corsOrigin === '*' || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error(`Not allowed by CORS: ${origin}`));
+    },
     credentials: true,
   }));
   app.use(express.json({ limit: '1mb' }));

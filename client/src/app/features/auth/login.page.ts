@@ -26,6 +26,11 @@ import { AuthService } from '../../core/auth.service';
           </ng-container>
           <label>Email</label>
           <input name="email" type="email" [(ngModel)]="email" required placeholder="you@company.com" />
+          <ng-container *ngIf="mode() === 'forgot'">
+            <label>Secret Recovery PIN</label>
+            <input name="recoveryPin" type="password" [(ngModel)]="recoveryPin" required
+                   placeholder="PIN configured in Settings (demo: demo1234)" />
+          </ng-container>
           <label>{{ mode() === 'forgot' ? 'New password' : 'Password' }}</label>
           <input name="password" type="password" [(ngModel)]="password" required minlength="8"
                  placeholder="At least 8 characters" />
@@ -77,7 +82,7 @@ export class LoginPage {
   busy = signal(false);
   error = signal('');
 
-  email = ''; password = ''; displayName = '';
+  email = ''; password = ''; displayName = ''; recoveryPin = '';
   timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
   timezones = [this.timezone, 'UTC', 'America/New_York', 'America/Los_Angeles',
                'Europe/London', 'Asia/Kolkata', 'Asia/Tokyo', 'Australia/Sydney'];
@@ -98,7 +103,12 @@ export class LoginPage {
     }
   }
 
-  fillDemo(): void { this.setMode('login'); this.email = 'demo@expense.test'; this.password = 'demo1234'; }
+  fillDemo(): void {
+    this.setMode('login');
+    this.email = 'demo@expense.test';
+    this.password = 'demo1234';
+    this.recoveryPin = 'demo1234';
+  }
 
   async submit(): Promise<void> {
     this.busy.set(true);
@@ -109,7 +119,7 @@ export class LoginPage {
       } else if (this.mode() === 'register') {
         await this.auth.register(this.email, this.password, this.displayName, this.timezone);
       } else {
-        await this.auth.resetPassword(this.email, this.password);
+        await this.auth.resetPassword(this.email, this.recoveryPin, this.password);
       }
       const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') || '/dashboard';
       void this.router.navigateByUrl(returnUrl);

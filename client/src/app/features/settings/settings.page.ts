@@ -25,38 +25,134 @@ const COMMON_TIMEZONES = [
   imports: [CommonModule, FormsModule],
   template: `
     <h1>Settings</h1>
-    <p class="lede">Choose your preferred display currency and timezone. New transactions and budgets use this currency; historical rows keep their stored currency for integrity.</p>
+    <p class="lede">Manage your regional preferences, currency, account credentials, and secret recovery key.</p>
+    
     <div class="flash {{ f.type }}" *ngIf="flash as f">{{ f.text }}</div>
-    <div class="card form">
-      <label for="settings-displayName">Display name</label>
-      <input id="settings-displayName" name="displayName" [(ngModel)]="displayName" />
 
-      <label for="settings-baseCurrency">Base currency</label>
-      <select id="settings-baseCurrency" name="baseCurrency" [(ngModel)]="baseCurrency">
-        <option *ngFor="let c of currencies" [value]="c">{{ c }}</option>
-      </select>
+    <div class="settings-grid">
+      <!-- General Preferences -->
+      <div class="card form">
+        <div class="card-header">
+          <span class="card-icon">⚙️</span>
+          <div>
+            <h2 class="card-title">Preferences</h2>
+            <p class="card-subtitle">Display currency and timezone configuration</p>
+          </div>
+        </div>
 
-      <label for="settings-timezone">Timezone</label>
-      <select id="settings-timezone" name="timezone" [(ngModel)]="timezone">
-        <option *ngFor="let tz of timezones" [value]="tz.value">{{ tz.label }}</option>
-      </select>
+        <label for="settings-displayName">Display name</label>
+        <input id="settings-displayName" name="displayName" [(ngModel)]="displayName" />
 
-      <div class="modal-actions">
-        <button class="btn-primary" (click)="save()" [disabled]="saving">Save settings</button>
+        <label for="settings-baseCurrency">Base currency</label>
+        <select id="settings-baseCurrency" name="baseCurrency" [(ngModel)]="baseCurrency">
+          <option *ngFor="let c of currencies" [value]="c">{{ c }}</option>
+        </select>
+
+        <label for="settings-timezone">Timezone</label>
+        <select id="settings-timezone" name="timezone" [(ngModel)]="timezone">
+          <option *ngFor="let tz of timezones" [value]="tz.value">{{ tz.label }}</option>
+        </select>
+
+        <div class="modal-actions">
+          <button class="btn-primary" (click)="save()" [disabled]="saving">Save preferences</button>
+        </div>
+      </div>
+
+      <!-- Security & Password -->
+      <div class="card form">
+        <div class="card-header">
+          <span class="card-icon">🔒</span>
+          <div>
+            <h2 class="card-title">Change Password</h2>
+            <p class="card-subtitle">Update your account login password</p>
+          </div>
+        </div>
+
+        <label for="settings-currentPass">Current password</label>
+        <input id="settings-currentPass" type="password" name="currentPassword" [(ngModel)]="currentPassword" placeholder="Enter current password" />
+
+        <label for="settings-newPass">New password</label>
+        <input id="settings-newPass" type="password" name="newPassword" [(ngModel)]="newPassword" placeholder="Minimum 8 characters" />
+
+        <label for="settings-confirmPass">Confirm new password</label>
+        <input id="settings-confirmPass" type="password" name="confirmPassword" [(ngModel)]="confirmPassword" placeholder="Re-enter new password" />
+
+        <div class="modal-actions">
+          <button class="btn-primary" (click)="changePassword()" [disabled]="changingPass">Update password</button>
+        </div>
+      </div>
+
+      <!-- Secret Recovery PIN Setup -->
+      <div class="card form">
+        <div class="card-header">
+          <span class="card-icon">🔑</span>
+          <div>
+            <h2 class="card-title">Secret Recovery PIN</h2>
+            <p class="card-subtitle">Zero-dependency password recovery key</p>
+          </div>
+        </div>
+
+        <div class="pin-status" [class.configured]="auth.user()?.hasRecoveryPin">
+          <span *ngIf="auth.user()?.hasRecoveryPin">✔ Recovery PIN is active & secured (bcrypt hashed)</span>
+          <span *ngIf="!auth.user()?.hasRecoveryPin">⚠️ No Recovery PIN set — configure one to enable self-recovery</span>
+        </div>
+
+        <p class="pin-desc">This secret PIN is required to reset your password if you are ever locked out, replacing third-party email dependencies with cryptographic privacy.</p>
+
+        <label for="settings-recoveryPin">Secret PIN (4–16 digits or characters)</label>
+        <input id="settings-recoveryPin" type="password" name="recoveryPin" [(ngModel)]="recoveryPin" placeholder="e.g. 849201 or secret-phrase" />
+
+        <div class="modal-actions">
+          <button class="btn-secondary" (click)="savePin()" [disabled]="savingPin">Save recovery PIN</button>
+        </div>
       </div>
     </div>
   `,
-  styles: [`.lede{color:#64748B;margin-top:0;max-width:700px}.form{max-width:480px}`]
+  styles: [`
+    .lede { color: #64748B; margin-top: 0; max-width: 700px; margin-bottom: 24px; }
+    .settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; align-items: start; }
+    .card { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; padding: 24px; }
+    .card-header { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
+    .card-icon { font-size: 24px; }
+    .card-title { margin: 0; font-size: 1.15rem; font-weight: 600; color: #F8FAFC; }
+    .card-subtitle { margin: 2px 0 0; font-size: 0.8rem; color: #94A3B8; }
+    label { display: block; font-size: 0.85rem; font-weight: 500; color: #CBD5E1; margin-top: 14px; margin-bottom: 6px; }
+    input, select { width: 100%; box-sizing: border-box; padding: 10px 14px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px; color: #F8FAFC; font-size: 0.95rem; }
+    input:focus, select:focus { outline: none; border-color: #3B82F6; }
+    .modal-actions { margin-top: 24px; display: flex; justify-content: flex-end; }
+    .btn-primary { background: #2563EB; color: #FFFFFF; border: none; border-radius: 8px; padding: 10px 18px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+    .btn-primary:hover { background: #1D4ED8; }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-secondary { background: rgba(255, 255, 255, 0.1); color: #F8FAFC; border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 8px; padding: 10px 18px; font-weight: 600; cursor: pointer; }
+    .btn-secondary:hover { background: rgba(255, 255, 255, 0.18); }
+    .btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .pin-status { padding: 10px 14px; border-radius: 8px; font-size: 0.85rem; margin-bottom: 12px; background: rgba(234, 179, 8, 0.15); color: #FDE047; border: 1px solid rgba(234, 179, 8, 0.3); }
+    .pin-status.configured { background: rgba(34, 197, 94, 0.15); color: #86EFAC; border-color: rgba(34, 197, 94, 0.3); }
+    .pin-desc { font-size: 0.82rem; color: #94A3B8; line-height: 1.4; margin: 0 0 14px; }
+    .flash { padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; font-size: 0.9rem; font-weight: 500; }
+    .flash.ok { background: rgba(34, 197, 94, 0.2); color: #86EFAC; border: 1px solid rgba(34, 197, 94, 0.4); }
+    .flash.err { background: rgba(239, 68, 68, 0.2); color: #FCA5A5; border: 1px solid rgba(239, 68, 68, 0.4); }
+  `]
 })
 export class SettingsPage {
   readonly auth = inject(AuthService);
   readonly currencies = CURRENCIES;
   readonly timezones = COMMON_TIMEZONES;
+
   saving = false;
+  changingPass = false;
+  savingPin = false;
   flash: { type: string; text: string } | null = null;
+
   displayName = this.auth.user()?.displayName || '';
   baseCurrency = this.auth.user()?.baseCurrency || 'USD';
   timezone = this.auth.user()?.timezone || 'Asia/Kolkata';
+
+  currentPassword = '';
+  newPassword = '';
+  confirmPassword = '';
+
+  recoveryPin = '';
 
   async save(): Promise<void> {
     try {
@@ -66,11 +162,60 @@ export class SettingsPage {
         baseCurrency: this.baseCurrency,
         timezone: this.timezone,
       });
-      this.flash = { type: 'ok', text: 'Settings saved — updated across the dashboard' };
+      this.flash = { type: 'ok', text: 'Preferences saved — updated across the dashboard' };
     } catch {
-      this.flash = { type: 'err', text: 'Could not save settings' };
+      this.flash = { type: 'err', text: 'Could not save preferences' };
     } finally {
       this.saving = false;
+    }
+  }
+
+  async changePassword(): Promise<void> {
+    if (!this.currentPassword || !this.newPassword) {
+      this.flash = { type: 'err', text: 'Please fill in current and new password' };
+      return;
+    }
+    if (this.newPassword.length < 8) {
+      this.flash = { type: 'err', text: 'New password must be at least 8 characters' };
+      return;
+    }
+    if (this.newPassword !== this.confirmPassword) {
+      this.flash = { type: 'err', text: 'New passwords do not match' };
+      return;
+    }
+
+    try {
+      this.changingPass = true;
+      await this.auth.changePassword(this.currentPassword, this.newPassword);
+      this.flash = { type: 'ok', text: 'Password successfully updated' };
+      this.currentPassword = '';
+      this.newPassword = '';
+      this.confirmPassword = '';
+    } catch (err: any) {
+      const msg = err?.error?.error || 'Failed to update password. Check your current password.';
+      this.flash = { type: 'err', text: msg };
+    } finally {
+      this.changingPass = false;
+    }
+  }
+
+  async savePin(): Promise<void> {
+    const trimmed = this.recoveryPin.trim();
+    if (trimmed.length < 4 || trimmed.length > 16) {
+      this.flash = { type: 'err', text: 'Recovery PIN must be between 4 and 16 characters' };
+      return;
+    }
+
+    try {
+      this.savingPin = true;
+      await this.auth.setRecoveryPin(trimmed);
+      this.flash = { type: 'ok', text: 'Secret Recovery PIN saved and secured' };
+      this.recoveryPin = '';
+    } catch (err: any) {
+      const msg = err?.error?.error || 'Failed to save Secret Recovery PIN';
+      this.flash = { type: 'err', text: msg };
+    } finally {
+      this.savingPin = false;
     }
   }
 }

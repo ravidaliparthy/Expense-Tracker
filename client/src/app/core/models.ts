@@ -1,4 +1,4 @@
-﻿export type TransactionKind = 'expense' | 'income';
+export type TransactionKind = 'expense' | 'income';
 export type KindFilter = 'all' | TransactionKind;
 
 export interface User {
@@ -8,6 +8,7 @@ export interface User {
   baseCurrency: string;
   timezone: string;
   isFirstLogin: boolean;
+  hasRecoveryPin?: boolean;
 }
 
 export interface Category {

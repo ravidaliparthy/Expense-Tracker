@@ -132,6 +132,55 @@ async function runTests() {
       assert.strictEqual(res.body.user.id, userId);
     });
 
+    await test('POST /auth/change-password validates current password before updating', async () => {
+      const wrong = await request('/auth/change-password', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${authToken}` },
+        body: { currentPassword: 'WrongOldPassword', newPassword: 'NewPassword123!' },
+      });
+      assert.strictEqual(wrong.status, 401);
+
+      const ok = await request('/auth/change-password', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${authToken}` },
+        body: { currentPassword: 'Password123!', newPassword: 'NewPassword123!' },
+      });
+      assert.strictEqual(ok.status, 200);
+      assert.strictEqual(ok.body.ok, true);
+    });
+
+    await test('POST /auth/set-pin saves secret recovery PIN in Settings', async () => {
+      const res = await request('/auth/set-pin', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${authToken}` },
+        body: { pin: '849201' },
+      });
+      assert.strictEqual(res.status, 200);
+      assert.strictEqual(res.body.ok, true);
+    });
+
+    await test('POST /auth/reset-password enforces secret recovery PIN verification', async () => {
+      const fail = await request('/auth/reset-password', {
+        method: 'POST',
+        body: { email: testEmail, recoveryPin: '000000', newPassword: 'ResetPassword123!' },
+      });
+      assert.strictEqual(fail.status, 401);
+
+      const success = await request('/auth/reset-password', {
+        method: 'POST',
+        body: { email: testEmail, recoveryPin: '849201', newPassword: 'ResetPassword123!' },
+      });
+      assert.strictEqual(success.status, 200);
+      assert.ok(success.body.token);
+
+      const login = await request('/auth/login', {
+        method: 'POST',
+        body: { email: testEmail, password: 'ResetPassword123!' },
+      });
+      assert.strictEqual(login.status, 200);
+      authToken = login.body.token;
+    });
+
     // 3. Categories
     let categoryId = null;
     await test('GET /categories lists seeded system categories', async () => {

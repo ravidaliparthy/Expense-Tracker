@@ -6,8 +6,8 @@
  */
 const { createClient } = require('@libsql/client');
 
-const TURSO_URL = process.env.TURSO_DATABASE_URL || 'libsql://expense-tracker-ravidaliparthy.aws-us-east-2.turso.io';
-const TURSO_AUTH_TOKEN = process.env.TURSO_AUTH_TOKEN || 'eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3OTE1MTg1NjMsImlkIjoiMDFhMTFlZDEtZWMwMS03YTY5LWJkMDgtNDQwNTQwZDFkMjVhIiwia2lkIjoickhrc1NjRXBXaTJCMVlIWDVyMEFwOEFIckZUN2JBNlJEdGg3NkN4NUdmQSIsInJpZCI6ImFkMjBiZWY0LTZlZmEtNDlkMy05OTBmLTYyZDAxOWUwOGJkNSJ9.YJNqPAstgraoKT9SgsWxAafbCEHg7HLn0hEXZArsH4bQsTvY9FDSkaPOcCqvuPELA7ajhoFSaQNrLNNjb7ceDA';
+const TURSO_URL = process.env.TURSO_DATABASE_URL || '';
+const TURSO_AUTH_TOKEN = process.env.TURSO_AUTH_TOKEN || '';
 
 let tursoClient = null;
 
@@ -41,12 +41,12 @@ async function syncFromTursoToLocal(db) {
     // 1. Sync Users
     const usersRes = await client.execute('SELECT * FROM users');
     const insertUser = db.prepare(`
-      INSERT OR REPLACE INTO users (id, email, password_hash, display_name, base_currency, timezone, is_first_login, created_at, updated_at, deleted_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT OR REPLACE INTO users (id, email, password_hash, display_name, base_currency, timezone, is_first_login, recovery_pin_hash, created_at, updated_at, deleted_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     const importUsers = db.transaction((rows) => {
       for (const u of rows) {
-        insertUser.run(u.id, u.email, u.password_hash, u.display_name, u.base_currency, u.timezone, u.is_first_login, u.created_at, u.updated_at, u.deleted_at);
+        insertUser.run(u.id, u.email, u.password_hash, u.display_name, u.base_currency, u.timezone, u.is_first_login, u.recovery_pin_hash || null, u.created_at, u.updated_at, u.deleted_at);
       }
     });
     importUsers(usersRes.rows);

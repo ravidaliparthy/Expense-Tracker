@@ -56,15 +56,15 @@ The system employs a **Decoupled 4-Tier Hybrid Cloud Architecture** engineered f
 │           🖥️ APPLICATION & COMPUTE TIER (Render Web Service)            │
 │   Node.js & Express REST API (Ohio - US East)                          │
 │   Helmet Security · JWT Auth · Zod Schema Validation · Audit Logs      │
-│   Local In-Process SQLite Cache (better-sqlite3 WAL Mode - 0ms reads)  │
+│   Local In-Process SQLite Cache (better-sqlite3 WAL Mode)              │
 └───────────────────────────────────┬────────────────────────────────────┘
-                                    │ Sub-2ms Internal VPC Network (Ohio)
+                                    │ Co-located AWS US East (Ohio) Network
                                     ▼
 ┌────────────────────────────────────────────────────────────────────────┐
 │           ☁️ CLOUD PERSISTENCE TIER (Turso Cloud Database)              │
 │   Distributed libSQL Cloud Database (AWS us-east-2 Ohio)               │
 │   Permanent Storage · Immune to Container Restarts / Sleep Cycles     │
-│   Real-Time Bidirectional Sync · Multi-User Isolation                  │
+│   Write-Through & Boot Hydration Sync · Multi-User Isolation           │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -287,7 +287,7 @@ Tap the **✨ Tour** button in the header at any time to launch a 7-step interac
 ## 🚀 Key Features
 
 * **Progressive Web App (PWA)**: Installable, full-screen standalone mobile experience with high-resolution app icons.
-* **Hybrid Cloud Persistence**: In-memory/disk SQLite for 0ms reads + Turso Cloud (libSQL) for permanent multi-device sync.
+* **Hybrid Cloud Persistence**: In-process SQLite for sub-millisecond local reads + Turso Cloud (libSQL) for permanent multi-device sync.
 * **Offline-First Resilience**: Log expenses offline; automatic background batch synchronization with idempotent UUIDs.
 * **Dynamic 10-Year Rolling Horizon**: Auto-updating rolling calendar horizon dynamically recalculating from system clock.
 * **High-Precision Financial Engine**: All monetary calculations execute with integer cents (`amount_cents`) to eliminate IEEE-754 floating-point inaccuracies.
@@ -323,16 +323,16 @@ Tap the **✨ Tour** button in the header at any time to launch a 7-step interac
 
 ### 2. Setup & Execution
 
-```powershell
+```bash
 # ── Terminal 1: Backend (Port 3001) ─────────────────────────────
-cd "expense tracker\server"
+cd server
 npm install
 npm run db:init            # Applies schema (idempotent, safe to rerun)
 npm run db:seed            # Seeds demo user + system categories
 npm start                  # ✔ Expense Tracker API listening on http://localhost:3001
 
 # ── Terminal 2: Frontend (Port 4200) ────────────────────────────
-cd "expense tracker\client"
+cd client
 npm install
 npm start                  # ✔ Compiled successfully → open http://localhost:4200
 ```
@@ -452,7 +452,7 @@ users 1───* categories 1───* expenses *───1 categories (ON DEL
 3. Environment Variables:
    - `NODE_ENV`: `production`
    - `JWT_SECRET`: *(32+ character random string)*
-   - `CORS_ORIGIN`: `*`
+   - `CORS_ORIGIN`: `https://expense-tracker-ochre-eight-80.vercel.app,http://localhost:4200`
    - `TURSO_DATABASE_URL`: `libsql://expense-tracker-ravidaliparthy.aws-us-east-2.turso.io`
    - `TURSO_AUTH_TOKEN`: *(Your Turso JWT auth token)*
 
@@ -463,20 +463,20 @@ users 1───* categories 1───* expenses *───1 categories (ON DEL
    - **Root Directory**: `client`
    - **Build Command**: `npm run build`
    - **Output Directory**: `dist/client`
-3. The repository includes [`client/vercel.json`](file:///c:/Users/Ravi%20Daliparthy/Desktop/expense%20tracker/client/vercel.json) pre-configured to proxy `/api/*` requests to Render with zero CORS issues.
+3. The repository includes [`vercel.json`](vercel.json) at root and [`client/vercel.json`](client/vercel.json) pre-configured to proxy `/api/*` requests to Render with zero CORS issues.
 
 ---
 
 ## 🧪 Verification & Automated Test Suites
 
-All components are rigorously tested with automated test suites:
+All components are covered with automated test suites:
 
 | Suite | Command | Passing Tests | Validated Features |
 |---|---|---|---|
 | **Client Unit Tests** | `npm test` in `client` | ✅ **13 of 13 PASS** | AuthService, FilterService, OfflineQueueService, BudgetStatus tier math |
-| **Server Integration Tests** | `npm test` in `server` | ✅ **21 of 21 PASS** | Auth, Categories, Expenses, Budgets, Analytics, Export, Sync, Rate limiting |
-| **Production Build** | `npm run build` in `client` | ✅ **0 ERRORS** | Tree-shaken, gzipped production bundle (~86 kB initial transfer) |
-| **Turso Cloud Persistence** | Live libSQL verification | ✅ **VERIFIED** | Cloud schema applied, multi-user records hydrated, instant background push |
+| **Server Integration Tests** | `npm test` in `server` | ✅ **24 of 24 PASS** | Auth, PIN recovery, Categories, Expenses, Budgets, Analytics, Export, Sync, Rate limiting |
+| **Production Build** | `npm run build` in `client` | ✅ **0 ERRORS** | Tree-shaken, gzipped production bundle (~93 kB initial transfer) |
+| **Turso Cloud Persistence** | Live libSQL verification | ✅ **VERIFIED** | Cloud schema applied, multi-user records hydrated, instant write-through push |
 
 ---
 
@@ -520,11 +520,38 @@ expense-tracker/
                 ├── transactions/transactions.page.ts ← Dedicated transaction manager with sort/search
                 ├── onboarding/onboarding-overlay.component.ts ← 7-step interactive coach mark tour
                 ├── categories/categories.page.ts    ← Custom categories with emoji picker & color swatches
-                └── budgets/budgets.page.ts          ← Monthly/yearly budgets with interactive gauges
+                ├── budgets/budgets.page.ts          ← Monthly/yearly budgets with interactive gauges
+                └── settings/settings.page.ts        ← Preferences, password change, and secret recovery PIN setup
 ```
+
+---
+
+## ⚖️ Known Limitations & Architectural Tradeoffs
+
+Every engineering architecture makes deliberate tradeoffs. Here are the operational boundaries of this design:
+
+1. **Boot Hydration Scale Ceiling ($O(N)$ Memory Limit)**:
+   - On cold start, `syncFromTursoToLocal` pulls active records from Turso into the local SQLite WAL cache.
+   - *Boundary*: Optimized for demo, portfolio, and personal scale ($<10,000$ transactions). At multi-tenant enterprise volume, cold-start hydration would exceed Render's 50-second health check timeout. A high-scale system would query Turso directly or use streaming windowed hydration.
+
+2. **Single-Node Compute Model**:
+   - The in-process SQLite cache assumes a single container instance.
+   - *Boundary*: Scaling out to multiple concurrent Render containers would cause local SQLite caches to diverge unless backed by distributed Turso embedded replicas or direct cloud queries.
+
+3. **Ephemeral Disk Durability Boundary**:
+   - Write mutations are write-through awaited to Turso cloud storage before returning success to the client.
+   - *Edge Case*: If Turso experiences transient network downtime during a write, mutations fall back to the local `turso_outbox` table. Because Render free-tier disks are ephemeral, a container restart occurring during an ongoing cloud outage would wipe unstaged outbox rows.
+
+4. **Token Storage & Single-Origin Boundaries**:
+   - JWT tokens are stored in browser `localStorage` and `sessionStorage`.
+   - *Security Note*: In decoupled cross-domain environments (Vercel frontend communicating with Render backend), `localStorage` is standard to prevent third-party cookie blocking. In unified domain environments, migrating to `httpOnly; SameSite=Strict` cookies with short-lived tokens and refresh rotation is recommended.
+
+5. **Self-Recovery PIN vs. Email Providers**:
+   - Password recovery uses a cryptographically hashed (bcrypt) Secret Recovery PIN configured in Settings rather than transactional emails.
+   - *Tradeoff*: Eliminates third-party email provider dependencies (SendGrid/Resend API quotas, SPF/DKIM DNS configuration) while eliminating unauthenticated account-takeover vulnerabilities.
 
 ---
 
 ## 📄 License
 
-This project is licensed under the **MIT License**. Free for personal and commercial use.
+This project is licensed under the **MIT License**. Free for personal and commercial use. See [`LICENSE`](LICENSE) for details.
