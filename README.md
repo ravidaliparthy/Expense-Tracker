@@ -169,8 +169,11 @@ Honest engineering involves understanding and documenting architectural tradeoff
    - *Production Evolution*: For multi-instance scaling, the straightforward progression is to query Turso Cloud directly via `@libsql/client`, removing the dual-cache layer entirely.
 
 2. **Session Authentication: `localStorage` vs. `httpOnly` Cookies**:
-   - *Current Design*: JWT access tokens are stored in `localStorage` to enable seamless offline PWA functionality.
-   - *Tradeoff*: Tokens in `localStorage` are accessible to JavaScript and vulnerable to Cross-Site Scripting (XSS), whereas `httpOnly` cookies protect against XSS but require custom Service Worker cookie routing for offline-first PWAs.
+   - *Current Design*: JWT access tokens are stored in `localStorage` and dispatched via standard `Authorization: Bearer` headers.
+   - *Architectural Rationale*:
+     1. **Cross-Origin Free-Tier Isolation**: The client (`*.vercel.app`) and API server (`*.onrender.com`) reside on distinct eTLD+1 domains. Storing auth in `httpOnly` cookies classifies them as third-party cross-site cookies, which modern privacy engines (Safari ITP, Firefox ETP, Chrome Privacy Sandbox) block by default without a paid custom apex domain.
+     2. **Offline-First PWA Hydration**: Enables the client to inspect JWT payload claims (`userId`, `exp`) and render cached offline views instantly during airplane-mode boot without network roundtrips.
+   - *Tradeoff & Mitigation*: `localStorage` is accessible to JavaScript if an XSS vulnerability exists. This is mitigated by Angular's strict built-in context-aware DOM sanitization (`DomSanitizer`), parameter-free HTML binding, and zero dynamic `eval` or unsafe HTML injections across the codebase.
 
 3. **Public Demo Account Hygiene (`demo@expense.test`)**:
    - *Current Design*: The demo account is fully interactive, allowing recruiters and visitors to add and edit records.
