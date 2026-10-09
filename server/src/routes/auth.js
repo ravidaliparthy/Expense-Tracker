@@ -1,7 +1,7 @@
 'use strict';
 const express = require('express');
 const bcrypt = require('bcryptjs');
-const { getDb, audit, persistUserToSeed } = require('../db');
+const { getDb, audit, persistUserToSeed, pushToTurso } = require('../db');
 const { signToken, requireAuth } = require('../middleware/auth');
 const { validate, registerSchema, loginSchema, profileSchema } = require('../lib/validate');
 const { normalizeTimezone } = require('../lib/time');
@@ -62,6 +62,19 @@ router.post('/register', (req, res, next) => {
     const userCats = db.prepare(`SELECT * FROM categories WHERE user_id = ?`).all(userId);
     persistUserToSeed(rawUser, userCats);
 
+    pushToTurso(
+      `INSERT OR REPLACE INTO users (id, email, password_hash, display_name, base_currency, timezone, is_first_login, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [rawUser.id, rawUser.email, rawUser.password_hash, rawUser.display_name, rawUser.base_currency, rawUser.timezone, rawUser.is_first_login, rawUser.created_at, rawUser.updated_at]
+    );
+    for (const cat of userCats) {
+      pushToTurso(
+        `INSERT OR REPLACE INTO categories (id, user_id, name, color_hex, icon, is_system, is_archived, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [cat.id, cat.user_id, cat.name, cat.color_hex, cat.icon, cat.is_system, cat.is_archived, cat.created_at, cat.updated_at]
+      );
+    }
+
     res.status(201).json({ token: signToken(user), user: publicUser(user) });
   } catch (err) { next(err); }
 });
@@ -101,6 +114,7 @@ router.post('/reset-password', (req, res, next) => {
     db.prepare('UPDATE users SET password_hash = ?, updated_at = strftime("%Y-%m-%dT%H:%M:%fZ", "now") WHERE id = ?').run(hash, user.id);
     const updated = db.prepare('SELECT * FROM users WHERE id = ?').get(user.id);
     persistUserToSeed(updated);
+    pushToTurso('UPDATE users SET password_hash = ?, updated_at = strftime("%Y-%m-%dT%H:%M:%fZ", "now") WHERE id = ?', [hash, user.id]);
     res.json({ token: signToken(updated), user: publicUser(updated), message: 'Password reset successful' });
   } catch (err) { next(err); }
 });
@@ -129,6 +143,7 @@ router.patch('/profile', requireAuth, (req, res, next) => {
     ).get(req.user.id);
     const rawUser = db.prepare(`SELECT * FROM users WHERE id = ?`).get(req.user.id);
     if (rawUser) persistUserToSeed(rawUser);
+    pushToTurso(`UPDATE users SET ${sets.join(', ')} WHERE id = ?`, [...args, req.user.id]);
     res.json({ user: publicUser(user) });
   } catch (err) { next(err); }
 });

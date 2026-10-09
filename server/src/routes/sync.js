@@ -6,6 +6,7 @@ const { getDb, audit } = require('../db');
 const { requireAuth } = require('../middleware/auth');
 const { validate } = require('../lib/validate');
 const { resolveInstant } = require('../lib/time');
+const { pushToTurso } = require('../lib/turso');
 
 const router = express.Router();
 router.use(requireAuth);
@@ -128,8 +129,36 @@ router.post('/batch', (req, res, next) => {
     });
 
     for (const m of body.mutations) {
-      try { results.push(apply(m)); }
-      catch (e) { results.push({ clientUuid: m.clientUuid, status: 'error', error: e.message }); }
+      try {
+        const resItem = apply(m);
+        results.push(resItem);
+
+        if (resItem.status === 'created' || resItem.status === 'updated') {
+          const row = db.prepare(`SELECT * FROM expenses WHERE id = ?`).get(resItem.id);
+          if (row) {
+            pushToTurso(
+              `INSERT OR REPLACE INTO expenses (id, user_id, category_id, category_name_snapshot, category_color_snapshot, category_icon_snapshot, amount_cents, currency, kind, occurred_at_utc, local_date, tz_offset_minutes, merchant, notes, receipt_url, client_uuid, sync_version, created_at, updated_at, deleted_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+              [
+                row.id, row.user_id, row.category_id, row.category_name_snapshot, row.category_color_snapshot,
+                row.category_icon_snapshot, row.amount_cents, row.currency, row.kind, row.occurred_at_utc,
+                row.local_date, row.tz_offset_minutes, row.merchant, row.notes, row.receipt_url,
+                row.client_uuid, row.sync_version, row.created_at, row.updated_at, row.deleted_at
+              ]
+            );
+          }
+        } else if (resItem.status === 'deleted') {
+          const row = db.prepare(`SELECT * FROM expenses WHERE user_id = ? AND client_uuid = ?`).get(req.user.id, m.clientUuid);
+          if (row) {
+            pushToTurso(
+              `UPDATE expenses SET deleted_at = ?, updated_at = ? WHERE id = ?`,
+              [row.deleted_at, row.updated_at, row.id]
+            );
+          }
+        }
+      } catch (e) {
+        results.push({ clientUuid: m.clientUuid, status: 'error', error: e.message });
+      }
     }
     audit(req.user.id, 'expense', 0, 'update', { syncBatch: results.length });
 

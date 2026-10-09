@@ -14,6 +14,8 @@ const SEED_DATA_PATH = fs.existsSync(path.join(ROOT, 'db', 'seed-data.json'))
       ? path.join(__dirname, '..', 'seed-data.json')
       : (fs.existsSync(path.join(__dirname, 'seed-data.json')) ? path.join(__dirname, 'seed-data.json') : path.join(ROOT, 'db', 'seed-data.json')));
 
+const { syncFromTursoToLocal, pushToTurso } = require('./lib/turso');
+
 let db = null;
 
 function init() {
@@ -23,6 +25,7 @@ function init() {
   migrate();                                               // idempotent ALTERs for older DBs
   restoreSeedData(db);
   ensureDemoUser();
+  syncFromTursoToLocal(db).catch(err => console.warn('Background Turso sync:', err.message));
   return db;
 }
 
@@ -214,4 +217,4 @@ if (require.main === module) {
   console.log('✔ SQLite database initialized at', DB_PATH);
 }
 
-module.exports = { getDb, closeDb, audit, DB_PATH, persistUserToSeed };
+module.exports = { getDb, closeDb, audit, DB_PATH, persistUserToSeed, pushToTurso };

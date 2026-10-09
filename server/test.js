@@ -1,4 +1,5 @@
 'use strict';
+process.env.NODE_ENV = 'test';
 const http = require('http');
 const assert = require('assert');
 const { createApp } = require('./src/index');

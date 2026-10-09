@@ -1,6 +1,6 @@
 'use strict';
 const express = require('express');
-const { getDb, audit } = require('../db');
+const { getDb, audit, pushToTurso } = require('../db');
 const { requireAuth } = require('../middleware/auth');
 const { validate, categoryCreateSchema, categoryPatchSchema } = require('../lib/validate');
 
@@ -38,6 +38,14 @@ router.post('/', (req, res, next) => {
     ).run(req.user.id, body.name, body.colorHex, body.icon ?? null);
 
     audit(req.user.id, 'category', info.lastInsertRowid, 'create', body);
+    const catRow = db.prepare(`SELECT * FROM categories WHERE id = ?`).get(info.lastInsertRowid);
+    if (catRow) {
+      pushToTurso(
+        `INSERT OR REPLACE INTO categories (id, user_id, name, color_hex, icon, is_system, is_archived, created_at, updated_at, deleted_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [catRow.id, catRow.user_id, catRow.name, catRow.color_hex, catRow.icon, catRow.is_system, catRow.is_archived, catRow.created_at, catRow.updated_at, catRow.deleted_at]
+      );
+    }
     res.status(201).json({
       id: info.lastInsertRowid, name: body.name, colorHex: body.colorHex,
       icon: body.icon ?? null, isSystem: false, isArchived: false,
@@ -70,6 +78,7 @@ router.patch('/:id', (req, res, next) => {
 
     sets.push(`updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now')`);
     db.prepare(`UPDATE categories SET ${sets.join(', ')} WHERE id = ?`).run(...args, cat.id);
+    pushToTurso(`UPDATE categories SET ${sets.join(', ')} WHERE id = ?`, [...args, cat.id]);
 
     audit(req.user.id, 'category', cat.id, body.isArchived !== undefined ? 'archive' : 'update', body);
     const updated = db.prepare(

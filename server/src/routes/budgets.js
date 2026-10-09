@@ -1,6 +1,6 @@
 'use strict';
 const express = require('express');
-const { getDb, audit } = require('../db');
+const { getDb, audit, pushToTurso } = require('../db');
 const { requireAuth } = require('../middleware/auth');
 const { validate, budgetSchema } = require('../lib/validate');
 
@@ -66,6 +66,19 @@ router.put('/', (req, res, next) => {
     );
 
     audit(req.user.id, 'budget', body.categoryId ?? 0, 'update', body);
+    pushToTurso(
+      `INSERT INTO budgets (user_id, category_id, period, period_year, period_month,
+                            amount_cents, warn_pct, crit_pct, over_pct)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(user_id, scope_key, period, period_year, period_month)
+       DO UPDATE SET amount_cents = excluded.amount_cents,
+                     warn_pct = excluded.warn_pct,
+                     crit_pct = excluded.crit_pct,
+                     over_pct = excluded.over_pct,
+                     category_id = excluded.category_id,
+                     updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now')`,
+      [req.user.id, body.categoryId, body.period, body.periodYear, body.periodMonth, body.amountCents, body.warnPct, body.critPct, body.overPct]
+    );
     const row = db.prepare(
       `${SELECT_BUDGET}
        WHERE b.user_id = ? AND b.period = ? AND b.period_year = ? AND b.period_month = ?
@@ -79,6 +92,7 @@ router.delete('/:id', (req, res, next) => {
   try {
     getDb().prepare(`DELETE FROM budgets WHERE id = ? AND user_id = ?`)
       .run(req.params.id, req.user.id);
+    pushToTurso(`DELETE FROM budgets WHERE id = ? AND user_id = ?`, [req.params.id, req.user.id]);
     res.status(204).end();
   } catch (err) { next(err); }
 });
