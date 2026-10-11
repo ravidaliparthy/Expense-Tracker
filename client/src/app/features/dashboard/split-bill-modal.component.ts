@@ -250,14 +250,17 @@ export interface SplitRecordPayload {
       color: #94A3B8;
     }
     .split-input {
-      padding: 10px 12px;
-      border-radius: 8px;
-      border: 1px solid #CBD5E1;
-      font-size: 14px;
+      height: 48px;
+      padding: 0 14px;
+      border-radius: 10px;
+      border: 1.5px solid #CBD5E1;
+      font-size: 16px;
+      font-weight: 600;
       background: #FFFFFF;
       color: #0F172A;
       outline: none;
-      transition: border-color 0.15s ease;
+      box-sizing: border-box;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
     }
     .split-input:focus {
       border-color: #6366F1;
@@ -270,27 +273,30 @@ export interface SplitRecordPayload {
     }
     :host-context([data-theme='dark']) .split-input:focus {
       border-color: #818CF8;
+      box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.2);
     }
     .stepper-wrap {
       display: flex;
       align-items: center;
-      border: 1px solid #CBD5E1;
-      border-radius: 8px;
+      height: 48px;
+      border: 1.5px solid #CBD5E1;
+      border-radius: 10px;
       overflow: hidden;
       background: #FFFFFF;
+      box-sizing: border-box;
     }
     :host-context([data-theme='dark']) .stepper-wrap {
       background: #1F2937;
       border-color: #374151;
     }
     .btn-step {
-      width: 40px;
-      height: 38px;
+      width: 46px;
+      height: 100%;
       background: #F8FAFC;
       border: none;
       cursor: pointer;
       font-weight: bold;
-      font-size: 16px;
+      font-size: 18px;
       color: #475569;
       display: flex;
       align-items: center;

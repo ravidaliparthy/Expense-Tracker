@@ -104,8 +104,8 @@ export interface OmnibarSubmitPayload {
     .omnibar-container {
       background: #FFFFFF;
       border: 1px solid #CBD5E1;
-      border-radius: 12px;
-      padding: 8px 12px;
+      border-radius: 14px;
+      padding: 10px 16px;
       margin-bottom: 16px;
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
       transition: all 0.15s ease;
@@ -125,10 +125,11 @@ export interface OmnibarSubmitPayload {
     .omnibar-input-wrap {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
+      min-height: 40px;
     }
     .omnibar-icon {
-      font-size: 16px;
+      font-size: 18px;
       color: #F59E0B;
       flex-shrink: 0;
     }
@@ -136,7 +137,7 @@ export interface OmnibarSubmitPayload {
       flex: 1;
       border: none;
       background: transparent;
-      font-size: 14px;
+      font-size: 15px;
       color: #0F172A;
       outline: none;
       font-weight: 500;
@@ -151,7 +152,7 @@ export interface OmnibarSubmitPayload {
     .omnibar-actions {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
     }
     .hotkey-badge {
       background: #F1F5F9;
