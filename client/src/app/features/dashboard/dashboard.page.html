@@ -26,10 +26,11 @@
   <div class="card"><h3>Daily burn rate</h3><div class="value" style="font-size:22px">{{ money(cashflowBreakdown().burnRate, currency()) }}</div><p class="mini">Expense run-rate over selected range.</p></div>
   <div class="card"><h3>Expense / income</h3><div class="value" style="font-size:22px">{{ cashflowBreakdown().expenseRatio }}%</div><p class="mini">Lower is better; over 100% means overspending income.</p></div>
 </div>
-<div class="analysis-grid col-3">
+<div class="analysis-grid">
   <div class="card"><h3>Added vs spent</h3><div class="value positive" style="font-size:22px">{{ money(kpis().income, currency()) }}</div><p class="mini">Added, against {{ money(kpis().expense, currency()) }} spent.</p></div>
   <div class="card"><h3>Savings this period</h3><div class="value" style="font-size:22px" [class.positive]="kpis().net >= 0" [class.negative]="kpis().net < 0">{{ signedMoney(kpis().net, currency()) }}</div><p class="mini">Actual retained cash after expenses.</p></div>
   <div class="card"><h3>Projected savings</h3><div class="value" style="font-size:22px" [class.positive]="cashflowBreakdown().projectedNet >= 0" [class.negative]="cashflowBreakdown().projectedNet < 0">{{ signedMoney(cashflowBreakdown().projectedNet, currency()) }}</div><p class="mini">If today's burn rate continues.</p></div>
+  <div class="card"><h3>Safe to spend/day</h3><div class="value" style="font-size:22px">{{ money(cashflowBreakdown().safeToday, currency()) }}</div><p class="mini">For {{ cashflowBreakdown().daysLeft }} days left in this range.</p></div>
 </div>
 <div class="grid-2">
   <div class="card"><h3>🧠 Money insights</h3>
