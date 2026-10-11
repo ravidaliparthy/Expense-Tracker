@@ -50,7 +50,8 @@ export interface BreakdownRow {
     .actions{display:flex;gap:8px;flex-wrap:wrap}
     .grid-2{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:16px}
     .analysis-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px}
-    @media(max-width:980px){.grid-2,.analysis-grid{grid-template-columns:1fr}}
+    .analysis-grid.col-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+    @media(max-width:980px){.grid-2,.analysis-grid,.analysis-grid.col-3{grid-template-columns:1fr}}
     .chart svg{width:100%;height:auto;display:block}
     .catbar{display:flex;align-items:center;gap:10px;margin-bottom:9px;font-size:12px}
     .catbar .name{width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#475569}
@@ -146,60 +147,6 @@ export interface BreakdownRow {
     :host-context([data-theme='dark']) .positive{color:#34D399 !important}
     :host-context([data-theme='dark']) .negative{color:#F87171 !important}
 
-    /* Safe-to-Spend Dynamic Daily Allowance Hero Widget */
-    .safe-hero-banner {
-      background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%);
-      border: 1px solid #C7D2FE;
-      border-radius: 14px;
-      padding: 16px 20px;
-      margin-bottom: 16px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 16px;
-      flex-wrap: wrap;
-      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.08);
-      position: relative;
-      overflow: hidden;
-    }
-    .safe-hero-banner.pace-comfortable { border-left: 5px solid #10B981; }
-    .safe-hero-banner.pace-moderate { border-left: 5px solid #F59E0B; }
-    .safe-hero-banner.pace-heavy, .safe-hero-banner.pace-exceeded { border-left: 5px solid #EF4444; }
-    :host-context([data-theme='dark']) .safe-hero-banner {
-      background: linear-gradient(135deg, #111827 0%, #1E1B4B 100%);
-      border-color: #312E81;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
-    }
-    .safe-hero-left { display: flex; flex-direction: column; gap: 4px; }
-    .safe-hero-badge {
-      display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700;
-      padding: 2px 8px; border-radius: 999px; background: rgba(99, 102, 241, 0.12); color: #4F46E5;
-      width: fit-content; text-transform: uppercase; letter-spacing: 0.3px;
-    }
-    :host-context([data-theme='dark']) .safe-hero-badge {
-      background: rgba(129, 140, 248, 0.2); color: #A5B4FC;
-    }
-    .safe-hero-title { font-size: 13px; font-weight: 600; color: #475569; }
-    :host-context([data-theme='dark']) .safe-hero-title { color: #94A3B8; }
-    .safe-hero-amount { display: flex; align-items: baseline; gap: 6px; }
-    .hero-allowance-val { font-size: 28px; font-weight: 800; color: #1E1B4B; letter-spacing: -0.5px; }
-    :host-context([data-theme='dark']) .hero-allowance-val { color: #F8FAFC; }
-    .safe-hero-sub { font-size: 13px; color: #64748B; font-weight: 500; }
-    :host-context([data-theme='dark']) .safe-hero-sub { color: #94A3B8; }
-    .safe-hero-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-    .safe-stat-pill {
-      background: rgba(255, 255, 255, 0.7); border: 1px solid rgba(226, 232, 240, 0.8);
-      border-radius: 10px; padding: 8px 12px; display: flex; flex-direction: column; gap: 2px;
-    }
-    :host-context([data-theme='dark']) .safe-stat-pill {
-      background: rgba(15, 23, 42, 0.6); border-color: #374151;
-    }
-    .safe-stat-pill .lbl { font-size: 10px; font-weight: 600; color: #64748B; text-transform: uppercase; }
-    :host-context([data-theme='dark']) .safe-stat-pill .lbl { color: #94A3B8; }
-    .safe-stat-pill .val { font-size: 13px; font-weight: 700; color: #0F172A; }
-    :host-context([data-theme='dark']) .safe-stat-pill .val { color: #F8FAFC; }
-
-
     /* Empty state card */
     .empty-state-card { text-align:center; padding:32px 16px; background:#F8FAFC; border:1px dashed #CBD5E1; border-radius:12px; margin-top:8px; }
     :host-context([data-theme='dark']) .empty-state-card { background:#1E293B; border-color:#334155; }
@@ -255,16 +202,7 @@ export class DashboardPage {
   readonly trend=computed(()=>{ const f=this.filter.filters(); const buckets=new Map<string,{expense:number;income:number;net:number}>(); for(const e of this.expenses()){ const key=this.bucket(e.localDate,f.groupBy); const cur=buckets.get(key)??{expense:0,income:0,net:0}; if(e.kind==='income')cur.income+=e.amountCents; else cur.expense+=e.amountCents; cur.net=cur.income-cur.expense; buckets.set(key,cur); } return [...buckets.entries()].sort((a,b)=>a[0].localeCompare(b[0])); });
   readonly expensePoints=computed(()=>this.pointsFor('expense')); readonly incomePoints=computed(()=>this.pointsFor('income')); readonly netPoints=computed(()=>this.pointsFor('net'));
   readonly byCategory=computed(()=>{ const map=new Map<string,{name:string;icon:string;cents:number;color:string}>(); for(const e of this.spendRows()){ const cur=map.get(e.categorySnapshot)??{name:e.categorySnapshot,icon:e.categoryIcon||'🏷️',cents:0,color:e.categoryColor}; cur.cents+=e.amountCents; map.set(e.categorySnapshot,cur); } const rows=[...map.values()].sort((a,b)=>b.cents-a.cents).slice(0,7); const max=rows[0]?.cents||1; return rows.map(r=>({...r,pct:Math.round((r.cents/max)*100)})); });
-  readonly cashflowBreakdown=computed(()=>{ const k=this.kpis(); const days=this.daysInRange(); const elapsed=this.daysElapsedInRange(); const left=Math.max(0,days-elapsed); const burnRate=elapsed>0?Math.round(k.expense/elapsed):0; const projectedExpense=Math.round(burnRate*days); const projectedNet=k.income-projectedExpense; const remainingIncome=Math.max(0,k.income-k.expense); const safeToday=left>0?Math.round(remainingIncome/left):remainingIncome; return { burnRate, daysLeft:left, projectedExpense, projectedNet, safeToday, runwayDays: burnRate>0 && k.income>0 ? Math.round(k.income/burnRate) : 0, expenseRatio: k.income>0 ? Math.round((k.expense/k.income)*1000)/10 : 0 }; });
-  readonly safeToSpendPace = computed(() => {
-    const c = this.cashflowBreakdown();
-    if (c.daysLeft <= 0) return { status: 'ended', label: 'Period Completed', tone: 'neutral', icon: '🏁' };
-    if (c.safeToday <= 0) return { status: 'exceeded', label: 'Over Budget', tone: 'neg', icon: '🚨' };
-    if (c.burnRate <= c.safeToday) return { status: 'comfortable', label: 'On Track', tone: 'pos', icon: '🟢' };
-    if (c.burnRate <= c.safeToday * 1.25) return { status: 'moderate', label: 'Paced Carefully', tone: 'warn', icon: '🟡' };
-    return { status: 'heavy', label: 'High Burn Rate', tone: 'neg', icon: '🔴' };
-  });
-  readonly remainingBuffer = computed(() => Math.max(0, this.kpis().income - this.kpis().expense));
+  readonly cashflowBreakdown=computed(()=>{ const k=this.kpis(); const days=this.daysInRange(); const elapsed=this.daysElapsedInRange(); const left=Math.max(0,days-elapsed); const burnRate=elapsed>0?Math.round(k.expense/elapsed):0; const projectedExpense=Math.round(burnRate*days); const projectedNet=k.income-projectedExpense; return { burnRate, daysLeft:left, projectedExpense, projectedNet, runwayDays: burnRate>0 && k.income>0 ? Math.round(k.income/burnRate) : 0, expenseRatio: k.income>0 ? Math.round((k.expense/k.income)*1000)/10 : 0 }; });
   readonly insightMessages=computed(()=>{ const ins=this.insights(); if(!ins)return[]; const cur=this.currency(); const out:{icon:string;text:string;tone?:'pos'|'neg'}[]=[]; const c=ins.comparison; const pct=(p:number)=>`${Math.abs(p)}%`;
     if(c.prevExpenseCents>0){const up=c.expenseDeltaPct>0;out.push({icon:up?'📈':'📉',text:`Debits ${up?'up':'down'} ${pct(c.expenseDeltaPct)} vs previous period (${money(c.prevExpenseCents,cur)} → ${money(c.expenseCents,cur)}).`,tone:up?'neg':'pos'});}
     if(c.incomeCents>0||c.prevIncomeCents>0){const up=c.incomeDeltaPct>=0;out.push({icon:'💰',text:`Credits ${up?'grew':'fell'} ${pct(c.incomeDeltaPct)} (${money(c.prevIncomeCents,cur)} → ${money(c.incomeCents,cur)}).`,tone:up?'pos':'neg'});}

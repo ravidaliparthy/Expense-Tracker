@@ -1366,8 +1366,6 @@ html[data-privacy='true'] {
   .donut-total,
   .catbar .val,
   .wdrow .v,
-  .safe-val,
-  .hero-allowance-val,
   .amount-tag {
     filter: blur(6.5px) !important;
     user-select: none !important;
@@ -1383,8 +1381,6 @@ html[data-privacy='true'] {
   .donut-total:hover,
   .catbar .val:hover,
   .wdrow .v:hover,
-  .safe-val:hover,
-  .hero-allowance-val:hover,
   .amount-tag:hover {
     filter: blur(0px) !important;
   }

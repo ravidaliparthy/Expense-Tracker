@@ -298,7 +298,7 @@ Tap the **✨ Tour** button in the header at any time to launch a 9-step interac
 
 ## 💡 Zero-Cost Edge Intelligence Features (100% Free-Tier Preserved)
 
-To deliver world-class daily user convenience without degrading server RAM or violating free-tier limits, all 5 newly added capabilities run completely at the **Client Edge**:
+To deliver world-class daily user convenience without degrading server RAM or violating free-tier limits, all newly added capabilities run completely at the **Client Edge**:
 
 1. 🛡️ **Privacy Shield / Ghost Mode (`👁` & `P` Hotkey)**:
    - Obscures sensitive financial numbers across cards, KPIs, tables, and gauges via CSS backdrop filters.
@@ -306,24 +306,19 @@ To deliver world-class daily user convenience without degrading server RAM or vi
    - 1-tap unmasking on hover or via global hotkey `P`.
    - **Zero Server Impact**: 0.00 KB added server memory; 0 ms network roundtrip.
 
-2. 🎯 **"Safe-to-Spend Today" Dynamic Allowance Widget**:
-   - Dynamically calculates daily disposable income: `(Disposable Buffer) ÷ (Days Remaining in Range)`.
-   - Color-coded pace indicator: 🟢 *On Track*, 🟡 *Paced Carefully*, 🔴 *Over Budget*.
-   - **Zero Server Impact**: Computed in 0.1 ms client-side using Angular Reactive Signals from loaded metrics.
-
-3. ⚡ **Natural Language Quick Omnibar ("15 lunch" / "40 gas")**:
+2. ⚡ **Natural Language Quick Omnibar ("15 lunch" / "40 gas")**:
    - Log expenses in under 2 seconds without clicking multi-field forms.
    - Client-side regex engine extracts amount, auto-matches categories (`lunch` ➔ 🍔 Food & Dining), detects transaction kind (credits vs debits), and relative dates.
    - Instant live preview chips beneath the bar as you type, with 1-tap everyday suggestion chips.
    - **Zero Server Impact**: Reuses existing `POST /api/expenses` endpoint; 0 extra server state.
 
-4. 👥 **Client Split Bill Calculator & Payment Share Request**:
+3. 👥 **Client Split Bill Calculator & Payment Share Request**:
    - Calculates equal shares for group dining, road trips, and shared bills.
    - **"📋 Copy Message"**: Generates a pre-formatted request message and copies it directly to your clipboard for sharing across any messaging platform.
    - Option to automatically save the user's personal share to expenses.
    - **Zero Server Impact**: 100% browser-driven; zero external API dependencies.
 
-5. 💱 **Client-Driven Multi-Currency Live Converter**:
+4. 💱 **Client-Driven Multi-Currency Live Converter**:
    - Offline-ready conversion table supporting 10 major global currencies (USD, EUR, GBP, INR, CAD, AUD, JPY, AED, SGD, CHF).
    - Omnibar auto-detects foreign symbols (`€20 lunch`, `£15 coffee`, `₹500 cab`) and auto-converts to user's base currency while preserving notes.
    - **Zero Server Impact**: Completely client-side conversion logic.
@@ -334,7 +329,6 @@ To deliver world-class daily user convenience without degrading server RAM or vi
 
 * **Progressive Web App (PWA)**: Installable, full-screen standalone mobile experience with high-resolution app icons.
 * **🛡️ Privacy Shield / Ghost Mode**: Instantly mask numbers with `P` hotkey or toolbar toggle for privacy in public.
-* **🎯 Safe-to-Spend Today Daily Pacing**: Live hero widget telling users exactly what they can spend each day without going broke.
 * **⚡ Natural Language Omnibar**: Quick-log entries in 1 second ("15 lunch", "45 groceries") with live preview chips.
 * **👥 Split Bill & 1-Tap Request Generator**: Split group dining bills and generate instant formatted payment request messages.
 * **💱 Multi-Currency Offline Converter**: Live conversions for 10 global currencies with automatic symbol detection in the Omnibar.
