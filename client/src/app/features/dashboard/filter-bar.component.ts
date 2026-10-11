@@ -171,6 +171,20 @@ import { Category, KindFilter } from '../../core/models';
     .groupby-select:hover{border-color:#94A3B8;background-color:#F8FAFC}
     .groupby-select:focus{outline:none;border-color:#6366F1;box-shadow:0 0 0 3px rgba(99,102,241,0.18)}
     .groupby-select option{font-size:12px;padding:6px 10px;background:#fff;color:#1E293B}
+
+    /* Dark mode overrides */
+    :host-context([data-theme='dark']) .gb-label{color:#94A3B8}
+    :host-context([data-theme='dark']) .range{color:#94A3B8}
+    :host-context([data-theme='dark']) .sep{color:#64748B}
+    :host-context([data-theme='dark']) .groupby-select{
+      background:#1E293B url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%2394A3B8' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E") no-repeat right 9px center !important;
+      background-size:10px 6px !important;
+      border-color:#334155;
+      color:#F1F5F9;
+    }
+    :host-context([data-theme='dark']) .groupby-select:hover{border-color:#6366F1;background-color:#2D3748 !important}
+    :host-context([data-theme='dark']) .groupby-select option{background:#0F172A;color:#F1F5F9}
+    :host-context([data-theme='dark']) input[type=date]{background:#0F172A;border-color:#334155;color:#F1F5F9}
   `]
 })
 export class FilterBarComponent implements OnInit {
