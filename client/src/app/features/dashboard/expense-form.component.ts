@@ -79,7 +79,7 @@ export interface ExpenseFormValue {
       </form>
     </div></div>
   `,
-  styles: [`.cat-row{display:flex;gap:8px;align-items:center;margin-top:4px}.cat-row select,.cat-row input:not(.swatch):not(.emoji),.cat-row .c-select{flex:1}.swatch{width:42px;height:36px;padding:2px}.emoji{width:54px;text-align:center}.kind-tabs{display:flex;gap:8px;margin:4px 0 10px}.kind-tabs button{flex:1;border:1px solid #CBD5E1;background:#fff;border-radius:8px;padding:9px;cursor:pointer;user-select:none;transition:background-color 0.05s ease, border-color 0.05s ease, color 0.05s ease}.kind-tabs button:hover{border-color:#94A3B8;background:#F8FAFC}.kind-tabs button.on{background:#1E1B4B;color:#fff;border-color:#6366F1}`]
+  styles: [`.cat-row{display:flex;gap:8px;align-items:center;margin-top:4px}.cat-row select,.cat-row input:not(.swatch):not(.emoji),.cat-row .c-select{flex:1}.swatch{width:42px;height:36px;padding:2px}.emoji{width:54px;text-align:center}.kind-tabs{display:flex;gap:8px;margin:4px 0 10px}.kind-tabs button{flex:1;border:1px solid #CBD5E1;background:#fff;border-radius:8px;padding:9px;cursor:pointer;user-select:none;transition:background-color 0.05s ease, border-color 0.05s ease, color 0.05s ease}.kind-tabs button:hover{border-color:#94A3B8;background:#F8FAFC}.kind-tabs button.on{background:#1E1B4B;color:#fff;border-color:#6366F1}:host-context([data-theme='dark']) .kind-tabs button{background:#0F172A;border-color:#334155;color:#CBD5E1}:host-context([data-theme='dark']) .kind-tabs button:hover{background:#1E293B;color:#F8FAFC}:host-context([data-theme='dark']) .kind-tabs button.on{background:#4F46E5;border-color:#6366F1;color:#FFFFFF}`]
 })
 export class ExpenseFormComponent implements OnInit, OnChanges {
   private api = inject(ApiService);

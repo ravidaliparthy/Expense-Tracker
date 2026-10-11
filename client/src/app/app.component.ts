@@ -230,8 +230,9 @@ import { KeepAliveService } from './core/keep-alive.service';
     .pc-signout-btn { display:flex; align-items:center; gap:10px; width:100%; padding:9px 12px; border-radius:8px; border:1px solid rgba(239,68,68,0.25); background:rgba(239,68,68,0.08); color:#F87171; font-size:13px; font-weight:600; cursor:pointer; transition:all 0.2s ease; text-align:left; box-sizing:border-box; }
     .pc-signout-btn:hover { background:rgba(239,68,68,0.22); border-color:#EF4444; color:#fff; }
     .btn-topbar-signout { border-color:rgba(239,68,68,0.35); color:#FCA5A5; display:inline-flex; align-items:center; gap:5px; }
-    .btn-topbar-signout:hover { background:rgba(239,68,68,0.18); border-color:#EF4444; color:#fff; }
     .content { flex:1; padding:24px; background:#F1F5F9; min-width:0; }
+    :host-context([data-theme='dark']) .content { background:#0B1220 !important; color:#F8FAFC !important; }
+    :host-context([data-theme='dark']) .shell { background:#0B1220 !important; }
 
     @media (max-width: 820px) {
       .sidenav-pc-footer { display: none !important; }

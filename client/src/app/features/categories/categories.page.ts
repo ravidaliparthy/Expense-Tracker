@@ -193,6 +193,23 @@ import { Category } from '../../core/models';
     .swatch-label { font-size:12px; margin:0; }
     .btns-wrap { display:flex; gap:6px; }
   }
+
+  /* Dark mode overrides */
+  :host-context([data-theme='dark']) h1 { color: #F8FAFC !important; }
+  :host-context([data-theme='dark']) .lede { color: #CBD5E1 !important; }
+  :host-context([data-theme='dark']) th { color: #94A3B8 !important; border-bottom-color: #1F2937 !important; }
+  :host-context([data-theme='dark']) tbody tr { border-bottom-color: #1F2937 !important; }
+  :host-context([data-theme='dark']) tbody tr:hover { background: #1E293B !important; }
+  :host-context([data-theme='dark']) .name-edit { background: #0F172A !important; border-color: #334155 !important; color: #F8FAFC !important; }
+  :host-context([data-theme='dark']) .emoji { background: #0F172A !important; border-color: #334155 !important; color: #F8FAFC !important; }
+  :host-context([data-theme='dark']) .cat-card-item { background: #111827 !important; border-color: #1F2937 !important; box-shadow: none !important; }
+  :host-context([data-theme='dark']) .cat-card-actions { border-top-color: #1F2937 !important; }
+  :host-context([data-theme='dark']) .tag-pill { background: #1E293B !important; color: #94A3B8 !important; }
+  :host-context([data-theme='dark']) .tag-pill.system { background: #1E1B4B !important; color: #A5B4FC !important; }
+  :host-context([data-theme='dark']) .tag-pill.active { background: #064E3B !important; color: #6EE7B7 !important; }
+  :host-context([data-theme='dark']) .tag-pill.archived { background: #1F2937 !important; color: #94A3B8 !important; }
+  :host-context([data-theme='dark']) .ghost { background: #1E293B !important; border-color: #334155 !important; color: #E2E8F0 !important; }
+  :host-context([data-theme='dark']) .ghost:hover { background: #334155 !important; border-color: #6366F1 !important; color: #FFFFFF !important; }
 `] })
 export class CategoriesPage implements OnInit {
   private api = inject(ApiService);

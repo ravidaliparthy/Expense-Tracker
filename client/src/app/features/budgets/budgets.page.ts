@@ -251,6 +251,12 @@ import { BudgetStatus } from '../../core/budget-status';
     }
 
     /* Dark mode overrides */
+    :host-context([data-theme='dark']) h1 {
+      color: #F8FAFC !important;
+    }
+    :host-context([data-theme='dark']) .lede {
+      color: #CBD5E1 !important;
+    }
     :host-context([data-theme='dark']) .gauge:hover {
       background: #1E293B;
       border-color: #334151;
@@ -260,7 +266,7 @@ import { BudgetStatus } from '../../core/budget-status';
       border-color: #6366F1;
     }
     :host-context([data-theme='dark']) .gauge-label {
-      color: #F1F5F9;
+      color: #F8FAFC !important;
     }
     :host-context([data-theme='dark']) .gauge-amounts {
       color: #94A3B8;
