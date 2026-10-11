@@ -1,8 +1,18 @@
-import { Component, Input, inject, signal } from '@angular/core';
+import { Component, EventEmitter, Input, Output, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { GoalsService, SavingsGoal } from '../../core/goals.service';
-import { money } from '../../core/models';
+import { TransactionKind, money } from '../../core/models';
+
+export interface SavingsRecordPayload {
+  amountCents: number;
+  kind: TransactionKind;
+  merchant: string;
+  notes?: string;
+  occurredAt?: string;
+  goalId: string;
+  goalTitle: string;
+}
 
 @Component({
   selector: 'app-savings-goals',
@@ -48,7 +58,15 @@ import { money } from '../../core/models';
           <!-- Amounts and Actions -->
           <div class="goal-bottom">
             <div class="goal-amounts">
-              <span class="saved-val">{{ money(g.currentCents, currency) }}</span>
+              <button
+                type="button"
+                class="saved-click-btn"
+                (click)="openRecordModal(g)"
+                title="Click amount to record as a transaction in your history"
+              >
+                <span class="saved-val">{{ money(g.currentCents, currency) }}</span>
+                <span class="tx-tag">📝 Mark Tx</span>
+              </button>
               <span class="target-val">of {{ money(g.targetCents, currency) }}</span>
             </div>
             <div class="goal-actions">
@@ -201,6 +219,12 @@ import { money } from '../../core/models';
               placeholder="Deposit amount"
             />
           </div>
+          <div class="deposit-tx-toggle">
+            <label class="tx-checkbox-label">
+              <input type="checkbox" [(ngModel)]="alsoRecordDepositAsTx" />
+              <span>Also mark this deposit as a transaction in history</span>
+            </label>
+          </div>
           <div class="modal-footer">
             <button type="button" class="btn-ghost" (click)="closeDepositModal()">Cancel</button>
             <button
@@ -210,6 +234,113 @@ import { money } from '../../core/models';
               (click)="confirmDeposit()"
             >
               Add {{ money(depositAmount * 100, currency) }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Record Savings as Transaction Modal -->
+    <div class="modal-overlay" *ngIf="recordModalOpen()" (click)="closeRecordModal()">
+      <div class="modal-box record-box" (click)="$event.stopPropagation()">
+        <div class="modal-top">
+          <div class="modal-head-left">
+            <span class="modal-top-emoji">💸</span>
+            <div>
+              <h4>Record Savings as Transaction</h4>
+              <p class="modal-subtext">Mark {{ selectedGoal()?.title }} in your live transactions</p>
+            </div>
+          </div>
+          <button type="button" class="modal-x" (click)="closeRecordModal()">✕</button>
+        </div>
+
+        <div class="record-modal-body">
+          <div class="goal-card-preview" [style.border-left-color]="selectedGoal()?.color">
+            <span class="preview-icon">{{ selectedGoal()?.icon }}</span>
+            <div class="preview-text">
+              <span class="preview-title">{{ selectedGoal()?.title }}</span>
+              <span class="preview-info">
+                Current Saved: <strong>{{ money(selectedGoal()?.currentCents || 0, currency) }}</strong>
+                of {{ money(selectedGoal()?.targetCents || 0, currency) }} ({{ selectedGoal() ? calcPct(selectedGoal()!) : 0 }}%)
+              </span>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <label>Transaction Type</label>
+            <div class="kind-segmented">
+              <button
+                type="button"
+                class="kind-btn"
+                [class.active]="txKind === 'expense'"
+                (click)="txKind = 'expense'"
+              >
+                🔴 Expense (Transferred to Savings)
+              </button>
+              <button
+                type="button"
+                class="kind-btn"
+                [class.active]="txKind === 'income'"
+                (click)="txKind = 'income'"
+              >
+                🟢 Income (Savings Withdrawn/Earned)
+              </button>
+            </div>
+          </div>
+
+          <div class="form-columns">
+            <div class="form-row">
+              <label>Amount ({{ currency }})</label>
+              <input
+                type="number"
+                min="0.01"
+                step="any"
+                [(ngModel)]="txAmount"
+                name="txAmount"
+                placeholder="0.00"
+                required
+              />
+            </div>
+            <div class="form-row">
+              <label>Transaction Date</label>
+              <input
+                type="date"
+                [(ngModel)]="txDate"
+                name="txDate"
+              />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <label>Merchant / Title</label>
+            <input
+              type="text"
+              [(ngModel)]="txMerchant"
+              name="txMerchant"
+              placeholder="e.g. Savings: Emergency Fund"
+              required
+            />
+          </div>
+
+          <div class="form-row">
+            <label>Notes (Optional)</label>
+            <input
+              type="text"
+              [(ngModel)]="txNotes"
+              name="txNotes"
+              placeholder="e.g. Monthly contribution to goal"
+            />
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn-ghost" (click)="closeRecordModal()">Cancel</button>
+            <button
+              type="button"
+              class="btn-primary"
+              [disabled]="txAmount <= 0"
+              (click)="confirmRecordTransaction()"
+            >
+              ✓ Mark as Transaction ({{ money(txAmount * 100, currency) }})
             </button>
           </div>
         </div>
@@ -351,11 +482,59 @@ import { money } from '../../core/models';
       gap: 5px;
       font-size: 13px;
     }
+    .saved-click-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      padding: 2px 6px;
+      margin: -2px -6px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+      font-family: inherit;
+      text-align: left;
+    }
+    .saved-click-btn:hover {
+      background: rgba(79, 70, 229, 0.08);
+      border-color: rgba(79, 70, 229, 0.2);
+    }
+    :host-context([data-theme='dark']) .saved-click-btn:hover {
+      background: rgba(99, 102, 241, 0.15);
+      border-color: rgba(99, 102, 241, 0.3);
+    }
     .saved-val {
       font-weight: 700;
       color: #0F172A;
     }
     :host-context([data-theme='dark']) .saved-val { color: #F8FAFC; }
+    .tx-tag {
+      font-size: 10px;
+      font-weight: 700;
+      color: #4F46E5;
+      background: #EEF2FF;
+      border: 1px solid #C7D2FE;
+      padding: 1px 5px;
+      border-radius: 4px;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    :host-context([data-theme='dark']) .tx-tag {
+      background: #1E1B4B;
+      color: #A5B4FC;
+      border-color: #3730A3;
+    }
+    .saved-click-btn:hover .tx-tag {
+      background: #4F46E5;
+      color: #FFFFFF;
+      border-color: #4338CA;
+    }
+    :host-context([data-theme='dark']) .saved-click-btn:hover .tx-tag {
+      background: #6366F1;
+      color: #FFFFFF;
+      border-color: #4F46E5;
+    }
     .target-val {
       font-size: 12px;
       color: #64748B;
@@ -576,10 +755,115 @@ import { money } from '../../core/models';
       border-color: #475569;
       color: #F8FAFC;
     }
+    .modal-head-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .modal-top-emoji { font-size: 22px; }
+    .modal-subtext {
+      margin: 2px 0 0;
+      font-size: 11px;
+      color: #64748B;
+    }
+    :host-context([data-theme='dark']) .modal-subtext { color: #94A3B8; }
+    .record-modal-body {
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .goal-card-preview {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      border-left-width: 4px;
+      border-radius: 8px;
+      padding: 10px 14px;
+    }
+    :host-context([data-theme='dark']) .goal-card-preview {
+      background: #1E293B;
+      border-color: #334155;
+    }
+    .preview-icon { font-size: 24px; }
+    .preview-text {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .preview-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #0F172A;
+    }
+    :host-context([data-theme='dark']) .preview-title { color: #F8FAFC; }
+    .preview-info {
+      font-size: 11px;
+      color: #64748B;
+    }
+    :host-context([data-theme='dark']) .preview-info { color: #94A3B8; }
+    .kind-segmented {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .kind-btn {
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid #CBD5E1;
+      background: #F8FAFC;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      color: #475569;
+    }
+    :host-context([data-theme='dark']) .kind-btn {
+      background: #1E293B;
+      border-color: #334155;
+      color: #94A3B8;
+    }
+    .kind-btn.active {
+      background: #EEF2FF;
+      border-color: #6366F1;
+      color: #4F46E5;
+      box-shadow: 0 0 0 1px #6366F1;
+    }
+    :host-context([data-theme='dark']) .kind-btn.active {
+      background: #312E81;
+      border-color: #818CF8;
+      color: #E0E7FF;
+      box-shadow: 0 0 0 1px #818CF8;
+    }
+    .deposit-tx-toggle {
+      margin: 4px 0 12px;
+      padding: 10px 12px;
+      background: #F1F5F9;
+      border-radius: 8px;
+      border: 1px solid #E2E8F0;
+    }
+    :host-context([data-theme='dark']) .deposit-tx-toggle {
+      background: #1E293B;
+      border-color: #334155;
+    }
+    .tx-checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #334155;
+      cursor: pointer;
+    }
+    :host-context([data-theme='dark']) .tx-checkbox-label { color: #E2E8F0; }
   `]
 })
 export class SavingsGoalsComponent {
   @Input() currency = 'USD';
+  @Output() recordTransaction = new EventEmitter<SavingsRecordPayload>();
+
   private readonly goalsService = inject(GoalsService);
   readonly goals = this.goalsService.goals;
   readonly money = money;
@@ -588,6 +872,7 @@ export class SavingsGoalsComponent {
 
   readonly modalOpen = signal(false);
   readonly depositModalOpen = signal(false);
+  readonly recordModalOpen = signal(false);
   readonly selectedGoal = signal<SavingsGoal | null>(null);
 
   formTitle = '';
@@ -597,6 +882,14 @@ export class SavingsGoalsComponent {
   formDeadline = '';
   formColor = '#10B981';
   depositAmount = 50;
+  alsoRecordDepositAsTx = true;
+
+  // Transaction form fields
+  txKind: TransactionKind = 'expense';
+  txAmount = 50;
+  txMerchant = '';
+  txNotes = '';
+  txDate = '';
 
   readonly iconOptions = ['🛡️', '🏖️', '💻', '🚗', '🏠', '🎓', '💍', '📈', '🎁', '✈️'];
   readonly colorOptions = ['#10B981', '#6366F1', '#EC4899', '#F59E0B', '#06B6D4', '#8B5CF6'];
@@ -652,6 +945,7 @@ export class SavingsGoalsComponent {
   openDepositModal(g: SavingsGoal): void {
     this.selectedGoal.set(g);
     this.depositAmount = 50;
+    this.alsoRecordDepositAsTx = true;
     this.depositModalOpen.set(true);
   }
 
@@ -663,8 +957,50 @@ export class SavingsGoalsComponent {
   confirmDeposit(): void {
     const g = this.selectedGoal();
     if (!g || this.depositAmount <= 0) return;
-    this.goalsService.deposit(g.id, Math.round(this.depositAmount * 100));
+    const cents = Math.round(this.depositAmount * 100);
+    this.goalsService.deposit(g.id, cents);
+    if (this.alsoRecordDepositAsTx) {
+      this.recordTransaction.emit({
+        amountCents: cents,
+        kind: 'expense',
+        merchant: `Savings Deposit: ${g.title}`,
+        notes: `Quick deposit added to goal "${g.title}".`,
+        occurredAt: new Date().toISOString(),
+        goalId: g.id,
+        goalTitle: g.title
+      });
+    }
     this.closeDepositModal();
+  }
+
+  openRecordModal(g: SavingsGoal): void {
+    this.selectedGoal.set(g);
+    this.txKind = 'expense';
+    this.txAmount = g.currentCents > 0 ? (g.currentCents / 100) : 50;
+    this.txMerchant = `Savings: ${g.title}`;
+    this.txNotes = `Recorded from Savings Goal "${g.title}" (${this.calcPct(g)}% reached)`;
+    this.txDate = new Date().toISOString().slice(0, 10);
+    this.recordModalOpen.set(true);
+  }
+
+  closeRecordModal(): void {
+    this.recordModalOpen.set(false);
+    this.selectedGoal.set(null);
+  }
+
+  confirmRecordTransaction(): void {
+    const g = this.selectedGoal();
+    if (!g || this.txAmount <= 0) return;
+    this.recordTransaction.emit({
+      amountCents: Math.round(this.txAmount * 100),
+      kind: this.txKind,
+      merchant: this.txMerchant.trim() || `Savings: ${g.title}`,
+      notes: this.txNotes.trim() || undefined,
+      occurredAt: this.txDate ? new Date(this.txDate + 'T12:00:00Z').toISOString() : new Date().toISOString(),
+      goalId: g.id,
+      goalTitle: g.title
+    });
+    this.closeRecordModal();
   }
 
   deleteGoal(id: string): void {

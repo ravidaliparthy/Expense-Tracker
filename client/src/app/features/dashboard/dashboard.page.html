@@ -148,7 +148,10 @@
 </div>
 
 <!-- Savings Goals with Progress Bars -->
-<app-savings-goals [currency]="currency()"></app-savings-goals>
+<app-savings-goals
+  [currency]="currency()"
+  (recordTransaction)="onRecordSavingsTransaction($event)"
+></app-savings-goals>
 
 <div class="grid-2">
   <div class="card" data-tour="transactions-table">
