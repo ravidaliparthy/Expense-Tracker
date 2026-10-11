@@ -296,42 +296,9 @@ Tap the **✨ Tour** button in the header at any time to launch a 9-step interac
 
 ---
 
-## 💡 Zero-Cost Edge Intelligence Features (100% Free-Tier Preserved)
-
-To deliver world-class daily user convenience without degrading server RAM or violating free-tier limits, all newly added capabilities run completely at the **Client Edge**:
-
-1. 🛡️ **Privacy Shield / Ghost Mode (`👁` & `P` Hotkey)**:
-   - Obscures sensitive financial numbers across cards, KPIs, tables, and gauges via CSS backdrop filters.
-   - Protects against public shoulder-surfing on trains, coffee shops, and open offices.
-   - 1-tap unmasking on hover or via global hotkey `P`.
-   - **Zero Server Impact**: 0.00 KB added server memory; 0 ms network roundtrip.
-
-2. ⚡ **Natural Language Quick Omnibar ("15 lunch" / "40 gas")**:
-   - Log expenses in under 2 seconds without clicking multi-field forms.
-   - Client-side regex engine extracts amount, auto-matches categories (`lunch` ➔ 🍔 Food & Dining), detects transaction kind (credits vs debits), and relative dates.
-   - Instant live preview chips beneath the bar as you type, with 1-tap everyday suggestion chips.
-   - **Zero Server Impact**: Reuses existing `POST /api/expenses` endpoint; 0 extra server state.
-
-3. 👥 **Client Split Bill Calculator & Payment Share Request**:
-   - Calculates equal shares for group dining, road trips, and shared bills.
-   - **"📋 Copy Message"**: Generates a pre-formatted request message and copies it directly to your clipboard for sharing across any messaging platform.
-   - Option to automatically save the user's personal share to expenses.
-   - **Zero Server Impact**: 100% browser-driven; zero external API dependencies.
-
-4. 💱 **Client-Driven Multi-Currency Live Converter**:
-   - Offline-ready conversion table supporting 10 major global currencies (USD, EUR, GBP, INR, CAD, AUD, JPY, AED, SGD, CHF).
-   - Omnibar auto-detects foreign symbols (`€20 lunch`, `£15 coffee`, `₹500 cab`) and auto-converts to user's base currency while preserving notes.
-   - **Zero Server Impact**: Completely client-side conversion logic.
-
----
-
 ## 🚀 Key Features
 
 * **Progressive Web App (PWA)**: Installable, full-screen standalone mobile experience with high-resolution app icons.
-* **🛡️ Privacy Shield / Ghost Mode**: Instantly mask numbers with `P` hotkey or toolbar toggle for privacy in public.
-* **⚡ Natural Language Omnibar**: Quick-log entries in 1 second ("15 lunch", "45 groceries") with live preview chips.
-* **👥 Split Bill & 1-Tap Request Generator**: Split group dining bills and generate instant formatted payment request messages.
-* **💱 Multi-Currency Offline Converter**: Live conversions for 10 global currencies with automatic symbol detection in the Omnibar.
 * **Native Launch Splash Animation**: Buttery-smooth 1.5s virtual brand launch animation (Instagram & WhatsApp caliber) with an illuminated diamond insignia, brand typography, and smooth cubic-bezier unmasking across PC, iOS Safari, and Android without blocking UI interactivity or causing white flashes.
 * **Hybrid Cloud Persistence**: In-process SQLite for sub-millisecond local reads + Turso Cloud (libSQL) for permanent multi-device sync.
 * **Offline-First Resilience**: Log expenses offline; automatic background batch synchronization with idempotent UUIDs.
