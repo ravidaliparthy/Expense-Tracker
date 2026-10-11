@@ -130,6 +130,8 @@ export interface BreakdownRow {
     :host-context([data-theme='dark']) .sort-btn:hover{background:#334155}
     :host-context([data-theme='dark']) .sort-btn.active{background:#312E81;border-color:#6366F1;color:#A5B4FC}
     :host-context([data-theme='dark']) .sortable:hover{color:#A5B4FC}
+    :host-context([data-theme='dark']) .positive{color:#34D399 !important}
+    :host-context([data-theme='dark']) .negative{color:#F87171 !important}
 
     /* Empty state card */
     .empty-state-card { text-align:center; padding:32px 16px; background:#F8FAFC; border:1px dashed #CBD5E1; border-radius:12px; margin-top:8px; }

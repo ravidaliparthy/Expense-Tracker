@@ -302,6 +302,10 @@ import { safeUuid } from '../../core/uuid';
     :host-context([data-theme='dark']) .sort-btn:hover { background: #334155; }
     :host-context([data-theme='dark']) .sort-btn.active { background: #312E81; border-color: #6366F1; color: #A5B4FC; }
     :host-context([data-theme='dark']) .sortable:hover { color: #A5B4FC; }
+    :host-context([data-theme='dark']) .pval.pos,
+    :host-context([data-theme='dark']) .amount.plus { color: #34D399 !important; }
+    :host-context([data-theme='dark']) .pval.neg,
+    :host-context([data-theme='dark']) .amount.minus { color: #F87171 !important; }
   `],
 })
 export class TransactionsPage {

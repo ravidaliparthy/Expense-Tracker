@@ -595,7 +595,19 @@ html[data-theme='dark'] .kpi {
 }
 
 html[data-theme='dark'] .kpi .value {
-  color: #FFFFFF !important;
+  color: #F8FAFC;
+}
+
+html[data-theme='dark'] .positive,
+html[data-theme='dark'] .value.positive,
+html[data-theme='dark'] .kpi .value.positive {
+  color: #34D399 !important;
+}
+
+html[data-theme='dark'] .negative,
+html[data-theme='dark'] .value.negative,
+html[data-theme='dark'] .kpi .value.negative {
+  color: #F87171 !important;
 }
 
 html[data-theme='dark'] .kpi h3 {
@@ -764,22 +776,37 @@ html[data-theme='dark'] .catbar .name,
 html[data-theme='dark'] .catbar .val { color: #CBD5E1; }
 html[data-theme='dark'] .catbar .bar { background: #1F2937; }
 
-html[data-theme='dark'] .tab,
-html[data-theme='dark'] .cat {
-  background: #0F172A !important;
-  border-color: #334155 !important;
-  color: #CBD5E1 !important;
+html[data-theme='dark'] .tab {
+  background: #0F172A;
+  border-color: #334155;
+  color: #CBD5E1;
 }
-html[data-theme='dark'] .tab:hover,
-html[data-theme='dark'] .cat:hover {
-  background: #1E293B !important;
-  border-color: #64748B !important;
-  color: #FFFFFF !important;
+html[data-theme='dark'] .tab:hover {
+  background: #1E293B;
+  border-color: #64748B;
+  color: #FFFFFF;
 }
 html[data-theme='dark'] .tab.on {
   background: #6366F1 !important;
   border-color: #6366F1 !important;
   color: #FFFFFF !important;
+}
+
+/* Category pills in dark mode: preserve individual category colors! */
+html[data-theme='dark'] .cat {
+  background: rgba(15, 23, 42, 0.7);
+  transition: all 0.05s ease;
+}
+html[data-theme='dark'] .cat:hover {
+  filter: brightness(1.25);
+}
+html[data-theme='dark'] .cat.on {
+  color: #FFFFFF !important;
+}
+html[data-theme='dark'] .cat.clear {
+  color: #94A3B8 !important;
+  border-color: #475569 !important;
+  background: transparent !important;
 }
 
 html[data-theme='dark'] .zero-state p { color: #94A3B8; }

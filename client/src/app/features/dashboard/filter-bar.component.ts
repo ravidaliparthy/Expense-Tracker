@@ -102,7 +102,7 @@ import { Category, KindFilter } from '../../core/models';
     <!-- Horizontal Categories Row -->
     <div class="categories-bar" *ngIf="categories && categories.length">
       <div class="categories-inner">
-        <button class="cat" *ngFor="let c of categories" [class.on]="filter.categoryIds().includes(c.id)" [style.background]="filter.categoryIds().includes(c.id) ? c.colorHex : '#fff'" [style.color]="filter.categoryIds().includes(c.id) ? '#fff' : '#334155'" [style.borderColor]="c.colorHex" (click)="filter.toggleCategory(c.id)">{{ c.icon || '🏷️' }} {{ c.name }}</button>
+        <button class="cat" *ngFor="let c of categories" [class.on]="filter.categoryIds().includes(c.id)" [style.background]="filter.categoryIds().includes(c.id) ? c.colorHex : (c.colorHex + '20')" [style.color]="filter.categoryIds().includes(c.id) ? '#fff' : c.colorHex" [style.borderColor]="c.colorHex" (click)="filter.toggleCategory(c.id)">{{ c.icon || '🏷️' }} {{ c.name }}</button>
         <button class="cat clear" *ngIf="filter.categoryIds().length" (click)="filter.setCategoryIds([])">✕ Clear</button>
       </div>
     </div>
