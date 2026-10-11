@@ -262,6 +262,12 @@ The application is a full **Progressive Web App (PWA)** that installs directly t
 4. Tap **Add** in the top-right corner.
 5. Tap the new **ExpenseTracker** app icon on your home screen to launch in full-screen standalone mode.
 
+### 💫 Native Launch Splash Screen
+When opened from the home screen on iPhone, iPad, Android, or desktop browsers, the app greets the user with an animated 1.5-second brand launch screen:
+- **Glowing Diamond Insignia**: Ambient radial illumination with breathing pulse keyframes and orbiting ring.
+- **Brand Typography**: High-DPI title and tagline (*Smart Financial Intelligence · Offline-First Precision*).
+- **Graceful Unmasking**: Smooth cubic-bezier transition revealing the dashboard or login view without blocking UI interactivity or flashing white.
+
 ---
 
 ## ⚡ Cold-Start Mitigation & Keep-Alive Infrastructure
@@ -489,7 +495,8 @@ All components are covered with automated test suites:
 |---|---|---|---|
 | **Client Unit Tests** | `npm test` in `client` | ✅ **13 of 13 PASS** | AuthService, FilterService, OfflineQueueService, BudgetStatus tier math |
 | **Server Integration Tests** | `npm test` in `server` | ✅ **24 of 24 PASS** | Auth, PIN recovery, Categories, Expenses, Budgets, Analytics, Export, Sync, Rate limiting |
-| **Production Build** | `npm run build` in `client` | ✅ **0 ERRORS** | Tree-shaken, gzipped production bundle (~93 kB initial transfer) |
+| **Production Build** | `npm run build` in `client` | ✅ **0 ERRORS** | Tree-shaken, gzipped production bundle (~95 kB initial transfer) |
+| **GitHub Actions CI** | Push to `main` / PR | ✅ **All Jobs PASS** | Automated CI matrix executing backend integration tests & Angular production compile |
 | **Turso Cloud Persistence** | Live libSQL verification | ✅ **VERIFIED** | Cloud schema applied, multi-user records hydrated, instant write-through push |
 
 ---
