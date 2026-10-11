@@ -299,6 +299,7 @@ Tap the **✨ Tour** button in the header at any time to launch a 9-step interac
 ## 🚀 Key Features
 
 * **Progressive Web App (PWA)**: Installable, full-screen standalone mobile experience with high-resolution app icons.
+* **🛡️ Privacy Shield / Ghost Mode**: Instantly mask numbers with `P` hotkey or toolbar toggle (`👁️`) for shoulder-surfing protection in public.
 * **Native Launch Splash Animation**: Buttery-smooth 1.5s virtual brand launch animation (Instagram & WhatsApp caliber) with an illuminated diamond insignia, brand typography, and smooth cubic-bezier unmasking across PC, iOS Safari, and Android without blocking UI interactivity or causing white flashes.
 * **Hybrid Cloud Persistence**: In-process SQLite for sub-millisecond local reads + Turso Cloud (libSQL) for permanent multi-device sync.
 * **Offline-First Resilience**: Log expenses offline; automatic background batch synchronization with idempotent UUIDs.

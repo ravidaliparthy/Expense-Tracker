@@ -1351,3 +1351,43 @@ html[data-theme='dark'] .kind-tabs button.on {
   0%, 100% { opacity: 0.6; transform: scale(0.9); }
   50% { opacity: 1; transform: scale(1.15); }
 }
+
+/* ==========================================================================
+   PRIVACY MODE / GHOST MODE (P HOTKEY)
+   Masks sensitive amounts from shoulder-surfing in public transit & offices.
+   Hovering or tapping temporarily unmasks an individual value.
+   ========================================================================== */
+html[data-privacy='true'] {
+  .kpi .value,
+  .card .value,
+  .card .stat-val,
+  td.amount,
+  td.mono,
+  .donut-total,
+  .catbar .val,
+  .wdrow .v,
+  .amount-tag {
+    filter: blur(6.5px) !important;
+    user-select: none !important;
+    cursor: pointer;
+    transition: filter 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .kpi .value:hover,
+  .card .value:hover,
+  .card .stat-val:hover,
+  td.amount:hover,
+  td.mono:hover,
+  .donut-total:hover,
+  .catbar .val:hover,
+  .wdrow .v:hover,
+  .amount-tag:hover {
+    filter: blur(0px) !important;
+  }
+}
+
+.privacy-toggle-active {
+  background: #312E81 !important;
+  border-color: #6366F1 !important;
+  color: #A5B4FC !important;
+}

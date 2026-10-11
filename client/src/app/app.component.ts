@@ -6,6 +6,7 @@ import { OfflineQueueService } from './core/offline-queue.service';
 import { OnboardingService } from './core/onboarding.service';
 import { PwaService } from './core/pwa.service';
 import { KeepAliveService } from './core/keep-alive.service';
+import { PrivacyService } from './core/privacy.service';
 
 @Component({
   selector: 'app-root',
@@ -66,6 +67,9 @@ import { KeepAliveService } from './core/keep-alive.service';
           <span class="badge off" *ngIf="!queue.online()">● Offline — saving locally</span>
           <button class="ghost" (click)="replayTour()" title="Replay guided tour">✨ Tour</button>
           <button class="ghost" (click)="toggleTheme()" title="Toggle dark mode">{{ dark() ? '☀️ Light' : '🌙 Dark' }}</button>
+          <button class="ghost privacy-toggle-btn" [class.privacy-toggle-active]="privacy.isPrivate()" (click)="privacy.toggle()" title="Privacy Mode (Hotkey: P) — blur amounts in public">
+            {{ privacy.isPrivate() ? '👁️ Masked' : '👁️ Show' }}
+          </button>
           <span class="user">{{ auth.user()?.displayName }}</span>
           <button class="ghost btn-topbar-signout" data-tour="session-controls" (click)="auth.logout()" title="Sign out and end session">
             <span>🚪</span> Sign out
@@ -534,6 +538,7 @@ export class AppComponent {
   readonly onboarding = inject(OnboardingService);
   readonly pwa = inject(PwaService);
   readonly keepAlive = inject(KeepAliveService);
+  readonly privacy = inject(PrivacyService);
   /** Theme preference — persisted so the app opens in your chosen mode. */
   readonly dark = signal(readStoredTheme());
 
