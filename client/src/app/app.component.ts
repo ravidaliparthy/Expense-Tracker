@@ -12,6 +12,33 @@ import { KeepAliveService } from './core/keep-alive.service';
   standalone: true,
   imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive],
   template: `
+    <!-- Native Launch / Splash Virtual Animation Screen (Instagram & WhatsApp style) -->
+    <div class="app-splash-screen" *ngIf="showSplash()" [class.exiting]="splashExiting()">
+      <div class="splash-ambient-glow"></div>
+      <div class="splash-content">
+        <div class="splash-logo-container">
+          <div class="splash-logo-ring"></div>
+          <div class="splash-logo-badge">
+            <span class="splash-logo-symbol">◆</span>
+          </div>
+        </div>
+        
+        <div class="splash-brand-wrap">
+          <h1 class="splash-brand-title">Expense<span class="splash-brand-accent">Tracker</span></h1>
+          <p class="splash-brand-tagline">Smart Financial Intelligence · Offline-First Precision</p>
+        </div>
+
+        <div class="splash-loader-bar">
+          <div class="splash-loader-indicator"></div>
+        </div>
+      </div>
+
+      <div class="splash-footer-badge">
+        <span class="splash-footer-dot">●</span>
+        <span>Secure · Private · Real-Time</span>
+      </div>
+    </div>
+
     <!-- Cold-Start Wakeup Notification Banner -->
     <div class="cold-start-banner" *ngIf="keepAlive.wakingUp()">
       <span class="cold-start-icon">⚡</span>
@@ -509,12 +536,24 @@ export class AppComponent {
   /** Theme preference — persisted so the app opens in your chosen mode. */
   readonly dark = signal(readStoredTheme());
 
+  /** Native app launch virtual splash animation (WhatsApp/Instagram feel) */
+  readonly showSplash = signal(true);
+  readonly splashExiting = signal(false);
+
   constructor() {
     this.keepAlive.init();
     effect(() => {
       document.documentElement.dataset['theme'] = this.dark() ? 'dark' : 'light';
       try { localStorage.setItem('et.theme', this.dark() ? 'dark' : 'light'); } catch { /* private mode */ }
     });
+
+    // Native app launch splash animation: 1.2s active + 0.35s graceful fade-out
+    setTimeout(() => {
+      this.splashExiting.set(true);
+      setTimeout(() => {
+        this.showSplash.set(false);
+      }, 350);
+    }, 1200);
   }
 
   toggleTheme(): void { this.dark.update((v) => !v); }
