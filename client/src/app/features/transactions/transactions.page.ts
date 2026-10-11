@@ -402,8 +402,8 @@ export class TransactionsPage {
     );
   }
 
-  ngOnInit(): void {
-    // Initial fetch handled cleanly by effect and instant pre-hydration
+  async ngOnInit(): Promise<void> {
+    await this.load();
   }
 
   toggleSort(field: 'date' | 'amount'): void {

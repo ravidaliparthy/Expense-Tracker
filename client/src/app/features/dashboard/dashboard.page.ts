@@ -13,6 +13,9 @@ import { FilterBarComponent } from './filter-bar.component';
 import { ExpenseTableComponent } from './expense-table.component';
 import { ExpenseFormComponent, ExpenseFormValue } from './expense-form.component';
 import { OnboardingOverlayComponent } from '../onboarding/onboarding-overlay.component';
+import { QuickOmnibarComponent, OmnibarSubmitPayload } from './quick-omnibar.component';
+import { SplitBillModalComponent, SplitRecordPayload } from './split-bill-modal.component';
+import { CurrencyConverterModalComponent } from './currency-converter-modal.component';
 import { safeUuid } from '../../core/uuid';
 const pad = (n: number) => String(n).padStart(2, '0');
 
@@ -28,7 +31,17 @@ export interface BreakdownRow {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink, FilterBarComponent, ExpenseTableComponent, ExpenseFormComponent, OnboardingOverlayComponent],
+  imports: [
+    CommonModule,
+    RouterLink,
+    FilterBarComponent,
+    ExpenseTableComponent,
+    ExpenseFormComponent,
+    OnboardingOverlayComponent,
+    QuickOmnibarComponent,
+    SplitBillModalComponent,
+    CurrencyConverterModalComponent
+  ],
   templateUrl: './dashboard.page.html',
   styles: [`
     .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:12px;flex-wrap:wrap}
@@ -133,6 +146,60 @@ export interface BreakdownRow {
     :host-context([data-theme='dark']) .positive{color:#34D399 !important}
     :host-context([data-theme='dark']) .negative{color:#F87171 !important}
 
+    /* Safe-to-Spend Dynamic Daily Allowance Hero Widget */
+    .safe-hero-banner {
+      background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%);
+      border: 1px solid #C7D2FE;
+      border-radius: 14px;
+      padding: 16px 20px;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.08);
+      position: relative;
+      overflow: hidden;
+    }
+    .safe-hero-banner.pace-comfortable { border-left: 5px solid #10B981; }
+    .safe-hero-banner.pace-moderate { border-left: 5px solid #F59E0B; }
+    .safe-hero-banner.pace-heavy, .safe-hero-banner.pace-exceeded { border-left: 5px solid #EF4444; }
+    :host-context([data-theme='dark']) .safe-hero-banner {
+      background: linear-gradient(135deg, #111827 0%, #1E1B4B 100%);
+      border-color: #312E81;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+    }
+    .safe-hero-left { display: flex; flex-direction: column; gap: 4px; }
+    .safe-hero-badge {
+      display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700;
+      padding: 2px 8px; border-radius: 999px; background: rgba(99, 102, 241, 0.12); color: #4F46E5;
+      width: fit-content; text-transform: uppercase; letter-spacing: 0.3px;
+    }
+    :host-context([data-theme='dark']) .safe-hero-badge {
+      background: rgba(129, 140, 248, 0.2); color: #A5B4FC;
+    }
+    .safe-hero-title { font-size: 13px; font-weight: 600; color: #475569; }
+    :host-context([data-theme='dark']) .safe-hero-title { color: #94A3B8; }
+    .safe-hero-amount { display: flex; align-items: baseline; gap: 6px; }
+    .hero-allowance-val { font-size: 28px; font-weight: 800; color: #1E1B4B; letter-spacing: -0.5px; }
+    :host-context([data-theme='dark']) .hero-allowance-val { color: #F8FAFC; }
+    .safe-hero-sub { font-size: 13px; color: #64748B; font-weight: 500; }
+    :host-context([data-theme='dark']) .safe-hero-sub { color: #94A3B8; }
+    .safe-hero-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .safe-stat-pill {
+      background: rgba(255, 255, 255, 0.7); border: 1px solid rgba(226, 232, 240, 0.8);
+      border-radius: 10px; padding: 8px 12px; display: flex; flex-direction: column; gap: 2px;
+    }
+    :host-context([data-theme='dark']) .safe-stat-pill {
+      background: rgba(15, 23, 42, 0.6); border-color: #374151;
+    }
+    .safe-stat-pill .lbl { font-size: 10px; font-weight: 600; color: #64748B; text-transform: uppercase; }
+    :host-context([data-theme='dark']) .safe-stat-pill .lbl { color: #94A3B8; }
+    .safe-stat-pill .val { font-size: 13px; font-weight: 700; color: #0F172A; }
+    :host-context([data-theme='dark']) .safe-stat-pill .val { color: #F8FAFC; }
+
+
     /* Empty state card */
     .empty-state-card { text-align:center; padding:32px 16px; background:#F8FAFC; border:1px dashed #CBD5E1; border-radius:12px; margin-top:8px; }
     :host-context([data-theme='dark']) .empty-state-card { background:#1E293B; border-color:#334155; }
@@ -161,6 +228,14 @@ export class DashboardPage {
   readonly deletingIds=signal<Set<number>>(new Set());
   readonly seedingDemo=signal(false);
 
+  // Client-edge feature signals (Zero backend memory impact)
+  readonly splitBillOpen = signal(false);
+  readonly splitBillInitialTotal = signal(0);
+  readonly splitBillInitialDesc = signal('');
+  readonly currencyModalOpen = signal(false);
+  readonly currencyModalAmount = signal(100);
+  readonly omnibarBusy = signal(false);
+
   // Customizable breakdown mode & sub-filter keys
   readonly breakdownMode=signal<'weekday'|'weekly'|'monthly'|'yearly'>('weekday');
   readonly selectedWeekKey=signal<string|null>(null);
@@ -181,6 +256,15 @@ export class DashboardPage {
   readonly expensePoints=computed(()=>this.pointsFor('expense')); readonly incomePoints=computed(()=>this.pointsFor('income')); readonly netPoints=computed(()=>this.pointsFor('net'));
   readonly byCategory=computed(()=>{ const map=new Map<string,{name:string;icon:string;cents:number;color:string}>(); for(const e of this.spendRows()){ const cur=map.get(e.categorySnapshot)??{name:e.categorySnapshot,icon:e.categoryIcon||'🏷️',cents:0,color:e.categoryColor}; cur.cents+=e.amountCents; map.set(e.categorySnapshot,cur); } const rows=[...map.values()].sort((a,b)=>b.cents-a.cents).slice(0,7); const max=rows[0]?.cents||1; return rows.map(r=>({...r,pct:Math.round((r.cents/max)*100)})); });
   readonly cashflowBreakdown=computed(()=>{ const k=this.kpis(); const days=this.daysInRange(); const elapsed=this.daysElapsedInRange(); const left=Math.max(0,days-elapsed); const burnRate=elapsed>0?Math.round(k.expense/elapsed):0; const projectedExpense=Math.round(burnRate*days); const projectedNet=k.income-projectedExpense; const remainingIncome=Math.max(0,k.income-k.expense); const safeToday=left>0?Math.round(remainingIncome/left):remainingIncome; return { burnRate, daysLeft:left, projectedExpense, projectedNet, safeToday, runwayDays: burnRate>0 && k.income>0 ? Math.round(k.income/burnRate) : 0, expenseRatio: k.income>0 ? Math.round((k.expense/k.income)*1000)/10 : 0 }; });
+  readonly safeToSpendPace = computed(() => {
+    const c = this.cashflowBreakdown();
+    if (c.daysLeft <= 0) return { status: 'ended', label: 'Period Completed', tone: 'neutral', icon: '🏁' };
+    if (c.safeToday <= 0) return { status: 'exceeded', label: 'Over Budget', tone: 'neg', icon: '🚨' };
+    if (c.burnRate <= c.safeToday) return { status: 'comfortable', label: 'On Track', tone: 'pos', icon: '🟢' };
+    if (c.burnRate <= c.safeToday * 1.25) return { status: 'moderate', label: 'Paced Carefully', tone: 'warn', icon: '🟡' };
+    return { status: 'heavy', label: 'High Burn Rate', tone: 'neg', icon: '🔴' };
+  });
+  readonly remainingBuffer = computed(() => Math.max(0, this.kpis().income - this.kpis().expense));
   readonly insightMessages=computed(()=>{ const ins=this.insights(); if(!ins)return[]; const cur=this.currency(); const out:{icon:string;text:string;tone?:'pos'|'neg'}[]=[]; const c=ins.comparison; const pct=(p:number)=>`${Math.abs(p)}%`;
     if(c.prevExpenseCents>0){const up=c.expenseDeltaPct>0;out.push({icon:up?'📈':'📉',text:`Debits ${up?'up':'down'} ${pct(c.expenseDeltaPct)} vs previous period (${money(c.prevExpenseCents,cur)} → ${money(c.expenseCents,cur)}).`,tone:up?'neg':'pos'});}
     if(c.incomeCents>0||c.prevIncomeCents>0){const up=c.incomeDeltaPct>=0;out.push({icon:'💰',text:`Credits ${up?'grew':'fell'} ${pct(c.incomeDeltaPct)} (${money(c.prevIncomeCents,cur)} → ${money(c.incomeCents,cur)}).`,tone:up?'pos':'neg'});}
@@ -700,6 +784,71 @@ export class DashboardPage {
       void this.loadCategories();
     }
   }
+
+  openSplitBill(total = 0, desc = ''): void {
+    this.splitBillInitialTotal.set(total);
+    this.splitBillInitialDesc.set(desc);
+    this.splitBillOpen.set(true);
+    this.cdr.detectChanges();
+  }
+
+  openCurrencyConverter(amt = 100): void {
+    this.currencyModalAmount.set(amt);
+    this.currencyModalOpen.set(true);
+    this.cdr.detectChanges();
+  }
+
+  async onOmnibarSubmit(p: OmnibarSubmitPayload): Promise<void> {
+    this.omnibarBusy.set(true);
+    try {
+      const res = await this.api.createExpense({ ...p, clientUuid: safeUuid() });
+      this.flash.set(
+        res === 'queued'
+          ? { type: 'warn', text: 'Offline — saved locally, will sync when back online' }
+          : { type: 'ok', text: `⚡ Logged ${money(p.amountCents, this.currency())} for ${p.merchant}!` }
+      );
+      this.cdr.detectChanges();
+      setTimeout(() => { if (this.flash()?.type === 'ok') this.flash.set(null); }, 3500);
+      await this.reload();
+      this.cdr.detectChanges();
+    } catch (err: unknown) {
+      const e = err as { error?: { error?: string } };
+      this.flash.set({ type: 'err', text: e.error?.error || 'Quick log failed' });
+      this.cdr.detectChanges();
+    } finally {
+      this.omnibarBusy.set(false);
+      this.cdr.detectChanges();
+    }
+  }
+
+  async onRecordSplitShare(share: SplitRecordPayload): Promise<void> {
+    try {
+      const res = await this.api.createExpense({
+        amountCents: share.amountCents,
+        occurredAt: new Date().toISOString(),
+        categoryId: null,
+        kind: 'expense',
+        merchant: share.merchant,
+        notes: share.notes,
+        clientUuid: safeUuid()
+      });
+      this.splitBillOpen.set(false);
+      this.flash.set(
+        res === 'queued'
+          ? { type: 'warn', text: 'Offline — split share saved locally, will sync when back online' }
+          : { type: 'ok', text: `✓ Recorded your share of ${money(share.amountCents, this.currency())}!` }
+      );
+      this.cdr.detectChanges();
+      setTimeout(() => { if (this.flash()?.type === 'ok') this.flash.set(null); }, 3500);
+      await this.reload();
+      this.cdr.detectChanges();
+    } catch (err: unknown) {
+      const e = err as { error?: { error?: string } };
+      this.flash.set({ type: 'err', text: e.error?.error || 'Failed to record share' });
+      this.cdr.detectChanges();
+    }
+  }
+
 
   hex(color: string, alpha: number): string {
     const c = color && color.startsWith('#') ? color : '#64748B';
