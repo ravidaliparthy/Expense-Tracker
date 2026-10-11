@@ -19,8 +19,8 @@ export interface SplitRecordPayload {
           <div class="modal-title-wrap">
             <span class="modal-icon">👥</span>
             <div>
-              <h3>Split Bill & WhatsApp Share</h3>
-              <p class="modal-sub">Calculate fair shares and generate instant WhatsApp message requests.</p>
+              <h3>Split Bill Calculator</h3>
+              <p class="modal-sub">Calculate fair shares and generate formatted payment requests.</p>
             </div>
           </div>
           <button type="button" class="btn-close" (click)="close.emit()">✕</button>
@@ -98,10 +98,10 @@ export interface SplitRecordPayload {
             </div>
           </div>
 
-          <!-- Live WhatsApp Message Preview -->
+          <!-- Live Message Preview -->
           <div class="msg-preview-wrap">
             <div class="msg-preview-header">
-              <span class="wa-badge">💬 WhatsApp Message Preview</span>
+              <span class="wa-badge">💬 Split Message Preview</span>
               <button type="button" class="btn-copy-preview" (click)="copyMessage()">
                 {{ copied() ? '✓ Copied!' : '📋 Copy Text' }}
               </button>
@@ -115,12 +115,12 @@ export interface SplitRecordPayload {
           
           <button
             type="button"
-            class="btn-wa"
-            (click)="shareOnWhatsapp()"
+            class="btn-ghost"
+            (click)="copyMessage()"
             [disabled]="perPersonShare() <= 0"
-            title="Open WhatsApp with pre-filled split message"
+            title="Copy payment request message to clipboard"
           >
-            <span>💬</span> Share via WhatsApp
+            <span>📋</span> {{ copied() ? '✓ Copied to Clipboard!' : 'Copy Message' }}
           </button>
 
           <button
@@ -135,6 +135,7 @@ export interface SplitRecordPayload {
         </div>
       </div>
     </div>
+
   `,
   styles: [`
     .overlay {
@@ -446,28 +447,6 @@ export interface SplitRecordPayload {
     :host-context([data-theme='dark']) .modal-footer {
       border-color: #1F2937;
     }
-    .btn-wa {
-      background: #25D366;
-      color: #FFFFFF;
-      border: none;
-      padding: 9px 16px;
-      border-radius: 8px;
-      font-weight: 600;
-      font-size: 13px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      transition: background 0.15s ease, transform 0.1s ease;
-    }
-    .btn-wa:hover:not(:disabled) {
-      background: #1EBE5D;
-      transform: translateY(-1px);
-    }
-    .btn-wa:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
     @media (max-width: 600px) {
       .input-grid {
         grid-template-columns: 1fr;
@@ -535,12 +514,6 @@ export class SplitBillModalComponent implements OnInit {
 
     text += `\n\nWhenever you get a chance! 🙏`;
     return text;
-  }
-
-  shareOnWhatsapp(): void {
-    const msg = this.generatedMessage();
-    const url = `https://wa.me/?text=${encodeURIComponent(msg)}`;
-    window.open(url, '_blank');
   }
 
   copyMessage(): void {

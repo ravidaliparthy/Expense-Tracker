@@ -317,9 +317,9 @@ To deliver world-class daily user convenience without degrading server RAM or vi
    - Instant live preview chips beneath the bar as you type, with 1-tap everyday suggestion chips.
    - **Zero Server Impact**: Reuses existing `POST /api/expenses` endpoint; 0 extra server state.
 
-4. 👥 **Client Split Bill Calculator & Direct WhatsApp Message Sharing**:
+4. 👥 **Client Split Bill Calculator & Payment Share Request**:
    - Calculates equal shares for group dining, road trips, and shared bills.
-   - **"💬 Share via WhatsApp"**: Generates a pre-formatted request message and opens WhatsApp directly (`https://wa.me/?text=...`) without requiring expensive WhatsApp Business APIs, webhooks, or third-party bots.
+   - **"📋 Copy Message"**: Generates a pre-formatted request message and copies it directly to your clipboard for sharing across any messaging platform.
    - Option to automatically save the user's personal share to expenses.
    - **Zero Server Impact**: 100% browser-driven; zero external API dependencies.
 
@@ -336,7 +336,7 @@ To deliver world-class daily user convenience without degrading server RAM or vi
 * **🛡️ Privacy Shield / Ghost Mode**: Instantly mask numbers with `P` hotkey or toolbar toggle for privacy in public.
 * **🎯 Safe-to-Spend Today Daily Pacing**: Live hero widget telling users exactly what they can spend each day without going broke.
 * **⚡ Natural Language Omnibar**: Quick-log entries in 1 second ("15 lunch", "45 groceries") with live preview chips.
-* **👥 Split Bill & 1-Tap WhatsApp Request**: Split group dining bills and generate instant WhatsApp payment request messages.
+* **👥 Split Bill & 1-Tap Request Generator**: Split group dining bills and generate instant formatted payment request messages.
 * **💱 Multi-Currency Offline Converter**: Live conversions for 10 global currencies with automatic symbol detection in the Omnibar.
 * **Native Launch Splash Animation**: Buttery-smooth 1.5s virtual brand launch animation (Instagram & WhatsApp caliber) with an illuminated diamond insignia, brand typography, and smooth cubic-bezier unmasking across PC, iOS Safari, and Android without blocking UI interactivity or causing white flashes.
 * **Hybrid Cloud Persistence**: In-process SQLite for sub-millisecond local reads + Turso Cloud (libSQL) for permanent multi-device sync.
