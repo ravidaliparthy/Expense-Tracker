@@ -1366,6 +1366,8 @@ html[data-privacy='true'] {
   .donut-total,
   .catbar .val,
   .wdrow .v,
+  .saved-val,
+  .target-val,
   .amount-tag {
     filter: blur(6.5px) !important;
     user-select: none !important;
@@ -1381,6 +1383,8 @@ html[data-privacy='true'] {
   .donut-total:hover,
   .catbar .val:hover,
   .wdrow .v:hover,
+  .saved-val:hover,
+  .target-val:hover,
   .amount-tag:hover {
     filter: blur(0px) !important;
   }

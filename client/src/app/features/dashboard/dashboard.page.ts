@@ -13,6 +13,10 @@ import { FilterBarComponent } from './filter-bar.component';
 import { ExpenseTableComponent } from './expense-table.component';
 import { ExpenseFormComponent, ExpenseFormValue } from './expense-form.component';
 import { OnboardingOverlayComponent } from '../onboarding/onboarding-overlay.component';
+import { StreakService } from '../../core/streak.service';
+import { StreakCardComponent } from './streak-card.component';
+import { SavingsGoalsComponent } from './savings-goals.component';
+import { SplitBillModalComponent, SplitRecordPayload } from './split-bill-modal.component';
 import { safeUuid } from '../../core/uuid';
 const pad = (n: number) => String(n).padStart(2, '0');
 
@@ -34,7 +38,10 @@ export interface BreakdownRow {
     FilterBarComponent,
     ExpenseTableComponent,
     ExpenseFormComponent,
-    OnboardingOverlayComponent
+    OnboardingOverlayComponent,
+    StreakCardComponent,
+    SavingsGoalsComponent,
+    SplitBillModalComponent
   ],
   templateUrl: './dashboard.page.html',
   styles: [`
@@ -162,11 +169,18 @@ export interface BreakdownRow {
 })
 export class DashboardPage {
   readonly filter=inject(FilterService); private api=inject(ApiService); readonly queue=inject(OfflineQueueService); readonly tour=inject(OnboardingService); readonly auth=inject(AuthService); private cdr = inject(ChangeDetectorRef);
+  private readonly streakService = inject(StreakService);
   readonly TIER_COLORS=TIER_COLORS; readonly money=money; readonly signedMoney=signedMoney;
   readonly trackById = (_: number, e: Expense): number => e.id;
   readonly expenses=signal<Expense[]>([]); readonly total=signal(0); readonly categories=signal<Category[]>([]); readonly budgets=signal<Budget[]>([]); readonly summary=signal<SummaryDto|null>(null); readonly insights=signal<Insights|null>(null); readonly loading=signal(false); readonly flash=signal<{type:'ok'|'warn'|'err';text:string}|null>(null); readonly exportBusy=signal(false); readonly formOpen=signal(false); readonly editing=signal<Expense|null>(null); readonly hadData=signal(false);
   readonly deletingIds=signal<Set<number>>(new Set());
   readonly seedingDemo=signal(false);
+
+  // Client-edge Streak & Split Bill signals
+  readonly streakInfo = computed(() => this.streakService.computeStreak(this.expenses()));
+  readonly splitBillOpen = signal(false);
+  readonly splitBillInitialTotal = signal(0);
+  readonly splitBillInitialDesc = signal('');
 
   // Customizable breakdown mode & sub-filter keys
   readonly breakdownMode=signal<'weekday'|'weekly'|'monthly'|'yearly'>('weekday');
@@ -705,6 +719,41 @@ export class DashboardPage {
     this.cdr.detectChanges();
     if (this.categories().length === 0) {
       void this.loadCategories();
+    }
+  }
+
+  openSplitBill(total = 0, desc = ''): void {
+    this.splitBillInitialTotal.set(total);
+    this.splitBillInitialDesc.set(desc);
+    this.splitBillOpen.set(true);
+    this.cdr.detectChanges();
+  }
+
+  async onRecordSplitShare(share: SplitRecordPayload): Promise<void> {
+    try {
+      const res = await this.api.createExpense({
+        amountCents: share.amountCents,
+        occurredAt: new Date().toISOString(),
+        categoryId: null,
+        kind: 'expense',
+        merchant: share.merchant,
+        notes: share.notes,
+        clientUuid: safeUuid()
+      });
+      this.splitBillOpen.set(false);
+      this.flash.set(
+        res === 'queued'
+          ? { type: 'warn', text: 'Offline — split share saved locally, will sync when back online' }
+          : { type: 'ok', text: `✓ Recorded your share of ${money(share.amountCents, this.currency())}!` }
+      );
+      this.cdr.detectChanges();
+      setTimeout(() => { if (this.flash()?.type === 'ok') this.flash.set(null); }, 3500);
+      await this.reload();
+      this.cdr.detectChanges();
+    } catch (err: unknown) {
+      const e = err as { error?: { error?: string } };
+      this.flash.set({ type: 'err', text: e.error?.error || 'Failed to record share' });
+      this.cdr.detectChanges();
     }
   }
 

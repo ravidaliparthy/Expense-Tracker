@@ -2,6 +2,7 @@
   <div><h1>Dashboard</h1><div class="sub">{{ filter.activePresetLabel() }} · {{ currency() }} · income, expenses, net cashflow</div></div>
   <div class="actions">
     <button class="btn-ghost" routerLink="/transactions" data-tour="view-transactions" title="View & edit all transactions">📋 View transactions</button>
+    <button class="btn-ghost" (click)="openSplitBill()" title="Split a bill with friends">👥 Split bill</button>
     <button class="btn-ghost" data-tour="export-menu" [disabled]="exportBusy()" (click)="exportCsv()">⤓ CSV</button>
     <button class="btn-ghost" [disabled]="exportBusy()" (click)="exportPdf()">⤓ PDF</button>
     <button class="btn-primary" data-tour="add-expense" (click)="openCreate()">+ Add transaction</button>
@@ -13,6 +14,9 @@
   <span style="margin-left:auto;opacity:0.6;font-size:11px">✕</span>
 </div>
 <app-filter-bar [categories]="categories()"></app-filter-bar>
+
+<!-- Daily Tracking Streak Flow -->
+<app-streak-card [streak]="streakInfo()"></app-streak-card>
 
 <div class="kpi-grid">
   <div class="card kpi"><h3>Total expenses</h3><div class="value negative">{{ money(kpis().expense, currency()) }}</div><div class="sub">{{ kpis().expenseCount }} debit transactions</div></div>
@@ -142,6 +146,10 @@
     <ng-template #noCum><p style="color:#94A3B8">Add transactions across multiple periods to see savings accumulate.</p></ng-template>
   </div>
 </div>
+
+<!-- Savings Goals with Progress Bars -->
+<app-savings-goals [currency]="currency()"></app-savings-goals>
+
 <div class="grid-2">
   <div class="card" data-tour="transactions-table">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
@@ -193,6 +201,7 @@
             <td class="notes-cell" [title]="e.notes || ''">{{ e.notes || '—' }}</td>
             <td class="amount" [class.plus]="e.kind === 'income'" [class.minus]="e.kind !== 'income'">{{ e.kind === 'income' ? '+' : '-' }}{{ money(e.amountCents, e.currency) }}</td>
             <td style="white-space:nowrap;text-align:right">
+              <button type="button" class="tbl-icon-btn" title="Split this expense with friends" (click)="openSplitBill(e.amountCents / 100, e.merchant || e.categorySnapshot)">👥</button>
               <button type="button" class="tbl-icon-btn" title="Edit transaction" [id]="'edit-tx-' + e.id" (click)="openEdit(e)">✎</button>
               <button type="button" class="tbl-icon-btn danger" [disabled]="deletingIds().has(e.id)" title="Delete transaction" [id]="'delete-tx-' + e.id" (click)="onRemove(e)">🗑</button>
             </td>
@@ -230,4 +239,5 @@
 </div>
 
 <app-expense-form *ngIf="formOpen()" [expense]="editing()" [categories]="categories()" [currency]="currency()" (save)="onSave($event)" (createCategory)="onCreateCategory($event)" (close)="formOpen.set(false)"></app-expense-form>
+<app-split-bill-modal *ngIf="splitBillOpen()" [total]="splitBillInitialTotal()" [currency]="currency()" [defaultDescription]="splitBillInitialDesc()" (recordShare)="onRecordSplitShare($event)" (close)="splitBillOpen.set(false)"></app-split-bill-modal>
 <app-onboarding-overlay [showZeroState]="isEmpty() && !hadData()"></app-onboarding-overlay>
