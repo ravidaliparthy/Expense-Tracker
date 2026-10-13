@@ -512,6 +512,63 @@ async function runTests() {
       assert.strictEqual(r2.kind, 'expense');
     });
 
+    // 10c. PhonePe PDF Statement Parsing
+    await test('POST /expenses/parse-pdf parses PhonePe multiline statement with credits and debits', async () => {
+      const PDFDocument = require('pdfkit');
+      const doc = new PDFDocument();
+      const buffers = [];
+      doc.on('data', (b) => buffers.push(b));
+      const pdfPromise = new Promise((resolve) => doc.on('end', () => resolve(Buffer.concat(buffers))));
+
+      doc.fontSize(16).text('Transaction Statement for +919182021304');
+      doc.fontSize(12).text('Sep 13, 2026 - Oct 13, 2026');
+      doc.text('Date Transaction Details Type Amount');
+      doc.text('Sep 13, 2026');
+      doc.text('04:27 PM');
+      doc.text('Received from DSV Chalapathy Rao');
+      doc.text('Transaction ID : T2609131627456388020423');
+      doc.text('UTR No : 339294069853');
+      doc.text('Credited to XX4194');
+      doc.text('Credit');
+      doc.text('INR 2000.00');
+
+      doc.text('Sep 18, 2026');
+      doc.text('09:43 AM');
+      doc.text('Paid to Kullai Reddy');
+      doc.text('Transaction ID : T2609180943552343967879');
+      doc.text('UTR No : 265494909399');
+      doc.text('Debited from XX4194');
+      doc.text('Debit');
+      doc.text('INR 130.00');
+      doc.end();
+
+      const pdfBuf = await pdfPromise;
+      const base64 = pdfBuf.toString('base64');
+
+      const res = await request('/expenses/parse-pdf', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${authToken}` },
+        body: { base64, filename: 'phonepe_statement.pdf' }
+      });
+      assert.strictEqual(res.status, 200);
+      assert.ok(Array.isArray(res.body.rows));
+      assert.strictEqual(res.body.rows.length, 2);
+
+      const creditRow = res.body.rows.find((r) => r.kind === 'income');
+      assert.ok(creditRow);
+      assert.strictEqual(creditRow.merchant, 'DSV Chalapathy Rao');
+      assert.strictEqual(creditRow.amountCents, 200000);
+      assert.strictEqual(creditRow.date, '2026-09-13');
+      assert.strictEqual(creditRow.tag, 'saving');
+
+      const debitRow = res.body.rows.find((r) => r.kind === 'expense');
+      assert.ok(debitRow);
+      assert.strictEqual(debitRow.merchant, 'Kullai Reddy');
+      assert.strictEqual(debitRow.amountCents, 13000);
+      assert.strictEqual(debitRow.date, '2026-09-18');
+      assert.strictEqual(debitRow.tag, 'need');
+    });
+
     // 11. Recurring Bills & Pay Action
     await test('POST /recurring creates bill and POST /recurring/:id/pay logs payment', async () => {
       const createRes = await request('/recurring', {
