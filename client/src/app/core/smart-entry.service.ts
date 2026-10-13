@@ -7,6 +7,7 @@ export interface ParsedTransaction {
   merchant: string;
   notes: string;
   date: string;
+  time?: string;
   tag: TransactionTag;
   categoryGuess: string;
 }
@@ -59,13 +60,11 @@ export class SmartEntryService {
 
     // 3. Extract Merchant / Recipient
     let merchant = '';
-    // Look for patterns like "to <Merchant>", "at <Merchant>", "info: <Merchant>", "paid to <Merchant>"
     const merchMatch = text.match(/(?:to|at|info:|vpa|merchant:)\s+([A-Za-z0-9\s&'-]{2,30}?)(?=\s+(?:on|via|ref|upi|using|for|avlbl|bal|\.|$))/i) ||
                        text.match(/(?:for)\s+([A-Za-z0-9\s&'-]{2,25}?)(?=\s+(?:on|at|via|\.|$))/i);
     if (merchMatch && merchMatch[1]) {
       merchant = merchMatch[1].trim();
     } else {
-      // Fallback: strip numbers and common transaction keywords
       const cleaned = text
         .replace(/(?:rs\.?|inr|₹|\$|debited|credited|paid|sent|via|upi|ref|ac|a\/c|bal|available|balance|on|at|for)\b/gi, '')
         .replace(/[\d,.]+/g, '')
@@ -110,13 +109,56 @@ export class SmartEntryService {
       tag = 'saving';
     }
 
-    const today = new Date().toISOString().slice(0, 10);
+    // 5. Extract Time & Date if present (fallback to random daytime time)
+    let extractedTime = '';
+    const timeMatch = text.match(/(?:at|time:?)\s*(\d{1,2}:\d{2}(?::\d{2})?\s*(?:[AaPp][Mm])?)/i) ||
+                      text.match(/\b(\d{1,2}:\d{2}(?::\d{2})?\s*(?:[AaPp][Mm]))\b/i) ||
+                      text.match(/\b([01]?\d|2[0-3]):([0-5]\d)(?::([0-5]\d))?\b/);
+    if (timeMatch) {
+      const raw = (timeMatch[1] || timeMatch[0]).trim();
+      const m12 = raw.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*([AaPp][Mm])$/i);
+      if (m12) {
+        let hrs = parseInt(m12[1], 10);
+        const mins = m12[2];
+        const secs = m12[3] || '00';
+        const ap = m12[4].toUpperCase();
+        if (ap === 'PM' && hrs < 12) hrs += 12;
+        if (ap === 'AM' && hrs === 12) hrs = 0;
+        extractedTime = `${String(hrs).padStart(2, '0')}:${mins}:${secs}`;
+      } else {
+        const m24 = raw.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+        if (m24) {
+          extractedTime = `${m24[1].padStart(2, '0')}:${m24[2]}:${m24[3] || '00'}`;
+        }
+      }
+    }
+
+    if (!extractedTime) {
+      const h = 8 + Math.floor(Math.random() * 14);
+      const m = Math.floor(Math.random() * 60);
+      const s = Math.floor(Math.random() * 60);
+      extractedTime = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+
+    let parsedDate = '';
+    const dmyMatch = text.match(/\b(\d{1,2})[-/](\d{1,2})[-/](\d{2,4})\b/);
+    if (dmyMatch) {
+      let yr = dmyMatch[3];
+      if (yr.length === 2) yr = '20' + yr;
+      const mo = dmyMatch[2].padStart(2, '0');
+      const da = dmyMatch[1].padStart(2, '0');
+      parsedDate = `${yr}-${mo}-${da}`;
+    } else {
+      parsedDate = new Date().toISOString().slice(0, 10);
+    }
+
     return {
       amount,
       kind,
       merchant,
       notes: text.length > 80 ? text.slice(0, 120) + '...' : text,
-      date: today,
+      date: parsedDate,
+      time: extractedTime,
       tag,
       categoryGuess,
     };

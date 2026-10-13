@@ -61,6 +61,20 @@ setInterval(() => {
 }, 60000).unref();
 
 /* ------------------------------------------------------------------ */
+/* Demo user data refresh schedule (auto-resets every 2 hours).       */
+/* ------------------------------------------------------------------ */
+const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
+setInterval(() => {
+  try {
+    const { seedDemoUser } = require('./seed');
+    console.log('[CRON] Auto-resetting demo transactions (2h interval)...');
+    seedDemoUser(null, true);
+  } catch (err) {
+    console.error('[CRON] Error resetting demo transactions:', err.message);
+  }
+}, TWO_HOURS_MS).unref();
+
+/* ------------------------------------------------------------------ */
 /* Multi-process mode: WAL SQLite + Node cluster = scales across cores.*/
 /* ------------------------------------------------------------------ */
 if (require.main === module) {

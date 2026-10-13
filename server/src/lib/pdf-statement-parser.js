@@ -65,6 +65,49 @@ function standardizeDate(rawDate) {
   return new Date().toISOString().slice(0, 10);
 }
 
+/**
+ * Normalizes time string (e.g. "04:27 PM", "7:04 PM", "21:06", "19:04:15") to 24-hr "HH:mm:ss".
+ */
+function standardizeTime(rawTime) {
+  if (!rawTime) return null;
+  const clean = rawTime.trim();
+
+  // Match: 12-hour AM/PM (e.g. "04:27 PM", "7:04 PM", "12:30 AM", "07:04:15 PM")
+  const m12 = clean.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*([AaPp][Mm])$/i);
+  if (m12) {
+    let hours = parseInt(m12[1], 10);
+    const mins = m12[2];
+    const secs = m12[3] || '00';
+    const ampm = m12[4].toUpperCase();
+    if (ampm === 'PM' && hours < 12) hours += 12;
+    if (ampm === 'AM' && hours === 12) hours = 0;
+    return `${String(hours).padStart(2, '0')}:${mins}:${secs}`;
+  }
+
+  // Match: 24-hour (e.g. "21:06", "09:43", "19:04:15")
+  const m24 = clean.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+  if (m24) {
+    const hours = parseInt(m24[1], 10);
+    const mins = m24[2];
+    const secs = m24[3] || '00';
+    if (hours >= 0 && hours <= 23) {
+      return `${String(hours).padStart(2, '0')}:${mins}:${secs}`;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Returns a natural random daytime/evening time between 08:00 and 21:59 if time was not provided.
+ */
+function getRandomTime() {
+  const h = 8 + Math.floor(Math.random() * 14);
+  const m = Math.floor(Math.random() * 60);
+  const s = Math.floor(Math.random() * 60);
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+
 function guessCategory(merchant, isIncome, userCategories = []) {
   const m = (merchant || '').toLowerCase();
   const catNames = userCategories.map((c) => ({ name: c.name, lower: c.name.toLowerCase() }));
@@ -172,12 +215,19 @@ function parseStatementText(text, userCategories = []) {
       let accountRef = '';
       let timeStr = '';
 
+      // Check if time was part of the date line itself (e.g. "Sep 13, 2026 04:27 PM")
+      const timeInDateLine = rawDate.match(/(\d{1,2}:\d{2}(?::\d{2})?\s*(?:[AaPp][Mm])?)/i);
+      if (timeInDateLine) {
+        timeStr = timeInDateLine[1];
+      }
+
       for (let j = 1; j < blockLines.length; j++) {
         const line = blockLines[j];
 
-        // Check for time: e.g. "04:27 PM" or "21:06"
-        if (/^\d{1,2}:\d{2}\s*(?:[AaPp][Mm])?$/.test(line)) {
-          timeStr = line;
+        // Check for time: e.g. "04:27 PM", "21:06", "Time: 07:04 PM"
+        const explicitTime = line.match(/(?:Time\s*[:\s]\s*|^)(\d{1,2}:\d{2}(?::\d{2})?\s*(?:[AaPp][Mm])?)/i);
+        if (explicitTime && !timeStr) {
+          timeStr = explicitTime[1];
           continue;
         }
 
@@ -247,8 +297,12 @@ function parseStatementText(text, userCategories = []) {
         if (utrNo) notesParts.push(`UTR: ${utrNo}`);
         if (timeStr) notesParts.push(`Time: ${timeStr}`);
 
+        const finalTime = standardizeTime(timeStr) || getRandomTime();
+
         results.push({
           date: isoDate,
+          time: finalTime,
+          timeStr: timeStr || finalTime,
           amountCents: Math.round(numAmt * 100),
           merchant: cleanName,
           bankRef: accountRef || '',
@@ -308,8 +362,12 @@ function parseStatementText(text, userCategories = []) {
         cleanMerchant = sanitizeText(cleanMerchant, 80);
         const category = guessCategory(cleanMerchant, kind === 'income', userCategories);
 
+        const finalTime = standardizeTime(rawTime) || getRandomTime();
+
         results.push({
           date: standardizeDate(rawDate),
+          time: finalTime,
+          timeStr: rawTime,
           amountCents: Math.round(numAmt * 100),
           merchant: cleanMerchant,
           bankRef: accPart,
@@ -361,8 +419,13 @@ function parseStatementText(text, userCategories = []) {
             const cleanMerchant = sanitizeText((merchant || 'UPI Transaction').replace(/^[-*•\s]+|[-*•\s]+$/g, ''), 80);
             const category = guessCategory(cleanMerchant, kind === 'income', userCategories);
 
+            const timeInLine = line.match(/(\d{1,2}:\d{2}(?::\d{2})?\s*(?:[AaPp][Mm])?)/i);
+            const finalTime = (timeInLine ? standardizeTime(timeInLine[1]) : null) || getRandomTime();
+
             results.push({
               date,
+              time: finalTime,
+              timeStr: timeInLine ? timeInLine[1] : finalTime,
               amountCents: Math.round(absAmt * 100),
               merchant: cleanMerchant,
               bankRef,
@@ -414,6 +477,8 @@ module.exports = {
   parsePdfBuffer,
   parseStatementText,
   standardizeDate,
+  standardizeTime,
+  getRandomTime,
   guessCategory,
   sanitizeText
 };

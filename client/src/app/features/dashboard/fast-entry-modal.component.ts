@@ -278,6 +278,11 @@ export class FastEntryModalComponent implements OnInit {
     // Save as last-used defaults
     this.smartEntry.saveDefaults(catId, this.parsed.kind, this.parsed.tag);
 
+    const [year, month, day] = this.parsed.date.split('-').map(Number);
+    const [hours, minutes, seconds] = (this.parsed.time || '12:00:00').split(':').map(Number);
+    const dt = new Date(year, (month || 1) - 1, day || 1, hours || 12, minutes || 0, seconds || 0);
+    const occurredAt = !isNaN(dt.getTime()) ? dt.toISOString() : `${this.parsed.date}T12:00:00.000Z`;
+
     this.save.emit({
       amountCents: Math.round(this.parsed.amount * 100),
       kind: this.parsed.kind,
@@ -285,7 +290,7 @@ export class FastEntryModalComponent implements OnInit {
       merchant: this.parsed.merchant,
       notes: this.parsed.notes,
       categoryId: catId,
-      occurredAt: `${this.parsed.date}T12:00:00.000Z`
+      occurredAt
     });
     this.close.emit();
   }

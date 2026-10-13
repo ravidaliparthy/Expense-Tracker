@@ -100,12 +100,6 @@ import { safeUuid } from '../../core/uuid';
         <strong>{{ selectedIds().size }}</strong> selected
       </div>
       <div class="bulk-actions">
-        <div class="bulk-group">
-          <span class="bulk-lbl">Tag:</span>
-          <button type="button" class="btn-bulk" (click)="bulkSetTag('need')" [disabled]="bulkBusy()">🛡️ Need</button>
-          <button type="button" class="btn-bulk" (click)="bulkSetTag('want')" [disabled]="bulkBusy()">💡 Want</button>
-          <button type="button" class="btn-bulk" (click)="bulkSetTag('saving')" [disabled]="bulkBusy()">🎯 Saving</button>
-        </div>
 
         <div class="bulk-group">
           <span class="bulk-lbl">Category:</span>
@@ -154,7 +148,6 @@ import { safeUuid } from '../../core/uuid';
                 Date <span class="sort-icon">{{ sortField() === 'date' ? (sortDirection() === 'desc' ? '▼' : '▲') : '↕' }}</span>
               </th>
               <th>Type</th>
-              <th>Tag</th>
               <th>Category</th>
               <th>Merchant / Source</th>
               <th class="notes">Notes</th>
@@ -182,11 +175,6 @@ import { safeUuid } from '../../core/uuid';
               <td>
                 <span class="kind" [class.income]="e.kind === 'income'">
                   {{ e.kind === 'income' ? 'Credit' : 'Expense' }}
-                </span>
-              </td>
-              <td>
-                <span class="tag-chip" [class]="e.tag || 'need'">
-                  {{ e.tag === 'want' ? '💡 Want' : (e.tag === 'saving' ? '🎯 Saving' : '🛡️ Need') }}
                 </span>
               </td>
               <td>

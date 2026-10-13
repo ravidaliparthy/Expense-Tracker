@@ -6,6 +6,7 @@ import { Category, TransactionKind, TransactionTag, money } from '../../core/mod
 
 export interface ImportPreviewRow {
   date: string;
+  time?: string;
   amountCents: number;
   merchant: string;
   notes: string;
@@ -91,11 +92,10 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
                 <thead>
                   <tr>
                     <th style="width: 36px"></th>
-                    <th>Date</th>
+                    <th>Date & Time</th>
                     <th>Merchant / Description</th>
                     <th>Category</th>
                     <th>Type</th>
-                    <th>Tag</th>
                     <th style="text-align: right">Amount</th>
                   </tr>
                 </thead>
@@ -106,6 +106,7 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
                     </td>
                     <td class="date-cell">
                       <input type="date" [(ngModel)]="row.date" class="cell-input" />
+                      <span *ngIf="row.time" class="time-sub">{{ row.time.slice(0, 5) }}</span>
                     </td>
                     <td class="desc-cell" [title]="row.merchant + (row.notes ? ' (' + row.notes + ')' : '')">
                       <input type="text" [(ngModel)]="row.merchant" class="cell-input text" />
@@ -126,13 +127,6 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
                       >
                         {{ row.kind }}
                       </button>
-                    </td>
-                    <td>
-                      <select [(ngModel)]="row.tag" class="cell-select">
-                        <option value="need">🛡️ Need</option>
-                        <option value="want">💡 Want</option>
-                        <option value="saving">🎯 Saving</option>
-                      </select>
                     </td>
                     <td style="text-align: right" class="amt-cell" [class.income]="row.kind === 'income'">
                       {{ money(row.amountCents, currency) }}
@@ -373,6 +367,7 @@ export class StatementImportModalComponent implements OnInit {
             if (res && res.rows && res.rows.length) {
               this.parsedRows.set(res.rows.map((r: any) => ({
                 date: r.date,
+                time: r.time,
                 amountCents: r.amountCents,
                 merchant: r.merchant,
                 notes: r.notes || '',
@@ -484,20 +479,35 @@ export class StatementImportModalComponent implements OnInit {
     }
   }
 
+  private getRandomTime(): string {
+    const h = 8 + Math.floor(Math.random() * 14);
+    const m = Math.floor(Math.random() * 60);
+    const s = Math.floor(Math.random() * 60);
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  }
+
   submitImport(): void {
     const selected = this.parsedRows().filter((r) => r.selected);
     if (!selected.length) return;
 
     this.isImporting.set(true);
-    const items = selected.map((r) => ({
-      amountCents: r.amountCents,
-      kind: r.kind,
-      tag: r.tag,
-      category: r.category,
-      merchant: r.merchant,
-      notes: r.notes,
-      occurredAt: `${r.date}T12:00:00.000Z`
-    }));
+    const items = selected.map((r) => {
+      const time = r.time || this.getRandomTime();
+      const [year, month, day] = r.date.split('-').map(Number);
+      const [hours, minutes, seconds] = time.split(':').map(Number);
+      const dt = new Date(year, (month || 1) - 1, day || 1, hours || 12, minutes || 0, seconds || 0);
+      const occurredAt = !isNaN(dt.getTime()) ? dt.toISOString() : `${r.date}T12:00:00.000Z`;
+
+      return {
+        amountCents: r.amountCents,
+        kind: r.kind,
+        tag: r.tag,
+        category: r.category,
+        merchant: r.merchant,
+        notes: r.notes,
+        occurredAt
+      };
+    });
 
     this.api.bulkImportExpenses(items).subscribe({
       next: (res) => {

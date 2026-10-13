@@ -609,6 +609,7 @@ async function runTests() {
       assert.strictEqual(creditRow.merchant, 'DSV Chalapathy Rao');
       assert.strictEqual(creditRow.amountCents, 200000);
       assert.strictEqual(creditRow.date, '2026-09-13');
+      assert.strictEqual(creditRow.time, '16:27:00');
       assert.strictEqual(creditRow.tag, 'saving');
 
       const debitRow = res.body.rows.find((r) => r.kind === 'expense');
@@ -616,6 +617,7 @@ async function runTests() {
       assert.strictEqual(debitRow.merchant, 'Kullai Reddy');
       assert.strictEqual(debitRow.amountCents, 13000);
       assert.strictEqual(debitRow.date, '2026-09-18');
+      assert.strictEqual(debitRow.time, '09:43:00');
       assert.strictEqual(debitRow.tag, 'need');
     });
 
