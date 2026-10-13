@@ -2,7 +2,7 @@ import { Component, EventEmitter, Input, OnInit, Output, inject, signal } from '
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SmartEntryService, ParsedTransaction } from '../../core/smart-entry.service';
-import { Category, TransactionKind, TransactionTag, money } from '../../core/models';
+import { Category, PaymentSource, TransactionKind, TransactionTag, money } from '../../core/models';
 
 @Component({
   selector: 'app-fast-entry-modal',
@@ -80,7 +80,20 @@ import { Category, TransactionKind, TransactionTag, money } from '../../core/mod
                 </select>
               </div>
 
-              <div class="field-item" style="grid-column: 1 / -1;">
+              <div class="field-item">
+                <label>Payment Source</label>
+                <select [(ngModel)]="parsed.source" class="form-input">
+                  <option value="SuperMoney">⚡ SuperMoney</option>
+                  <option value="PhonePe">🟣 PhonePe</option>
+                  <option value="Google Pay">🔵 Google Pay</option>
+                  <option value="Credit Card">💳 Credit Card</option>
+                  <option value="Debit Card">🏧 Debit Card</option>
+                  <option value="Cash">💵 Cash</option>
+                  <option value="Others">✨ Others</option>
+                </select>
+              </div>
+
+              <div class="field-item">
                 <label>Date</label>
                 <input type="date" [(ngModel)]="parsed.date" class="form-input" />
               </div>
@@ -202,6 +215,7 @@ export class FastEntryModalComponent implements OnInit {
     amountCents: number;
     kind: TransactionKind;
     tag: TransactionTag;
+    source?: PaymentSource;
     merchant: string;
     notes: string;
     categoryId: number | null;
@@ -216,6 +230,7 @@ export class FastEntryModalComponent implements OnInit {
     amount: 0,
     kind: 'expense',
     tag: 'need',
+    source: 'Others',
     merchant: '',
     notes: '',
     categoryGuess: 'Food',
@@ -246,7 +261,8 @@ export class FastEntryModalComponent implements OnInit {
       this.parsed = {
         amount: this.parsed?.amount || 0,
         kind: this.parsed?.kind || 'expense',
-        tag: this.parsed?.tag || 'need',
+        tag: 'need',
+        source: this.parsed?.source || 'Others',
         merchant: this.parsed?.merchant || '',
         notes: text,
         categoryGuess: this.parsed?.categoryGuess || 'Food',
@@ -278,6 +294,7 @@ export class FastEntryModalComponent implements OnInit {
       amountCents: Math.round(this.parsed.amount * 100),
       kind: this.parsed.kind,
       tag: this.parsed.tag,
+      source: this.parsed.source || 'Others',
       merchant: this.parsed.merchant,
       notes: this.parsed.notes,
       categoryId: catId,

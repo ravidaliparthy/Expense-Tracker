@@ -7,7 +7,7 @@ import { ApiService, SummaryDto } from '../../core/api.service';
 import { OfflineQueueService } from '../../core/offline-queue.service';
 import { OnboardingService } from '../../core/onboarding.service';
 import { AuthService } from '../../core/auth.service';
-import { Budget, Category, Expense, Insights, TIER_COLORS, money, signedMoney } from '../../core/models';
+import { Budget, Category, Expense, Insights, PaymentSource, TIER_COLORS, money, paymentSourceLabel, signedMoney } from '../../core/models';
 import { BudgetStatus, computeBudgetStatus } from '../../core/budget-status';
 import { FilterBarComponent } from './filter-bar.component';
 import { ExpenseTableComponent } from './expense-table.component';
@@ -180,7 +180,7 @@ export class DashboardPage {
   readonly goalsService = inject(GoalsService);
   readonly isDemoUser = computed(() => this.auth.user()?.email === 'demo@expense.test');
   readonly showSavingsGoals = computed(() => this.isDemoUser() || this.goalsService.goals().length > 0);
-  readonly TIER_COLORS=TIER_COLORS; readonly money=money; readonly signedMoney=signedMoney;
+  readonly TIER_COLORS=TIER_COLORS; readonly money=money; readonly signedMoney=signedMoney; readonly paymentSourceLabel=paymentSourceLabel;
   readonly trackById = (_: number, e: Expense): number => e.id;
   readonly expenses=signal<Expense[]>([]); readonly total=signal(0); readonly categories=signal<Category[]>([]); readonly budgets=signal<Budget[]>([]); readonly summary=signal<SummaryDto|null>(null); readonly insights=signal<Insights|null>(null); readonly loading=signal(false); readonly flash=signal<{type:'ok'|'warn'|'err';text:string}|null>(null); readonly exportBusy=signal(false); readonly formOpen=signal(false); readonly editing=signal<Expense|null>(null); readonly hadData=signal(false);
   readonly deletingIds=signal<Set<number>>(new Set());
@@ -900,13 +900,14 @@ export class DashboardPage {
     amountCents: number;
     kind: any;
     tag: any;
+    source?: PaymentSource;
     merchant: string;
     notes: string;
     categoryId: number | null;
     occurredAt: string;
   }): Promise<void> {
     try {
-      await this.api.createExpense({ ...payload, clientUuid: safeUuid() });
+      await this.api.createExpense({ ...payload, source: payload.source || 'Others', clientUuid: safeUuid() });
       this.fastEntryOpen.set(false);
       this.flash.set({ type: 'ok', text: `⚡ Transaction logged via Fast Entry: ${money(payload.amountCents, this.currency())}` });
       await this.reload();

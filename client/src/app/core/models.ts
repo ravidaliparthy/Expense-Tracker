@@ -3,6 +3,18 @@ export type KindFilter = 'all' | TransactionKind;
 export type TransactionTag = 'need' | 'want' | 'saving';
 export type PaymentSource = 'SuperMoney' | 'PhonePe' | 'Google Pay' | 'Credit Card' | 'Debit Card' | 'Cash' | 'Others';
 
+export function paymentSourceLabel(source?: PaymentSource | string | null): string {
+  switch (source) {
+    case 'SuperMoney': return '⚡ SuperMoney';
+    case 'PhonePe': return '🟣 PhonePe';
+    case 'Google Pay': return '🔵 Google Pay';
+    case 'Credit Card': return '💳 Credit Card';
+    case 'Debit Card': return '🏧 Debit Card';
+    case 'Cash': return '💵 Cash';
+    default: return '✨ Others';
+  }
+}
+
 export interface User {
   id: number;
   email: string;

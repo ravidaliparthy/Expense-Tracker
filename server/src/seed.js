@@ -54,8 +54,8 @@ function seedDemoUser(dbInstance, withDemoData = true) {
     const insert = db.prepare(
       `INSERT INTO expenses (user_id, category_id, category_name_snapshot, category_color_snapshot,
          category_icon_snapshot, amount_cents, currency, kind, occurred_at_utc, local_date, tz_offset_minutes,
-         merchant, notes, client_uuid)
-       VALUES (?,?,?,?,?,?,'USD',?,?,?,?,?,?,?)`
+         merchant, notes, client_uuid, source)
+       VALUES (?,?,?,?,?,?,'USD',?,?,?,?,?,?,?,?)`
     );
 
     const now = new Date();
@@ -70,44 +70,44 @@ function seedDemoUser(dbInstance, withDemoData = true) {
       db.prepare(`DELETE FROM expenses WHERE user_id = ?`).run(user.id);
       db.prepare(`DELETE FROM budgets WHERE user_id = ?`).run(user.id);
 
-      const addTx = (catName, cents, merchant, notes, ymd, kind = 'expense') => {
+      const addTx = (catName, cents, merchant, notes, ymd, kind = 'expense', source = 'Others') => {
         const inst = resolveInstant(`${ymd}T14:30:00.000Z`, TZ);
         const c = byName[catName] || null;
         insert.run(
           user.id, c ? c.id : null, c ? c.name : 'Uncategorized',
           c ? c.colorHex : '#94A3B8', c ? c.icon : null,
           cents, kind, inst.occurredAtUtc, inst.localDate, inst.tzOffsetMinutes,
-          merchant, notes, crypto.randomUUID()
+          merchant, notes, crypto.randomUUID(), source
         );
       };
 
       // ── 1. TODAY's Transactions (Ensures "Today" filter shows rich data)
-      addTx('Food', 650, 'Blue Bottle Coffee', 'Morning flat white + croissant', `${curY}-${pad(curM)}-${pad(curD)}`);
-      addTx('Food', 1850, 'Sweetgreen', 'Custom warm grain bowl with avocado', `${curY}-${pad(curM)}-${pad(curD)}`);
-      addTx('Travel', 320, 'Metropolitan Transit', 'Subway tap-to-pay commute', `${curY}-${pad(curM)}-${pad(curD)}`);
+      addTx('Food', 650, 'Blue Bottle Coffee', 'Morning flat white + croissant', `${curY}-${pad(curM)}-${pad(curD)}`, 'expense', 'Google Pay');
+      addTx('Food', 1850, 'Sweetgreen', 'Custom warm grain bowl with avocado', `${curY}-${pad(curM)}-${pad(curD)}`, 'expense', 'PhonePe');
+      addTx('Travel', 320, 'Metropolitan Transit', 'Subway tap-to-pay commute', `${curY}-${pad(curM)}-${pad(curD)}`, 'expense', 'SuperMoney');
 
       // ── 2. THIS WEEK's Transactions (Ensures "This week" and "7 days" show data)
       if (curD > 1) {
-        addTx('Food', 7850, 'Whole Foods Market', 'Weekly organic grocery haul', `${curY}-${pad(curM)}-${pad(Math.max(1, curD - 1))}`);
-        addTx('Travel', 2480, 'Uber Green', 'Ride to tech meetup downtown', `${curY}-${pad(curM)}-${pad(Math.max(1, curD - 2))}`);
-        addTx('Utilities', 1200, 'GitHub Copilot', 'Monthly AI developer plan', `${curY}-${pad(curM)}-${pad(Math.max(1, curD - 3))}`);
-        addTx('Health', 2250, 'CVS Pharmacy', 'Multivitamins & allergy relief', `${curY}-${pad(curM)}-${pad(Math.max(1, curD - 4))}`);
+        addTx('Food', 7850, 'Whole Foods Market', 'Weekly organic grocery haul', `${curY}-${pad(curM)}-${pad(Math.max(1, curD - 1))}`, 'expense', 'Credit Card');
+        addTx('Travel', 2480, 'Uber Green', 'Ride to tech meetup downtown', `${curY}-${pad(curM)}-${pad(Math.max(1, curD - 2))}`, 'expense', 'Google Pay');
+        addTx('Utilities', 1200, 'GitHub Copilot', 'Monthly AI developer plan', `${curY}-${pad(curM)}-${pad(Math.max(1, curD - 3))}`, 'expense', 'Credit Card');
+        addTx('Health', 2250, 'CVS Pharmacy', 'Multivitamins & allergy relief', `${curY}-${pad(curM)}-${pad(Math.max(1, curD - 4))}`, 'expense', 'Debit Card');
       }
 
       // ── 3. THIS MONTH's Core Expenses & Income
-      addTx('Utilities', 9450, 'Con Edison Power', 'Monthly electric & heating bill', `${curY}-${pad(curM)}-03`);
-      addTx('Entertainment', 1999, 'Netflix Premium', '4K family streaming subscription', `${curY}-${pad(curM)}-04`);
-      addTx('Shopping', 12999, 'Amazon Prime', 'Anker 100W USB-C desktop charging station', `${curY}-${pad(curM)}-05`);
-      addTx('Food', 6400, 'Trader Joe\'s', 'Snacks and specialty cheeses', `${curY}-${pad(curM)}-06`);
-      addTx('Shopping', 8500, 'Uniqlo', 'Merino wool sweater & winter socks', `${curY}-${pad(curM)}-07`);
-      addTx('Entertainment', 3500, 'AMC Theatres', 'IMAX tickets + popcorn combo', `${curY}-${pad(curM)}-08`);
-      addTx('Food', 11200, 'Osteria Mozza', 'Dinner celebration with friends', `${curY}-${pad(curM)}-10`);
-      addTx('Health', 4500, 'Dr. Smith Clinic', 'Annual wellness dental cleaning', `${curY}-${pad(curM)}-12`);
+      addTx('Utilities', 9450, 'Con Edison Power', 'Monthly electric & heating bill', `${curY}-${pad(curM)}-03`, 'expense', 'SuperMoney');
+      addTx('Entertainment', 1999, 'Netflix Premium', '4K family streaming subscription', `${curY}-${pad(curM)}-04`, 'expense', 'Credit Card');
+      addTx('Shopping', 12999, 'Amazon Prime', 'Anker 100W USB-C desktop charging station', `${curY}-${pad(curM)}-05`, 'expense', 'PhonePe');
+      addTx('Food', 6400, 'Trader Joe\'s', 'Snacks and specialty cheeses', `${curY}-${pad(curM)}-06`, 'expense', 'Google Pay');
+      addTx('Shopping', 8500, 'Uniqlo', 'Merino wool sweater & winter socks', `${curY}-${pad(curM)}-07`, 'expense', 'Credit Card');
+      addTx('Entertainment', 3500, 'AMC Theatres', 'IMAX tickets + popcorn combo', `${curY}-${pad(curM)}-08`, 'expense', 'PhonePe');
+      addTx('Food', 11200, 'Osteria Mozza', 'Dinner celebration with friends', `${curY}-${pad(curM)}-10`, 'expense', 'Credit Card');
+      addTx('Health', 4500, 'Dr. Smith Clinic', 'Annual wellness dental cleaning', `${curY}-${pad(curM)}-12`, 'expense', 'Debit Card');
 
       // Income for current month
-      addTx('Salary', 450000, 'Acme Corp', 'Direct deposit monthly engineering salary', `${curY}-${pad(curM)}-01`, 'income');
-      addTx('Freelance', 140000, 'Venture Studio', 'Q4 Design systems consulting milestone', `${curY}-${pad(curM)}-05`, 'income');
-      addTx('Bonus', 75000, 'Acme Corp', 'Q3 Project excellence recognition bonus', `${curY}-${pad(curM)}-07`, 'income');
+      addTx('Salary', 450000, 'Acme Corp', 'Direct deposit monthly engineering salary', `${curY}-${pad(curM)}-01`, 'income', 'Others');
+      addTx('Freelance', 140000, 'Venture Studio', 'Q4 Design systems consulting milestone', `${curY}-${pad(curM)}-05`, 'income', 'Others');
+      addTx('Bonus', 75000, 'Acme Corp', 'Q3 Project excellence recognition bonus', `${curY}-${pad(curM)}-07`, 'income', 'Others');
 
       // ── 4. LAST MONTH's Transactions (Ensures "Last month" shows rich data)
       const lastMonthDate = new Date(curY, curM - 2, 1);

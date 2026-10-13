@@ -903,6 +903,25 @@ html[data-theme='dark'] .kind-tabs button.on {
   color: #FFFFFF !important;
 }
 
+.source-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: #F1F5F9;
+  color: #334155;
+  border: 1px solid #E2E8F0;
+  white-space: nowrap;
+}
+html[data-theme='dark'] .source-chip {
+  background: #1E293B !important;
+  color: #CBD5E1 !important;
+  border-color: #334155 !important;
+}
+
 /* ── Mobile & Small Screen Responsive Enhancements ──────────────── */
 @media (max-width: 768px) {
   body {

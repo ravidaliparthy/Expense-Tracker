@@ -198,7 +198,8 @@
             </th>
             <th>Type</th>
             <th>Category</th>
-            <th>Merchant / Source</th>
+            <th>Merchant</th>
+            <th>Payment Source</th>
             <th class="notes">Notes</th>
             <th class="amount sortable" (click)="toggleSort('amount')" title="Click to sort by amount">
               Amount <span class="sort-icon">{{ sortField() === 'amount' ? (sortDirection() === 'desc' ? '▼' : '▲') : '↕' }}</span>
@@ -212,6 +213,7 @@
             <td><span class="kind" [class.income]="e.kind === 'income'">{{ e.kind === 'income' ? 'Credit' : 'Expense' }}</span></td>
             <td><span class="chip" [style.background]="hex(e.categoryColor, .14)" [style.color]="e.categoryColor">{{ e.categoryIcon || '🏷️' }} {{ e.categorySnapshot }}</span></td>
             <td>{{ e.merchant || '—' }}</td>
+            <td><span class="source-chip">{{ paymentSourceLabel(e.source) }}</span></td>
             <td class="notes-cell" [title]="e.notes || ''">{{ e.notes || '—' }}</td>
             <td class="amount" [class.plus]="e.kind === 'income'" [class.minus]="e.kind !== 'income'">{{ e.kind === 'income' ? '+' : '-' }}{{ money(e.amountCents, e.currency) }}</td>
             <td style="white-space:nowrap;text-align:right">

@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Expense, money } from '../../core/models';
+import { Expense, money, paymentSourceLabel } from '../../core/models';
 
 @Component({
   selector: 'app-expense-table',
@@ -23,7 +23,8 @@ import { Expense, money } from '../../core/models';
                 <th>Date</th>
                 <th>Type</th>
                 <th>Category</th>
-                <th>Merchant / Source</th>
+                <th>Merchant</th>
+                <th>Payment Source</th>
                 <th class="notes">Notes</th>
                 <th class="amount">Amount</th>
                 <th class="actions-head">Actions</th>
@@ -35,6 +36,7 @@ import { Expense, money } from '../../core/models';
                 <td><span class="kind" [class.income]="e.kind === 'income'">{{ e.kind === 'income' ? 'Credit' : 'Expense' }}</span></td>
                 <td><span class="chip" [style.background]="hex(e.categoryColor, .14)" [style.color]="e.categoryColor">{{ e.categoryIcon || '🏷️' }} {{ e.categorySnapshot }}</span></td>
                 <td>{{ e.merchant || '—' }}</td>
+                <td><span class="source-chip">{{ paymentSourceLabel(e.source) }}</span></td>
                 <td class="notes" [title]="e.notes || ''">{{ e.notes || '—' }}</td>
                 <td class="amount" [class.plus]="e.kind === 'income'" [class.minus]="e.kind !== 'income'">{{ e.kind === 'income' ? '+' : '-' }}{{ money(e.amountCents, e.currency) }}</td>
                 <td class="actions">
@@ -84,6 +86,7 @@ export class ExpenseTableComponent {
   @Output() edit = new EventEmitter<Expense>();
   @Output() remove = new EventEmitter<Expense>();
   readonly money = money;
+  readonly paymentSourceLabel = paymentSourceLabel;
 
   onEdit(event: MouseEvent, e: Expense): void {
     event.stopPropagation();

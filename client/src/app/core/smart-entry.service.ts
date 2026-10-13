@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { TransactionKind, TransactionTag } from './models';
+import { PaymentSource, TransactionKind, TransactionTag } from './models';
 
 export interface ParsedTransaction {
   amount: number;
@@ -10,6 +10,7 @@ export interface ParsedTransaction {
   time?: string;
   tag: TransactionTag;
   categoryGuess: string;
+  source?: PaymentSource;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -152,6 +153,22 @@ export class SmartEntryService {
       parsedDate = new Date().toISOString().slice(0, 10);
     }
 
+    // 6. Detect Payment Source from phrases (e.g. "via GPay", "on PhonePe", "via SuperMoney", "credit card", "in cash")
+    let source: PaymentSource = 'Others';
+    if (/(supermoney|super\s*money|super\s*cash|super\s*app)/i.test(lower)) {
+      source = 'SuperMoney';
+    } else if (/(phonepe|phone\s*pe|phone-pe)/i.test(lower)) {
+      source = 'PhonePe';
+    } else if (/(gpay|g-pay|google\s*pay|googlepay|google-pay)/i.test(lower)) {
+      source = 'Google Pay';
+    } else if (/(credit\s*card|creditcard|\bcc\b|amex|visa\s*card|mastercard)/i.test(lower)) {
+      source = 'Credit Card';
+    } else if (/(debit\s*card|debitcard|\bdc\b|atm\s*card)/i.test(lower)) {
+      source = 'Debit Card';
+    } else if (/\b(cash|in\s*cash|by\s*cash|paid\s*cash)\b/i.test(lower)) {
+      source = 'Cash';
+    }
+
     return {
       amount,
       kind,
@@ -161,6 +178,7 @@ export class SmartEntryService {
       time: extractedTime,
       tag,
       categoryGuess,
+      source,
     };
   }
 }

@@ -5,7 +5,7 @@ import { firstValueFrom } from 'rxjs';
 import { ApiService } from '../../core/api.service';
 import { FilterService } from '../../core/filter.service';
 import { AuthService } from '../../core/auth.service';
-import { Category, Expense, TransactionTag, money, signedMoney } from '../../core/models';
+import { Category, Expense, PaymentSource, TransactionTag, money, paymentSourceLabel, signedMoney } from '../../core/models';
 import { FilterBarComponent } from '../dashboard/filter-bar.component';
 import { ExpenseFormComponent, ExpenseFormValue } from '../dashboard/expense-form.component';
 import { StatementImportModalComponent } from './statement-import-modal.component';
@@ -149,7 +149,8 @@ import { safeUuid } from '../../core/uuid';
               </th>
               <th>Type</th>
               <th>Category</th>
-              <th>Merchant / Source</th>
+              <th>Merchant</th>
+              <th>Payment Source</th>
               <th class="notes">Notes</th>
               <th class="amount sortable" (click)="toggleSort('amount')" title="Click to sort by amount">
                 Amount <span class="sort-icon">{{ sortField() === 'amount' ? (sortDirection() === 'desc' ? '▼' : '▲') : '↕' }}</span>
@@ -183,6 +184,7 @@ import { safeUuid } from '../../core/uuid';
                 </span>
               </td>
               <td>{{ e.merchant || '—' }}</td>
+              <td><span class="source-chip">{{ paymentSourceLabel(e.source) }}</span></td>
               <td class="notes-cell" [title]="e.notes || ''">{{ e.notes || '—' }}</td>
               <td class="amount" [class.plus]="e.kind === 'income'" [class.minus]="e.kind !== 'income'">
                 {{ e.kind === 'income' ? '+' : '-' }}{{ money(e.amountCents, e.currency) }}
@@ -428,6 +430,7 @@ export class TransactionsPage {
 
   readonly money = money;
   readonly signedMoney = signedMoney;
+  readonly paymentSourceLabel = paymentSourceLabel;
   readonly trackById = (_: number, e: Expense): number => e.id;
 
   readonly expenses = signal<Expense[]>([]);
