@@ -48,16 +48,16 @@ import { Category, TransactionKind, TransactionTag, money } from '../../core/mod
           <!-- Parsed Fields Confirmation Card -->
           <div *ngIf="parsed" class="parsed-card">
             <div class="card-head">
-              <span class="parsed-status">✓ Smart Heuristic Detected</span>
+              <span class="parsed-status">{{ rawText.trim() ? '✓ Smart Heuristic Detected' : '⚡ Direct Transaction Entry' }}</span>
               <span class="amt-highlight" [class.income]="parsed.kind === 'income'">
-                {{ money(parsed.amount * 100, currency) }}
+                {{ money((parsed.amount || 0) * 100, currency) }}
               </span>
             </div>
 
             <div class="fields-grid">
               <div class="field-item">
                 <label>Amount ({{ currency }})</label>
-                <input type="number" step="any" min="0.01" [(ngModel)]="parsed.amount" class="form-input bold" />
+                <input type="number" step="any" min="0.01" [(ngModel)]="parsed.amount" class="form-input bold" placeholder="0.00" />
               </div>
 
               <div class="field-item">
@@ -70,7 +70,7 @@ import { Category, TransactionKind, TransactionTag, money } from '../../core/mod
 
               <div class="field-item">
                 <label>Merchant / Payee</label>
-                <input type="text" [(ngModel)]="parsed.merchant" class="form-input" />
+                <input type="text" [(ngModel)]="parsed.merchant" class="form-input" placeholder="e.g. Swiggy, Netflix, Salary" />
               </div>
 
               <div class="field-item">
@@ -80,16 +80,7 @@ import { Category, TransactionKind, TransactionTag, money } from '../../core/mod
                 </select>
               </div>
 
-              <div class="field-item">
-                <label>Budget Tag (50/30/20)</label>
-                <div class="tag-group">
-                  <button type="button" class="tag-btn" [class.active]="parsed.tag === 'need'" (click)="parsed.tag = 'need'">Need</button>
-                  <button type="button" class="tag-btn" [class.active]="parsed.tag === 'want'" (click)="parsed.tag = 'want'">Want</button>
-                  <button type="button" class="tag-btn" [class.active]="parsed.tag === 'saving'" (click)="parsed.tag = 'saving'">Saving</button>
-                </div>
-              </div>
-
-              <div class="field-item">
+              <div class="field-item" style="grid-column: 1 / -1;">
                 <label>Date</label>
                 <input type="date" [(ngModel)]="parsed.date" class="form-input" />
               </div>
@@ -105,7 +96,7 @@ import { Category, TransactionKind, TransactionTag, money } from '../../core/mod
             [disabled]="!parsed || parsed.amount <= 0"
             (click)="confirmSave()"
           >
-            ✓ Log Transaction ({{ parsed ? money(parsed.amount * 100, currency) : '$0.00' }})
+            ✓ Log Transaction ({{ (parsed && parsed.amount > 0) ? money(parsed.amount * 100, currency) : '$0.00' }})
           </button>
         </div>
       </div>
@@ -220,13 +211,13 @@ export class FastEntryModalComponent implements OnInit {
   private readonly smartEntry = inject(SmartEntryService);
   readonly money = money;
 
-  rawText = 'Sent Rs 450 to Swiggy on UPI';
+  rawText = '';
   parsed: ParsedTransaction = {
-    amount: 450,
+    amount: 0,
     kind: 'expense',
-    tag: 'want',
-    merchant: 'Swiggy',
-    notes: 'Sent Rs 450 to Swiggy on UPI',
+    tag: 'need',
+    merchant: '',
+    notes: '',
     categoryGuess: 'Food',
     date: new Date().toISOString().slice(0, 10),
   };
@@ -234,7 +225,7 @@ export class FastEntryModalComponent implements OnInit {
 
   ngOnInit(): void {
     const defaults = this.smartEntry.getLastDefaults();
-    this.onTextChange(this.rawText);
+    this.onTextChange('');
     if (defaults.categoryId && this.categories.length) {
       const matched = this.categories.find((c) => c.id === defaults.categoryId);
       if (matched) this.selectedCategoryName = matched.name;
