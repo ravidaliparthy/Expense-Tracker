@@ -3,7 +3,7 @@ const express = require('express');
 const crypto = require('crypto');
 const { getDb, audit } = require('../db');
 const { requireAuth } = require('../middleware/auth');
-const { validate, recurringBillSchema } = require('../lib/validate');
+const { validate, recurringBillSchema, recurringPatchSchema } = require('../lib/validate');
 const { resolveInstant } = require('../lib/time');
 
 const router = express.Router();
@@ -58,6 +58,7 @@ router.post('/', (req, res, next) => {
 /** PATCH /api/recurring/:id */
 router.patch('/:id', (req, res, next) => {
   try {
+    const body = validate(recurringPatchSchema, req.body);
     const db = getDb();
     const existing = db.prepare(
       `SELECT * FROM recurring_bills WHERE id = ? AND user_id = ? AND deleted_at IS NULL`
@@ -66,21 +67,21 @@ router.patch('/:id', (req, res, next) => {
 
     const sets = [];
     const args = [];
-    if (req.body.title !== undefined) { sets.push('title = ?'); args.push(req.body.title.trim()); }
-    if (req.body.amountCents !== undefined) { sets.push('amount_cents = ?'); args.push(Math.round(req.body.amountCents)); }
-    if (req.body.frequency !== undefined) { sets.push('frequency = ?'); args.push(req.body.frequency); }
-    if (req.body.dueDay !== undefined) { sets.push('due_day = ?'); args.push(Number(req.body.dueDay)); }
-    if (req.body.notes !== undefined) { sets.push('notes = ?'); args.push(req.body.notes || null); }
-    if (req.body.isActive !== undefined) { sets.push('is_active = ?'); args.push(req.body.isActive ? 1 : 0); }
-    if (req.body.categoryId !== undefined) {
+    if (body.title !== undefined) { sets.push('title = ?'); args.push(body.title.trim()); }
+    if (body.amountCents !== undefined) { sets.push('amount_cents = ?'); args.push(Math.round(body.amountCents)); }
+    if (body.frequency !== undefined) { sets.push('frequency = ?'); args.push(body.frequency); }
+    if (body.dueDay !== undefined) { sets.push('due_day = ?'); args.push(Number(body.dueDay)); }
+    if (body.notes !== undefined) { sets.push('notes = ?'); args.push(body.notes || null); }
+    if (body.isActive !== undefined) { sets.push('is_active = ?'); args.push(body.isActive ? 1 : 0); }
+    if (body.categoryId !== undefined) {
       sets.push('category_id = ?');
-      args.push(req.body.categoryId || null);
+      args.push(body.categoryId || null);
     }
     if (!sets.length) return res.status(400).json({ error: 'Nothing to update' });
 
     sets.push(`updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now')`);
     db.prepare(`UPDATE recurring_bills SET ${sets.join(', ')} WHERE id = ? AND user_id = ?`).run(...args, existing.id, req.user.id);
-    audit(req.user.id, 'expense', existing.id, 'update', { recurring: req.body });
+    audit(req.user.id, 'expense', existing.id, 'update', { recurring: body });
     const updated = db.prepare(`${SELECT_REC} WHERE r.id = ?`).get(existing.id);
     res.json({ ...updated, isActive: !!updated.isActive });
   } catch (err) { next(err); }

@@ -262,6 +262,56 @@ async function runTests() {
       assert.strictEqual(res.body.amountCents, 4800);
     });
 
+    await test('POST /expenses rejects notes containing scripts or HTML tags with 400', async () => {
+      const maliciousPayloads = [
+        '<script>alert("xss")</script>',
+        '<img src=x onerror=alert(1)>',
+        '![stealth image](https://attacker.com/leak.png)',
+        'javascript:fetch("/api/auth/me")',
+        'Normal note <iframe src="//evil.com"></iframe>',
+      ];
+      for (const badNote of maliciousPayloads) {
+        const res = await request('/expenses', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${authToken}` },
+          body: {
+            amountCents: 1000,
+            kind: 'expense',
+            categoryId,
+            merchant: 'Security Test',
+            occurredAt: new Date().toISOString(),
+            notes: badNote,
+          },
+        });
+        assert.strictEqual(res.status, 400, `Expected 400 rejection for payload: ${badNote}`);
+      }
+    });
+
+    await test('PATCH /expenses/:id rejects notes with HTML/scripts/images with 400', async () => {
+      const res = await request(`/expenses/${expenseId}`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${authToken}` },
+        body: { notes: '<script>document.cookie</script>' },
+      });
+      assert.strictEqual(res.status, 400);
+    });
+
+    await test('POST /expenses accepts pure plain text, numbers, and safe currency notes', async () => {
+      const res = await request('/expenses', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${authToken}` },
+        body: {
+          amountCents: 1200,
+          kind: 'expense',
+          categoryId,
+          merchant: 'Bookstore',
+          occurredAt: new Date().toISOString(),
+          notes: 'Invoice #10492 - paid cash $12.00 (split 50/50 with Alice)',
+        },
+      });
+      assert.strictEqual(res.status, 201);
+    });
+
     // 5. Budgets
     await test('PUT /budgets creates or updates a budget', async () => {
       const res = await request('/budgets', {

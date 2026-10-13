@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { firstValueFrom } from 'rxjs';
 import { ApiService } from '../../core/api.service';
 import { Category, Expense, TransactionKind } from '../../core/models';
+import { sanitizeNotes } from '../../core/sanitize';
 
 export interface ExpenseFormValue {
   amountCents: number; occurredAt: string; categoryId: number | null; kind: TransactionKind; merchant?: string | null; notes?: string | null;
@@ -70,6 +71,7 @@ export interface ExpenseFormValue {
         <input id="expense-merchant" name="merchant" [(ngModel)]="merchant" [placeholder]="kind === 'income' ? 'Payroll, client, refund…' : 'Where did you spend?'" />
         <label for="expense-notes">Contextual notes</label>
         <textarea id="expense-notes" name="notes" rows="3" [(ngModel)]="notes" placeholder="Receipt #, invoice #, split details, reminders…"></textarea>
+        <div style="font-size:0.75rem; color:#94A3B8; margin-top:-6px; margin-bottom:8px;">🔒 Plain text &amp; numbers only (no images or scripts)</div>
         <div class="modal-actions">
           <button type="button" class="btn-ghost" (click)="close.emit()">Cancel</button>
           <button class="btn-primary" [disabled]="f.invalid || busy">
@@ -226,7 +228,7 @@ export class ExpenseFormComponent implements OnInit, OnChanges {
     }
 
     const merchantVal = this.merchant.trim();
-    const notesVal = this.notes.trim();
+    const notesVal = sanitizeNotes(this.notes);
 
     this.busy = true;
     this.save.emit({

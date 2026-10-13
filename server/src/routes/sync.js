@@ -4,7 +4,7 @@ const crypto = require('crypto');
 const { z } = require('zod');
 const { getDb, audit } = require('../db');
 const { requireAuth } = require('../middleware/auth');
-const { validate } = require('../lib/validate');
+const { validate, safeNotesSchema } = require('../lib/validate');
 const { resolveInstant } = require('../lib/time');
 const { pushToTurso } = require('../lib/turso');
 
@@ -16,11 +16,11 @@ const mutationSchema = z.object({
   op: z.enum(['create', 'update', 'delete']),
   payload: z.object({
     amountCents: z.number().int().positive().optional(),
-      kind: z.enum(['expense', 'income']).optional(),
+    kind: z.enum(['expense', 'income']).optional(),
     occurredAt: z.string().datetime({ offset: true }).optional(),
     categoryId: z.number().int().positive().nullable().optional(),
     merchant: z.string().max(120).optional(),
-    notes: z.string().max(10000).optional(),
+    notes: safeNotesSchema,
     baseVersion: z.number().int().optional(),
   }).default({}),
 });

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { GoalsService, SavingsGoal } from '../../core/goals.service';
 import { TransactionKind, money } from '../../core/models';
+import { sanitizeNotes } from '../../core/sanitize';
 
 export interface SavingsRecordPayload {
   amountCents: number;
@@ -995,7 +996,7 @@ export class SavingsGoalsComponent {
       amountCents: Math.round(this.txAmount * 100),
       kind: this.txKind,
       merchant: this.txMerchant.trim() || `Savings: ${g.title}`,
-      notes: this.txNotes.trim() || undefined,
+      notes: sanitizeNotes(this.txNotes) || undefined,
       occurredAt: this.txDate ? new Date(this.txDate + 'T12:00:00Z').toISOString() : new Date().toISOString(),
       goalId: g.id,
       goalTitle: g.title

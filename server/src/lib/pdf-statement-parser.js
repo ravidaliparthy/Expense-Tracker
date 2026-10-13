@@ -1,5 +1,6 @@
 'use strict';
 const { PDFParse } = require('pdf-parse');
+const { sanitizeNotes } = require('./sanitize');
 
 const MONTH_MAP = {
   january: '01', jan: '01',
@@ -316,7 +317,7 @@ function parseStatementText(text, userCategories = []) {
           kind,
           tag,
           category,
-          notes: sanitizeText(`${descPart} · Acc: ${accPart} · Time: ${rawTime}`, 160),
+          notes: sanitizeNotes(`${descPart} · Acc: ${accPart} · Time: ${rawTime}`, 160) || '',
           selected: true
         });
         continue;
@@ -369,7 +370,7 @@ function parseStatementText(text, userCategories = []) {
               kind,
               tag: kind === 'income' ? 'saving' : 'need',
               category,
-              notes: sanitizeText(bankRef ? `Ref: ${bankRef} · Status: ${status}` : `Status: ${status}`, 160),
+              notes: sanitizeNotes(bankRef ? `Ref: ${bankRef} · Status: ${status}` : `Status: ${status}`, 160) || '',
               selected: true
             });
             continue;

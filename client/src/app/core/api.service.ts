@@ -5,6 +5,7 @@ import { catchError, tap } from 'rxjs/operators';
 import { Budget, Category, Expense, ExpensePage, Filters, Insights, RecurringBill, TransactionKind, TransactionTag } from './models';
 import { OfflineQueueService } from './offline-queue.service';
 import { safeUuid } from './uuid';
+import { sanitizeNotes } from './sanitize';
 
 export const DEFAULT_FALLBACK_CATEGORIES: Category[] = [
   { id: 1, name: 'Food', colorHex: '#F97316', icon: '🍔', isSystem: true, isArchived: false },
@@ -79,21 +80,38 @@ export class ApiService {
     );
   }
   async createExpense(body: { clientUuid?: string; amountCents: number; occurredAt: string; categoryId: number | null; kind: TransactionKind; tag?: TransactionTag; merchant?: string | null; notes?: string | null; }): Promise<{ id: number; status?: string } | 'queued'> {
-    try { return await firstValueFrom(this.http.post<{ id: number; status?: string }>('/api/expenses', body)); }
-    catch (err) { if (this.isNetworkError(err)) { this.queue.enqueue({ clientUuid: body.clientUuid ?? safeUuid(), op: 'create', payload: body }); return 'queued'; } return throwError(() => err) as never; }
+    const payload = { ...body, notes: body.notes ? sanitizeNotes(body.notes) : body.notes };
+    try { return await firstValueFrom(this.http.post<{ id: number; status?: string }>('/api/expenses', payload)); }
+    catch (err) { if (this.isNetworkError(err)) { this.queue.enqueue({ clientUuid: payload.clientUuid ?? safeUuid(), op: 'create', payload }); return 'queued'; } return throwError(() => err) as never; }
   }
-  updateExpense(id: number, body: Record<string, unknown>): Observable<Expense> { return this.http.patch<Expense>(`/api/expenses/${id}`, body); }
+  updateExpense(id: number, body: Record<string, unknown>): Observable<Expense> {
+    const rawNotes = body['notes'];
+    const payload = rawNotes !== undefined ? { ...body, notes: rawNotes ? sanitizeNotes(String(rawNotes)) : null } : body;
+    return this.http.patch<Expense>(`/api/expenses/${id}`, payload);
+  }
   deleteExpense(id: number): Observable<void> { return this.http.delete<void>(`/api/expenses/${id}`); }
   seedSample(): Observable<{ ok: boolean; count: number }> { return this.http.post<{ ok: boolean; count: number }>('/api/expenses/seed-sample', {}); }
 
   bulkDeleteExpenses(ids: number[]): Observable<{ ok: boolean; deletedCount: number }> { return this.http.post<{ ok: boolean; deletedCount: number }>('/api/expenses/bulk-delete', { ids }); }
   bulkUpdateExpenses(ids: number[], payload: { categoryId?: number | null; tag?: TransactionTag }): Observable<{ ok: boolean; updatedCount: number }> { return this.http.post<{ ok: boolean; updatedCount: number }>('/api/expenses/bulk-update', { ids, ...payload }); }
-  bulkImportExpenses(items: any[]): Observable<{ ok: boolean; count: number }> { return this.http.post<{ ok: boolean; count: number }>('/api/expenses/bulk-import', { items }); }
+  bulkImportExpenses(items: any[]): Observable<{ ok: boolean; count: number }> {
+    const sanitizedItems = items.map(item => ({
+      ...item,
+      notes: item.notes ? sanitizeNotes(item.notes) : item.notes
+    }));
+    return this.http.post<{ ok: boolean; count: number }>('/api/expenses/bulk-import', { items: sanitizedItems });
+  }
   parsePdfStatement(base64: string, filename?: string): Observable<{ ok: boolean; rows: any[] }> { return this.http.post<{ ok: boolean; rows: any[] }>('/api/expenses/parse-pdf', { base64, filename }); }
 
   getRecurringBills(): Observable<RecurringBill[]> { return this.http.get<RecurringBill[]>('/api/recurring'); }
-  createRecurringBill(body: Partial<RecurringBill>): Observable<RecurringBill> { return this.http.post<RecurringBill>('/api/recurring', body); }
-  updateRecurringBill(id: number, body: Partial<RecurringBill>): Observable<RecurringBill> { return this.http.patch<RecurringBill>(`/api/recurring/${id}`, body); }
+  createRecurringBill(body: Partial<RecurringBill>): Observable<RecurringBill> {
+    const payload = body.notes !== undefined ? { ...body, notes: body.notes ? sanitizeNotes(body.notes) : null } : body;
+    return this.http.post<RecurringBill>('/api/recurring', payload);
+  }
+  updateRecurringBill(id: number, body: Partial<RecurringBill>): Observable<RecurringBill> {
+    const payload = body.notes !== undefined ? { ...body, notes: body.notes ? sanitizeNotes(body.notes) : null } : body;
+    return this.http.patch<RecurringBill>(`/api/recurring/${id}`, payload);
+  }
   deleteRecurringBill(id: number): Observable<void> { return this.http.delete<void>(`/api/recurring/${id}`); }
   payRecurringBill(id: number): Observable<{ ok: boolean; expenseId: number; billId: number }> { return this.http.post<{ ok: boolean; expenseId: number; billId: number }>(`/api/recurring/${id}/pay`, {}); }
 

@@ -1,5 +1,6 @@
 'use strict';
 const { z } = require('zod');
+const { isSafePlainTextNotes, sanitizeNotes } = require('./sanitize');
 
 function validate(schema, data) {
   const result = schema.safeParse(data);
@@ -50,6 +51,26 @@ const categoryPatchSchema = z.object({
   isArchived: z.boolean().optional(),
 });
 
+const safeNotesSchema = z
+  .string()
+  .max(10000)
+  .refine(isSafePlainTextNotes, {
+    message: 'Notes must contain plain text or numbers only; HTML, images, and scripts are strictly prohibited',
+  })
+  .transform((val) => sanitizeNotes(val, 10000))
+  .nullable()
+  .optional();
+
+const safeRecurringNotesSchema = z
+  .string()
+  .max(1000)
+  .refine(isSafePlainTextNotes, {
+    message: 'Notes must contain plain text or numbers only; HTML, images, and scripts are strictly prohibited',
+  })
+  .transform((val) => sanitizeNotes(val, 1000))
+  .nullable()
+  .optional();
+
 const expenseCreateSchema = z.object({
   clientUuid: z.string().uuid().optional(),
   amountCents: z.number().int().positive(),
@@ -58,7 +79,7 @@ const expenseCreateSchema = z.object({
   kind: txKind.default('expense'),
   tag: txTag.default('need').optional(),
   merchant: z.string().max(120).nullable().optional(),
-  notes: z.string().max(10000).nullable().optional(),
+  notes: safeNotesSchema,
   receiptUrl: z.string().max(512).optional(),
 });
 
@@ -69,7 +90,7 @@ const expensePatchSchema = z.object({
   kind: txKind.optional(),
   tag: txTag.optional(),
   merchant: z.string().max(120).nullable().optional(),
-  notes: z.string().max(10000).nullable().optional(),
+  notes: safeNotesSchema,
   baseVersion: z.number().int().optional(),
 });
 
@@ -89,7 +110,17 @@ const recurringBillSchema = z.object({
   frequency: z.enum(['monthly', 'yearly', 'weekly']).default('monthly'),
   dueDay: z.number().int().min(1).max(31).default(1),
   categoryId: z.number().int().positive().nullable().optional(),
-  notes: z.string().max(1000).nullable().optional(),
+  notes: safeRecurringNotesSchema,
+});
+
+const recurringPatchSchema = z.object({
+  title: z.string().min(1).max(120).optional(),
+  amountCents: z.number().int().positive().optional(),
+  frequency: z.enum(['monthly', 'yearly', 'weekly']).optional(),
+  dueDay: z.number().int().min(1).max(31).optional(),
+  categoryId: z.number().int().positive().nullable().optional(),
+  notes: safeRecurringNotesSchema,
+  isActive: z.boolean().optional(),
 });
 
 const deleteAccountSchema = z.object({
@@ -126,6 +157,7 @@ module.exports = {
   validate, registerSchema, loginSchema, profileSchema,
   categoryCreateSchema, categoryPatchSchema,
   expenseCreateSchema, expensePatchSchema, expenseQuerySchema,
-  bulkDeleteSchema, bulkUpdateSchema, recurringBillSchema, deleteAccountSchema,
-  budgetSchema,
+  bulkDeleteSchema, bulkUpdateSchema, recurringBillSchema, recurringPatchSchema,
+  deleteAccountSchema, budgetSchema, safeNotesSchema,
+  isSafePlainTextNotes, sanitizeNotes,
 };

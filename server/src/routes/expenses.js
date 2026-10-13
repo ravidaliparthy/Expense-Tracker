@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const { getDb, audit, pushToTurso } = require('../db');
 const { requireAuth } = require('../middleware/auth');
 const { validate, expenseCreateSchema, expensePatchSchema, expenseQuerySchema, bulkDeleteSchema, bulkUpdateSchema } = require('../lib/validate');
+const { sanitizeNotes } = require('../lib/sanitize');
 const { resolveInstant } = require('../lib/time');
 
 const router = express.Router();
@@ -324,7 +325,7 @@ router.post('/bulk-import', async (req, res, next) => {
           inst.localDate,
           inst.tzOffsetMinutes,
           item.merchant ?? null,
-          item.notes ?? null,
+          sanitizeNotes(item.notes),
           crypto.randomUUID()
         );
         imported++;
