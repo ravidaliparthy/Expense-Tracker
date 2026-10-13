@@ -16,7 +16,7 @@ function requireAuth(req, res, next) {
   if (!token) return res.status(401).json({ error: 'Missing bearer token' });
 
   try {
-    const payload = jwt.verify(token, JWT_SECRET);
+    const payload = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] });
     const user = getDb()
       .prepare(
         `SELECT id, email, display_name AS displayName, base_currency AS baseCurrency,

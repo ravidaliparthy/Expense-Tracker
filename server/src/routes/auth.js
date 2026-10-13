@@ -99,7 +99,11 @@ router.post('/login', (req, res, next) => {
       )
       .get(body.email);
 
-    if (!user || !bcrypt.compareSync(body.password, user.passwordHash)) {
+    const DUMMY_HASH = '$2a$10$wT55wE9/08yBw/N7lC62teq4r4Kx/8i2B5V3yvP0Q4K9q9m2q5W7u';
+    const hashToCompare = user ? user.passwordHash : DUMMY_HASH;
+    const isValid = bcrypt.compareSync(body.password, hashToCompare);
+
+    if (!user || !isValid) {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
     res.json({ token: signToken(user), user: publicUser(user) });

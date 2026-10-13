@@ -34,9 +34,30 @@ function rateLimit(req, res, next) {
   }
   next();
 }
+const authRateBuckets = new Map();
+const AUTH_LIMIT_PER_15_MIN = Number(process.env.AUTH_RATE_LIMIT) || 60;
+function authRateLimit(req, res, next) {
+  const ip = req.ip || (req.socket && req.socket.remoteAddress) || 'unknown';
+  // Don't throttle localhost development requests
+  if (ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1' || ip === 'localhost') {
+    return next();
+  }
+  const now = Date.now();
+  let bucket = authRateBuckets.get(ip);
+  if (!bucket || now >= bucket.resetAt) {
+    bucket = { count: 0, resetAt: now + 15 * 60000 };
+    authRateBuckets.set(ip, bucket);
+  }
+  bucket.count += 1;
+  if (bucket.count > AUTH_LIMIT_PER_15_MIN) {
+    return res.status(429).json({ error: 'Too many authentication attempts — please try again later.' });
+  }
+  next();
+}
 setInterval(() => {
   const now = Date.now();
   for (const [ip, b] of rateBuckets) if (now >= b.resetAt) rateBuckets.delete(ip);
+  for (const [ip, b] of authRateBuckets) if (now >= b.resetAt) authRateBuckets.delete(ip);
 }, 60000).unref();
 
 /* ------------------------------------------------------------------ */
@@ -58,7 +79,18 @@ if (require.main === module) {
 function createApp() {
   const app = express();
   app.set('trust proxy', 1);                          // real client IPs behind nginx/LB
-  app.use(helmet());
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+      xContentTypeOptions: true,
+      xFrameOptions: { action: 'deny' },
+      hsts: {
+        maxAge: 31536000,
+        includeSubDomains: true,
+        preload: true,
+      },
+    })
+  );
   const DEFAULT_ALLOWED_ORIGINS = [
     'http://localhost:4200',
     'http://127.0.0.1:4200',
@@ -96,6 +128,7 @@ function createApp() {
   });
 
   app.use('/api', rateLimit);
+  app.use('/api/auth', authRateLimit);
 
   app.get('/api/health', (_req, res) => res.json({ ok: true, db: 'sqlite', ts: Date.now() }));
 
