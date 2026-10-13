@@ -192,6 +192,7 @@ export class DashboardPage {
   readonly splitBillInitialTotal = signal(0);
   readonly splitBillInitialDesc = signal('');
   readonly fastEntryOpen = signal(false);
+  readonly fastEntryVoiceMode = signal(false);
   readonly importModalOpen = signal(false);
 
   // Customizable breakdown mode & sub-filter keys
@@ -888,7 +889,8 @@ export class DashboardPage {
     this.flash.set({ type: 'ok', text: `${cat.icon || '🏷️'} ${cat.name} created` });
   }
 
-  openFastEntry(): void {
+  openFastEntry(withVoice = false): void {
+    this.fastEntryVoiceMode.set(withVoice);
     this.fastEntryOpen.set(true);
   }
 

@@ -46,18 +46,28 @@ export class SmartEntryService {
     const kind: TransactionKind = isCredit ? 'income' : 'expense';
 
     // 2. Extract Amount
-    // Matches Rs. 450, Rs 450.50, INR 1,299.00, ₹450, $50, 450.00
+    // Matches Rs. 450, Rs 450.50, INR 1,299.00, ₹450, $50, 450.00, 50k, or spoken numbers
     let amount = 0;
-    const amtMatch = text.match(/(?:(?:rs\.?|inr|₹|\$)\s*([\d,]+(?:\.\d{1,2})?))|(?:(?:spent|paid|sent|amount|debited by|credited by)\s*(?:rs\.?|inr|₹|\$)?\s*([\d,]+(?:\.\d{1,2})?))/i) ||
-                     text.match(/\b([\d,]+(?:\.\d{1,2})?)\s*(?:rs|inr|rupees)\b/i) ||
-                     text.match(/\b\d+(?:\.\d{1,2})?\b/);
+    const kMatch = text.match(/(?:(?:rs\.?|inr|₹|\$|spent|paid|sent|amount)\s*)?([\d,]+(?:\.\d+)?)\s*k\b/i);
+    if (kMatch) {
+      amount = parseFloat(kMatch[1].replace(/,/g, '')) * 1000;
+    } else {
+      const amtMatch = text.match(/(?:(?:rs\.?|inr|₹|\$)\s*([\d,]+(?:\.\d{1,2})?))|(?:(?:spent|paid|sent|amount|debited by|credited by)\s*(?:rs\.?|inr|₹|\$)?\s*([\d,]+(?:\.\d{1,2})?))/i) ||
+                       text.match(/\b([\d,]+(?:\.\d{1,2})?)\s*(?:rs|inr|rupees|bucks|dollars)\b/i) ||
+                       text.match(/\b\d+(?:\.\d{1,2})?\b/);
 
-    if (amtMatch) {
-      const valStr = (amtMatch[1] || amtMatch[2] || amtMatch[0]).replace(/,/g, '');
-      const parsed = parseFloat(valStr);
-      if (!isNaN(parsed) && parsed > 0) {
-        amount = parsed;
+      if (amtMatch) {
+        const valStr = (amtMatch[1] || amtMatch[2] || amtMatch[0]).replace(/,/g, '');
+        const parsed = parseFloat(valStr);
+        if (!isNaN(parsed) && parsed > 0) {
+          amount = parsed;
+        }
       }
+    }
+
+    if (amount === 0) {
+      const spokenAmt = this.parseSpokenWordsAmount(text);
+      if (spokenAmt > 0) amount = spokenAmt;
     }
 
     // 3. Extract Merchant / Recipient
@@ -254,5 +264,34 @@ export class SmartEntryService {
       categoryGuess,
       source,
     };
+  }
+
+  private parseSpokenWordsAmount(text: string): number {
+    const wordsMap: Record<string, number> = {
+      one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10,
+      eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17,
+      eighteen: 18, nineteen: 19, twenty: 20, thirty: 30, forty: 40, fifty: 50, sixty: 60,
+      seventy: 70, eighty: 80, ninety: 90, hundred: 100, thousand: 1000, lakh: 100000
+    };
+    const tokens = text.toLowerCase().replace(/[^a-z\s]/g, '').split(/\s+/);
+    let total = 0;
+    let current = 0;
+    let hasNumber = false;
+
+    for (const t of tokens) {
+      if (t in wordsMap) {
+        hasNumber = true;
+        const val = wordsMap[t];
+        if (val === 100) {
+          current = (current || 1) * 100;
+        } else if (val === 1000 || val === 100000) {
+          total += (current || 1) * val;
+          current = 0;
+        } else {
+          current += val;
+        }
+      }
+    }
+    return hasNumber ? (total + current) : 0;
   }
 }

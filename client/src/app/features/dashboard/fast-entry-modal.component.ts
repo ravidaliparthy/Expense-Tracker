@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output, inject, signal } from '@angular/core';
+import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SmartEntryService, ParsedTransaction } from '../../core/smart-entry.service';
@@ -15,25 +15,66 @@ import { Category, PaymentSource, TransactionKind, TransactionTag, money } from 
           <div class="header-left">
             <span class="emoji-icon">⚡</span>
             <div>
-              <h3>Fast Entry & UPI / SMS Parser</h3>
-              <p class="subtitle">Paste Indian Bank/UPI SMS or type plain English (e.g. "Paid 350 for Swiggy")</p>
+              <h3>Fast Entry & Voice / SMS Parser</h3>
+              <p class="subtitle">Type, paste Indian Bank/UPI SMS, or speak aloud (Voice Mode)</p>
             </div>
           </div>
-          <button type="button" class="btn-close" (click)="close.emit()">✕</button>
+          <div class="header-actions">
+            <button
+              type="button"
+              class="voice-toggle-btn"
+              [class.recording]="isRecording"
+              (click)="toggleVoice()"
+              [title]="isRecording ? 'Click to stop listening' : 'Start speaking your expense'"
+            >
+              <span class="mic-dot" *ngIf="isRecording"></span>
+              <span>{{ isRecording ? '🔴 Listening...' : '🎙️ Voice Mode' }}</span>
+            </button>
+            <button type="button" class="btn-close" (click)="close.emit()">✕</button>
+          </div>
         </div>
 
         <div class="modal-body">
-          <!-- Text Input / SMS Paste Area -->
+          <!-- Text Input / SMS Paste & Voice Area -->
           <div class="input-wrap">
-            <label>Paste Transaction SMS / UPI Text</label>
+            <div class="input-label-row">
+              <label>Paste Transaction SMS / UPI Text, or Speak:</label>
+              <button
+                type="button"
+                class="mic-pill-btn"
+                [class.active]="isRecording"
+                (click)="toggleVoice()"
+              >
+                <span>{{ isRecording ? '⏹ Stop Listening' : '🎙️ Speak Now' }}</span>
+              </button>
+            </div>
             <textarea
               [(ngModel)]="rawText"
               (ngModelChange)="onTextChange($event)"
               rows="3"
               class="sms-textarea"
-              placeholder="e.g. Sent Rs.450.00 to Swiggy on 12-10-26 via UPI Ref 12345... or 'Coffee 120'"
+              [class.listening]="isRecording"
+              placeholder="e.g. 'Paid Rs 450 to Swiggy via GPay for Travel' or tap 🎙️ Voice Mode to speak"
               autofocus
             ></textarea>
+
+            <!-- Dynamic Voice Wave / Status Indicator -->
+            <div *ngIf="isRecording" class="voice-listening-bar">
+              <div class="pulse-indicator"></div>
+              <div class="wave-lines">
+                <span class="wave"></span>
+                <span class="wave"></span>
+                <span class="wave"></span>
+                <span class="wave"></span>
+              </div>
+              <span class="voice-text">Listening... Speak naturally (e.g. "Paid 450 to Swiggy via GPay for Travel")</span>
+            </div>
+
+            <!-- Voice Notice / Error Banner -->
+            <div *ngIf="speechError" class="voice-error-banner">
+              <span>⚠️ {{ speechError }}</span>
+              <button type="button" class="btn-dismiss" (click)="speechError = null">✕</button>
+            </div>
           </div>
 
           <!-- Quick Suggestions / Sample Buttons -->
@@ -136,22 +177,100 @@ import { Category, PaymentSource, TransactionKind, TransactionTag, money } from 
     }
     :host-context([data-theme='dark']) .modal-header { border-bottom-color: #334155; }
     .header-left { display: flex; align-items: center; gap: 12px; }
+    .header-actions { display: flex; align-items: center; gap: 10px; }
     .emoji-icon { font-size: 24px; }
     .header-left h3 { margin: 0; font-size: 16px; font-weight: 700; }
     .subtitle { margin: 2px 0 0; font-size: 12px; color: #64748B; }
     :host-context([data-theme='dark']) .subtitle { color: #94A3B8; }
     .btn-close { background: none; border: none; font-size: 18px; color: #64748B; cursor: pointer; }
+
+    /* Voice Buttons */
+    .voice-toggle-btn, .mic-pill-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 12px; border-radius: 999px; font-size: 11px; font-weight: 700;
+      cursor: pointer; transition: all 0.2s ease; border: 1px solid #C7D2FE;
+      background: #EEF2FF; color: #4F46E5;
+    }
+    :host-context([data-theme='dark']) .voice-toggle-btn,
+    :host-context([data-theme='dark']) .mic-pill-btn {
+      background: #1E1B4B; border-color: #4338CA; color: #C7D2FE;
+    }
+    .voice-toggle-btn:hover, .mic-pill-btn:hover {
+      background: #E0E7FF; border-color: #818CF8; transform: translateY(-1px);
+    }
+    .voice-toggle-btn.recording, .mic-pill-btn.active {
+      background: #FEE2E2 !important; border-color: #F87171 !important; color: #DC2626 !important;
+      box-shadow: 0 0 12px rgba(239, 68, 68, 0.4); animation: mic-pulse 1.6s infinite;
+    }
+    :host-context([data-theme='dark']) .voice-toggle-btn.recording,
+    :host-context([data-theme='dark']) .mic-pill-btn.active {
+      background: #450A0A !important; border-color: #B91C1C !important; color: #FCA5A5 !important;
+    }
+    @keyframes mic-pulse {
+      0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
+      70% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    }
+    .mic-dot {
+      width: 7px; height: 7px; border-radius: 50%; background: #EF4444;
+      display: inline-block; animation: blink 1s infinite alternate;
+    }
+    @keyframes blink { from { opacity: 0.3; } to { opacity: 1; } }
+
     .modal-body { padding: 18px 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; }
-    .input-wrap label { font-size: 12px; font-weight: 600; color: #475569; display: block; margin-bottom: 6px; }
+    .input-wrap label { font-size: 12px; font-weight: 600; color: #475569; }
     :host-context([data-theme='dark']) .input-wrap label { color: #CBD5E1; }
+    .input-label-row {
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;
+    }
     .sms-textarea {
       width: 100%; border: 1px solid #CBD5E1; border-radius: 10px; padding: 10px 12px;
       font-size: 13px; font-family: inherit; resize: vertical; box-sizing: border-box;
-      background: #F8FAFC;
+      background: #F8FAFC; transition: border-color 0.2s ease, box-shadow 0.2s ease;
     }
     :host-context([data-theme='dark']) .sms-textarea {
       background: #1E293B; border-color: #475569; color: #F8FAFC;
     }
+    .sms-textarea.listening {
+      border-color: #EF4444 !important; box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important;
+    }
+
+    /* Voice Wave Indicator */
+    .voice-listening-bar {
+      display: flex; align-items: center; gap: 10px; padding: 8px 12px; margin-top: 6px;
+      border-radius: 8px; background: #FEF2F2; border: 1px solid #FECACA;
+      font-size: 12px; color: #B91C1C;
+    }
+    :host-context([data-theme='dark']) .voice-listening-bar {
+      background: #2D1515; border-color: #7F1D1D; color: #FCA5A5;
+    }
+    .pulse-indicator {
+      width: 8px; height: 8px; border-radius: 50%; background: #EF4444;
+      box-shadow: 0 0 8px #EF4444; flex-shrink: 0;
+    }
+    .wave-lines { display: flex; align-items: center; gap: 3px; height: 14px; }
+    .wave {
+      width: 3px; height: 6px; background: #EF4444; border-radius: 3px;
+      animation: sound-wave 0.6s ease-in-out infinite alternate;
+    }
+    .wave:nth-child(2) { animation-delay: 0.15s; height: 12px; }
+    .wave:nth-child(3) { animation-delay: 0.3s; height: 9px; }
+    .wave:nth-child(4) { animation-delay: 0.45s; height: 14px; }
+    @keyframes sound-wave {
+      0% { height: 4px; }
+      100% { height: 14px; }
+    }
+    .voice-text { font-weight: 500; font-size: 11px; flex: 1; }
+    .voice-error-banner {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 6px 10px; margin-top: 6px; border-radius: 6px;
+      background: #FFFBEB; border: 1px solid #FDE68A; color: #B45309; font-size: 11px;
+    }
+    :host-context([data-theme='dark']) .voice-error-banner {
+      background: #362506; border-color: #78350F; color: #FCD34D;
+    }
+    .btn-dismiss { background: none; border: none; cursor: pointer; color: inherit; font-size: 12px; }
+
     .sample-chips { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
     .sample-label { font-size: 11px; color: #64748B; font-weight: 600; }
     .chip {
@@ -207,9 +326,10 @@ import { Category, PaymentSource, TransactionKind, TransactionTag, money } from 
     .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
   `]
 })
-export class FastEntryModalComponent implements OnInit {
+export class FastEntryModalComponent implements OnInit, OnDestroy {
   @Input() currency = 'USD';
   @Input() categories: Category[] = [];
+  @Input() startWithVoice = false;
   @Output() close = new EventEmitter<void>();
   @Output() save = new EventEmitter<{
     amountCents: number;
@@ -238,6 +358,12 @@ export class FastEntryModalComponent implements OnInit {
   };
   selectedCategoryName = 'Food';
 
+  // Voice Mode State
+  isRecording = false;
+  speechError: string | null = null;
+  hasSpeechSupport = true;
+  private recognition: any = null;
+
   ngOnInit(): void {
     const defaults = this.smartEntry.getLastDefaults();
     this.onTextChange('');
@@ -245,6 +371,111 @@ export class FastEntryModalComponent implements OnInit {
       const matched = this.categories.find((c) => c.id === defaults.categoryId);
       if (matched) this.selectedCategoryName = matched.name;
     }
+
+    this.hasSpeechSupport = this.checkSpeechSupport();
+    if (this.startWithVoice && this.hasSpeechSupport) {
+      setTimeout(() => {
+        this.toggleVoice();
+      }, 250);
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.cleanupVoice();
+  }
+
+  checkSpeechSupport(): boolean {
+    return typeof window !== 'undefined' &&
+      (('SpeechRecognition' in window) || ('webkitSpeechRecognition' in window));
+  }
+
+  initSpeech(): void {
+    const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRec) {
+      this.hasSpeechSupport = false;
+      this.speechError = 'Voice input is not supported in this browser. Please use Chrome, Edge, or Safari.';
+      return;
+    }
+
+    try {
+      this.recognition = new SpeechRec();
+      this.recognition.continuous = false;
+      this.recognition.interimResults = true;
+      this.recognition.lang = 'en-IN'; // Optimized for INR, UPI, and common financial phrases
+
+      this.recognition.onstart = () => {
+        this.isRecording = true;
+        this.speechError = null;
+      };
+
+      this.recognition.onresult = (event: any) => {
+        let transcript = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          transcript += event.results[i][0].transcript;
+        }
+        if (transcript.trim()) {
+          this.rawText = transcript.trim();
+          this.onTextChange(this.rawText);
+        }
+      };
+
+      this.recognition.onerror = (event: any) => {
+        this.isRecording = false;
+        if (event.error === 'not-allowed') {
+          this.speechError = 'Microphone permission denied. Please allow microphone access in browser settings.';
+        } else if (event.error === 'no-speech') {
+          this.speechError = 'No speech detected. Tap 🎙️ to try speaking again.';
+        } else {
+          this.speechError = `Voice error: ${event.error}`;
+        }
+      };
+
+      this.recognition.onend = () => {
+        this.isRecording = false;
+      };
+    } catch (err: any) {
+      this.hasSpeechSupport = false;
+      this.speechError = 'Could not initialize speech recognition: ' + (err?.message || '');
+    }
+  }
+
+  toggleVoice(): void {
+    if (!this.recognition) {
+      this.initSpeech();
+      if (!this.recognition) return;
+    }
+
+    if (this.isRecording) {
+      try {
+        this.recognition.stop();
+      } catch {}
+      this.isRecording = false;
+    } else {
+      this.speechError = null;
+      try {
+        this.recognition.start();
+      } catch {
+        // If recognition was in an invalid state, reinitialize
+        try {
+          this.recognition.abort();
+          setTimeout(() => {
+            try { this.recognition.start(); } catch {}
+          }, 100);
+        } catch {
+          this.speechError = 'Microphone busy. Please click again.';
+        }
+      }
+    }
+  }
+
+  private cleanupVoice(): void {
+    if (this.recognition) {
+      try {
+        this.recognition.abort();
+      } catch {}
+      this.recognition = null;
+    }
+    this.isRecording = false;
   }
 
   setSample(text: string): void {
@@ -300,6 +531,7 @@ export class FastEntryModalComponent implements OnInit {
       categoryId: catId,
       occurredAt
     });
+    this.cleanupVoice();
     this.close.emit();
   }
 }
