@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, inject, signal } from '@angular/core';
+import { Component, EventEmitter, Input, Output, effect, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { GoalsService, SavingsGoal } from '../../core/goals.service';
@@ -875,6 +875,15 @@ export class SavingsGoalsComponent {
   readonly depositModalOpen = signal(false);
   readonly recordModalOpen = signal(false);
   readonly selectedGoal = signal<SavingsGoal | null>(null);
+
+  constructor() {
+    effect(() => {
+      if (this.goalsService.createModalRequested()) {
+        this.openCreateModal();
+        this.goalsService.createModalRequested.set(false);
+      }
+    }, { allowSignalWrites: true });
+  }
 
   formTitle = '';
   formIcon = '🛡️';

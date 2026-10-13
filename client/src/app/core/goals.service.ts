@@ -19,6 +19,8 @@ export class GoalsService {
   private readonly auth = inject(AuthService);
   readonly goals = signal<SavingsGoal[]>([]);
 
+  readonly createModalRequested = signal(false);
+
   constructor() {
     // Re-load goals when current user changes
     effect(() => {
@@ -36,6 +38,9 @@ export class GoalsService {
   }
 
   loadForUser(userId: number): void {
+    const user = this.auth.user();
+    const isDemo = user?.email === 'demo@expense.test';
+
     try {
       const raw = localStorage.getItem(this.storageKey(userId));
       if (raw) {
@@ -49,31 +54,36 @@ export class GoalsService {
       /* ignore storage error */
     }
 
-    // Default inspirational starter goals
-    const initial: SavingsGoal[] = [
-      {
-        id: 'goal-emergency-' + Date.now(),
-        title: 'Emergency Fund',
-        icon: '🛡️',
-        targetCents: 100000, // $1,000.00
-        currentCents: 45000,  // $450.00 (45%)
-        deadline: new Date(Date.now() + 90 * 86400000).toISOString().slice(0, 10),
-        color: '#10B981',
-        createdAt: new Date().toISOString()
-      },
-      {
-        id: 'goal-vacation-' + Date.now(),
-        title: 'Holiday Getaway',
-        icon: '🏖️',
-        targetCents: 60000,  // $600.00
-        currentCents: 20000,  // $200.00 (33%)
-        deadline: new Date(Date.now() + 150 * 86400000).toISOString().slice(0, 10),
-        color: '#6366F1',
-        createdAt: new Date().toISOString()
-      }
-    ];
-    this.goals.set(initial);
-    this.persist();
+    if (isDemo) {
+      // Default inspirational starter goals ONLY for demo user (matching picture 3)
+      const initial: SavingsGoal[] = [
+        {
+          id: 'goal-emergency-' + Date.now(),
+          title: 'Emergency Fund',
+          icon: '🛡️',
+          targetCents: 100000, // $1,000.00
+          currentCents: 65000,  // $650.00 (65%)
+          deadline: new Date(Date.now() + 88 * 86400000).toISOString().slice(0, 10),
+          color: '#10B981',
+          createdAt: new Date().toISOString()
+        },
+        {
+          id: 'goal-vacation-' + Date.now(),
+          title: 'Holiday Getaway',
+          icon: '🏖️',
+          targetCents: 60000,  // $600.00
+          currentCents: 20000,  // $200.00 (33%)
+          deadline: new Date(Date.now() + 148 * 86400000).toISOString().slice(0, 10),
+          color: '#6366F1',
+          createdAt: new Date().toISOString()
+        }
+      ];
+      this.goals.set(initial);
+      this.persist();
+    } else {
+      // For any new or existing non-demo user, do not seed goals
+      this.goals.set([]);
+    }
   }
 
   private persist(): void {

@@ -26,7 +26,7 @@ const SELECT_EXP = `
          e.category_name_snapshot AS categorySnapshot,
          e.category_color_snapshot AS categoryColor,
          e.category_icon_snapshot AS categoryIcon,
-         e.amount_cents AS amountCents, e.currency, e.kind, e.tag,
+         e.amount_cents AS amountCents, e.currency, e.kind, e.tag, e.source,
          e.occurred_at_utc AS occurredAtUtc, e.local_date AS localDate,
          e.tz_offset_minutes AS tzOffsetMinutes,
          e.merchant, e.notes, e.receipt_url AS receiptUrl,
@@ -113,12 +113,12 @@ router.post('/', async (req, res, next) => {
     const info = db.prepare(
       `INSERT INTO expenses
          (user_id, category_id, category_name_snapshot, category_color_snapshot, category_icon_snapshot,
-          amount_cents, currency, kind, tag, occurred_at_utc, local_date, tz_offset_minutes,
+          amount_cents, currency, kind, tag, source, occurred_at_utc, local_date, tz_offset_minutes,
           merchant, notes, receipt_url, client_uuid)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ).run(
       req.user.id, snap.categoryId, snap.name, snap.color, snap.icon,
-      body.amountCents, req.user.baseCurrency, body.kind, body.tag || 'need',
+      body.amountCents, req.user.baseCurrency, body.kind, body.tag || 'need', body.source || 'Others',
       inst.occurredAtUtc, inst.localDate, inst.tzOffsetMinutes,
       body.merchant ?? null, body.notes ?? null, body.receiptUrl ?? null,
       body.clientUuid || crypto.randomUUID()
@@ -165,6 +165,7 @@ router.patch('/:id', async (req, res, next) => {
     if (body.amountCents !== undefined) { sets.push('amount_cents = ?'); args.push(body.amountCents); }
     if (body.kind !== undefined) { sets.push('kind = ?'); args.push(body.kind); }
     if (body.tag !== undefined) { sets.push('tag = ?'); args.push(body.tag); }
+    if (body.source !== undefined) { sets.push('source = ?'); args.push(body.source); }
     if (body.merchant !== undefined) { sets.push('merchant = ?'); args.push(body.merchant || null); }
     if (body.notes !== undefined) { sets.push('notes = ?'); args.push(body.notes || null); }
     if (snap) {
@@ -253,6 +254,10 @@ router.post('/bulk-update', async (req, res, next) => {
       sets.push('tag = ?');
       args.push(body.tag);
     }
+    if (body.source) {
+      sets.push('source = ?');
+      args.push(body.source);
+    }
     if (!sets.length) return res.status(400).json({ error: 'Nothing to update' });
     sets.push(`updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now')`);
     const placeholders = body.ids.map(() => '?').join(',');
@@ -289,9 +294,9 @@ router.post('/bulk-import', async (req, res, next) => {
     const insert = db.prepare(
       `INSERT INTO expenses
          (user_id, category_id, category_name_snapshot, category_color_snapshot, category_icon_snapshot,
-          amount_cents, currency, kind, tag, occurred_at_utc, local_date, tz_offset_minutes,
+          amount_cents, currency, kind, tag, source, occurred_at_utc, local_date, tz_offset_minutes,
           merchant, notes, client_uuid)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     );
 
     const importTx = db.transaction(() => {
@@ -300,6 +305,7 @@ router.post('/bulk-import', async (req, res, next) => {
         if (!item.amountCents || item.amountCents <= 0) continue;
         const kind = item.kind === 'income' ? 'income' : 'expense';
         const tag = ['need', 'want', 'saving'].includes(item.tag) ? item.tag : 'need';
+        const source = ['SuperMoney', 'PhonePe', 'Google Pay', 'Credit Card', 'Debit Card', 'Cash', 'Others'].includes(item.source) ? item.source : 'Others';
         const occurredAt = item.occurredAt || new Date().toISOString();
         const inst = resolveInstant(occurredAt, req.user.timezone);
         let cat = defaultCat;
@@ -321,6 +327,7 @@ router.post('/bulk-import', async (req, res, next) => {
           req.user.baseCurrency || 'USD',
           kind,
           tag,
+          source,
           inst.occurredAtUtc,
           inst.localDate,
           inst.tzOffsetMinutes,

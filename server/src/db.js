@@ -205,6 +205,11 @@ function migrate() {
     db.exec(`ALTER TABLE expenses ADD COLUMN tag TEXT NOT NULL DEFAULT 'need'`);
   }
 
+  // Payment source tracking (SuperMoney, PhonePe, Google Pay, Credit Card, Debit Card, Cash, Others)
+  if (!expCols.includes('source')) {
+    db.exec(`ALTER TABLE expenses ADD COLUMN source TEXT NOT NULL DEFAULT 'Others'`);
+  }
+
   // Recurring bills table for subscriptions, rent, and EMI tracking
   db.exec(`
     CREATE TABLE IF NOT EXISTS recurring_bills (

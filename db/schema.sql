@@ -67,6 +67,8 @@ CREATE TABLE IF NOT EXISTS expenses (
   tz_offset_minutes       INTEGER NOT NULL DEFAULT 0,
   merchant                TEXT,
   notes                   TEXT,                 -- contextual log / receipt / reminder
+  tag                     TEXT    NOT NULL DEFAULT 'need',
+  source                  TEXT    NOT NULL DEFAULT 'Others',
   receipt_url             TEXT,
   client_uuid             TEXT    NOT NULL,     -- idempotency key for offline sync
   sync_version            INTEGER NOT NULL DEFAULT 1,  -- optimistic locking

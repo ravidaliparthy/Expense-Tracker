@@ -3,11 +3,11 @@ import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { firstValueFrom } from 'rxjs';
 import { ApiService } from '../../core/api.service';
-import { Category, Expense, TransactionKind } from '../../core/models';
+import { Category, Expense, PaymentSource, TransactionKind } from '../../core/models';
 import { sanitizeNotes } from '../../core/sanitize';
 
 export interface ExpenseFormValue {
-  amountCents: number; occurredAt: string; categoryId: number | null; kind: TransactionKind; merchant?: string | null; notes?: string | null;
+  amountCents: number; occurredAt: string; categoryId: number | null; kind: TransactionKind; source?: PaymentSource; merchant?: string | null; notes?: string | null;
 }
 
 @Component({
@@ -67,8 +67,18 @@ export interface ExpenseFormValue {
         </div>
         <label for="expense-occurredAt">Date & time</label>
         <input id="expense-occurredAt" name="occurredAt" type="datetime-local" [(ngModel)]="occurredLocal" required />
-        <label for="expense-merchant">{{ kind === 'income' ? 'Source' : 'Merchant' }}</label>
+        <label for="expense-merchant">{{ kind === 'income' ? 'Payee / From' : 'Merchant' }}</label>
         <input id="expense-merchant" name="merchant" [(ngModel)]="merchant" [placeholder]="kind === 'income' ? 'Payroll, client, refund…' : 'Where did you spend?'" />
+        <label for="expense-source">Payment Source</label>
+        <select id="expense-source" name="source" [(ngModel)]="source" class="source-select">
+          <option value="SuperMoney">⚡ SuperMoney</option>
+          <option value="PhonePe">🟣 PhonePe</option>
+          <option value="Google Pay">🔵 Google Pay</option>
+          <option value="Credit Card">💳 Credit Card</option>
+          <option value="Debit Card">🏧 Debit Card</option>
+          <option value="Cash">💵 Cash</option>
+          <option value="Others">✨ Others</option>
+        </select>
         <label for="expense-notes">Contextual notes</label>
         <textarea id="expense-notes" name="notes" rows="3" [(ngModel)]="notes" placeholder="Receipt #, invoice #, split details, reminders…"></textarea>
         <div style="font-size:0.75rem; color:#94A3B8; margin-top:-6px; margin-bottom:8px;">🔒 Plain text &amp; numbers only (no images or scripts)</div>
@@ -81,7 +91,7 @@ export interface ExpenseFormValue {
       </form>
     </div></div>
   `,
-  styles: [`.cat-row{display:flex;gap:8px;align-items:center;margin-top:4px}.cat-row select,.cat-row input:not(.swatch):not(.emoji),.cat-row .c-select{flex:1}.swatch{width:42px;height:36px;padding:2px}.emoji{width:54px;text-align:center}.kind-tabs{display:flex;gap:8px;margin:4px 0 10px}.kind-tabs button{flex:1;border:1px solid #CBD5E1;background:#fff;border-radius:8px;padding:9px;cursor:pointer;user-select:none;transition:background-color 0.05s ease, border-color 0.05s ease, color 0.05s ease}.kind-tabs button:hover{border-color:#94A3B8;background:#F8FAFC}.kind-tabs button.on{background:#1E1B4B;color:#fff;border-color:#6366F1}:host-context([data-theme='dark']) .kind-tabs button{background:#0F172A;border-color:#334155;color:#CBD5E1}:host-context([data-theme='dark']) .kind-tabs button:hover{background:#1E293B;color:#F8FAFC}:host-context([data-theme='dark']) .kind-tabs button.on{background:#4F46E5;border-color:#6366F1;color:#FFFFFF}`]
+  styles: [`.cat-row{display:flex;gap:8px;align-items:center;margin-top:4px}.cat-row select,.cat-row input:not(.swatch):not(.emoji),.cat-row .c-select{flex:1}.swatch{width:42px;height:36px;padding:2px}.emoji{width:54px;text-align:center}.kind-tabs{display:flex;gap:8px;margin:4px 0 10px}.kind-tabs button{flex:1;border:1px solid #CBD5E1;background:#fff;border-radius:8px;padding:9px;cursor:pointer;user-select:none;transition:background-color 0.05s ease, border-color 0.05s ease, color 0.05s ease}.kind-tabs button:hover{border-color:#94A3B8;background:#F8FAFC}.kind-tabs button.on{background:#1E1B4B;color:#fff;border-color:#6366F1}:host-context([data-theme='dark']) .kind-tabs button{background:#0F172A;border-color:#334155;color:#CBD5E1}:host-context([data-theme='dark']) .kind-tabs button:hover{background:#1E293B;color:#F8FAFC}:host-context([data-theme='dark']) .kind-tabs button.on{background:#4F46E5;border-color:#6366F1;color:#FFFFFF}.source-select{width:100%;border:1px solid #CBD5E1;background:#fff;border-radius:8px;padding:9px 12px;font-size:14px;color:#1E293B;margin-top:4px;box-sizing:border-box}:host-context([data-theme='dark']) .source-select{background:#0F172A;border-color:#334155;color:#F1F5F9}`]
 })
 export class ExpenseFormComponent implements OnInit, OnChanges {
   private api = inject(ApiService);
@@ -104,6 +114,7 @@ export class ExpenseFormComponent implements OnInit, OnChanges {
   occurredLocal = '';
   merchant = '';
   notes = '';
+  source: PaymentSource = 'SuperMoney';
   newCatName = '';
   newCatColor = '#6366F1';
   newCatIcon = '🏷️';
@@ -114,6 +125,7 @@ export class ExpenseFormComponent implements OnInit, OnChanges {
       this.amount = exp.amountCents / 100;
       this.categoryId = exp.categoryId;
       this.kind = exp.kind || 'expense';
+      this.source = exp.source || 'SuperMoney';
       this.merchant = exp.merchant || '';
       this.notes = exp.notes || '';
       const d = exp.occurredAtUtc ? new Date(exp.occurredAtUtc) : new Date();
@@ -123,6 +135,7 @@ export class ExpenseFormComponent implements OnInit, OnChanges {
       this.amount = null;
       this.categoryId = null;
       this.kind = 'expense';
+      this.source = 'SuperMoney';
       this.merchant = '';
       this.notes = '';
       const now = new Date();
@@ -236,6 +249,7 @@ export class ExpenseFormComponent implements OnInit, OnChanges {
       occurredAt: iso,
       categoryId: this.categoryId,
       kind: this.kind,
+      source: this.source,
       merchant: merchantVal ? merchantVal : (this.expense ? null : undefined),
       notes: notesVal ? notesVal : (this.expense ? null : undefined),
     });

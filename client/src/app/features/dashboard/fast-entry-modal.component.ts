@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, inject, signal } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SmartEntryService, ParsedTransaction } from '../../core/smart-entry.service';
@@ -203,7 +203,7 @@ import { Category, TransactionKind, TransactionTag, money } from '../../core/mod
     .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
   `]
 })
-export class FastEntryModalComponent {
+export class FastEntryModalComponent implements OnInit {
   @Input() currency = 'USD';
   @Input() categories: Category[] = [];
   @Output() close = new EventEmitter<void>();
@@ -220,14 +220,21 @@ export class FastEntryModalComponent {
   private readonly smartEntry = inject(SmartEntryService);
   readonly money = money;
 
-  rawText = '';
-  parsed: ParsedTransaction | null = null;
-  selectedCategoryName = '';
+  rawText = 'Sent Rs 450 to Swiggy on UPI';
+  parsed: ParsedTransaction = {
+    amount: 450,
+    kind: 'expense',
+    tag: 'want',
+    merchant: 'Swiggy',
+    notes: 'Sent Rs 450 to Swiggy on UPI',
+    categoryGuess: 'Food',
+    date: new Date().toISOString().slice(0, 10),
+  };
+  selectedCategoryName = 'Food';
 
   ngOnInit(): void {
-    // Check last-used defaults
     const defaults = this.smartEntry.getLastDefaults();
-    this.setSample('Sent Rs 450 to Swiggy on UPI');
+    this.onTextChange(this.rawText);
     if (defaults.categoryId && this.categories.length) {
       const matched = this.categories.find((c) => c.id === defaults.categoryId);
       if (matched) this.selectedCategoryName = matched.name;
@@ -240,7 +247,21 @@ export class FastEntryModalComponent {
   }
 
   onTextChange(text: string): void {
-    this.parsed = this.smartEntry.parseInput(text);
+    const p = this.smartEntry.parseInput(text);
+    if (p) {
+      this.parsed = p;
+    } else {
+      // Keep parsed card directly visible with fallback fields
+      this.parsed = {
+        amount: this.parsed?.amount || 0,
+        kind: this.parsed?.kind || 'expense',
+        tag: this.parsed?.tag || 'need',
+        merchant: this.parsed?.merchant || '',
+        notes: text,
+        categoryGuess: this.parsed?.categoryGuess || 'Food',
+        date: this.parsed?.date || new Date().toISOString().slice(0, 10),
+      };
+    }
     if (this.parsed && this.categories.length) {
       const match = this.categories.find(
         (c) => c.name.toLowerCase() === this.parsed!.categoryGuess.toLowerCase()

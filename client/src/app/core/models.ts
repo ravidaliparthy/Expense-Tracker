@@ -1,6 +1,7 @@
 export type TransactionKind = 'expense' | 'income';
 export type KindFilter = 'all' | TransactionKind;
 export type TransactionTag = 'need' | 'want' | 'saving';
+export type PaymentSource = 'SuperMoney' | 'PhonePe' | 'Google Pay' | 'Credit Card' | 'Debit Card' | 'Cash' | 'Others';
 
 export interface User {
   id: number;
@@ -31,6 +32,7 @@ export interface Expense {
   currency: string;
   kind: TransactionKind;
   tag?: TransactionTag;
+  source?: PaymentSource;
   occurredAtUtc: string;
   localDate: string;
   merchant: string | null;

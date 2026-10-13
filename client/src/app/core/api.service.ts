@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, firstValueFrom, of, throwError } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
-import { Budget, Category, Expense, ExpensePage, Filters, Insights, RecurringBill, TransactionKind, TransactionTag } from './models';
+import { Budget, Category, Expense, ExpensePage, Filters, Insights, PaymentSource, RecurringBill, TransactionKind, TransactionTag } from './models';
 import { OfflineQueueService } from './offline-queue.service';
 import { safeUuid } from './uuid';
 import { sanitizeNotes } from './sanitize';
@@ -79,7 +79,7 @@ export class ApiService {
       })
     );
   }
-  async createExpense(body: { clientUuid?: string; amountCents: number; occurredAt: string; categoryId: number | null; kind: TransactionKind; tag?: TransactionTag; merchant?: string | null; notes?: string | null; }): Promise<{ id: number; status?: string } | 'queued'> {
+  async createExpense(body: { clientUuid?: string; amountCents: number; occurredAt: string; categoryId: number | null; kind: TransactionKind; tag?: TransactionTag; source?: PaymentSource; merchant?: string | null; notes?: string | null; }): Promise<{ id: number; status?: string } | 'queued'> {
     const payload = { ...body, notes: body.notes ? sanitizeNotes(body.notes) : body.notes };
     try { return await firstValueFrom(this.http.post<{ id: number; status?: string }>('/api/expenses', payload)); }
     catch (err) { if (this.isNetworkError(err)) { this.queue.enqueue({ clientUuid: payload.clientUuid ?? safeUuid(), op: 'create', payload }); return 'queued'; } return throwError(() => err) as never; }

@@ -17,6 +17,15 @@ const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'expected YYYY-MM-DD');
 const currency = z.string().regex(/^[A-Z]{3}$/, 'expected ISO currency code');
 const txKind = z.enum(['expense', 'income']);
 const txTag = z.enum(['need', 'want', 'saving']);
+const paymentSource = z.enum([
+  'SuperMoney',
+  'PhonePe',
+  'Google Pay',
+  'Credit Card',
+  'Debit Card',
+  'Cash',
+  'Others',
+]);
 
 const registerSchema = z.object({
   email: z.string().email(),
@@ -78,6 +87,7 @@ const expenseCreateSchema = z.object({
   categoryId: z.number().int().positive().nullable().default(null),
   kind: txKind.default('expense'),
   tag: txTag.default('need').optional(),
+  source: paymentSource.default('Others').optional(),
   merchant: z.string().max(120).nullable().optional(),
   notes: safeNotesSchema,
   receiptUrl: z.string().max(512).optional(),
@@ -89,6 +99,7 @@ const expensePatchSchema = z.object({
   categoryId: z.number().int().positive().nullable().optional(),
   kind: txKind.optional(),
   tag: txTag.optional(),
+  source: paymentSource.optional(),
   merchant: z.string().max(120).nullable().optional(),
   notes: safeNotesSchema,
   baseVersion: z.number().int().optional(),
@@ -102,6 +113,7 @@ const bulkUpdateSchema = z.object({
   ids: z.array(z.number().int().positive()).min(1).max(500),
   categoryId: z.number().int().positive().nullable().optional(),
   tag: txTag.optional(),
+  source: paymentSource.optional(),
 });
 
 const recurringBillSchema = z.object({
@@ -159,5 +171,5 @@ module.exports = {
   expenseCreateSchema, expensePatchSchema, expenseQuerySchema,
   bulkDeleteSchema, bulkUpdateSchema, recurringBillSchema, recurringPatchSchema,
   deleteAccountSchema, budgetSchema, safeNotesSchema,
-  isSafePlainTextNotes, sanitizeNotes,
+  isSafePlainTextNotes, sanitizeNotes, paymentSource,
 };

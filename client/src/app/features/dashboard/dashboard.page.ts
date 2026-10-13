@@ -16,6 +16,7 @@ import { OnboardingOverlayComponent } from '../onboarding/onboarding-overlay.com
 import { StreakService } from '../../core/streak.service';
 import { StreakCardComponent } from './streak-card.component';
 import { SavingsGoalsComponent, SavingsRecordPayload } from './savings-goals.component';
+import { GoalsService } from '../../core/goals.service';
 import { SplitBillModalComponent, SplitRecordPayload } from './split-bill-modal.component';
 import { FastEntryModalComponent } from './fast-entry-modal.component';
 import { StatementImportModalComponent } from '../transactions/statement-import-modal.component';
@@ -176,6 +177,9 @@ export interface BreakdownRow {
 export class DashboardPage {
   readonly filter=inject(FilterService); private api=inject(ApiService); readonly queue=inject(OfflineQueueService); readonly tour=inject(OnboardingService); readonly auth=inject(AuthService); private cdr = inject(ChangeDetectorRef);
   private readonly streakService = inject(StreakService);
+  readonly goalsService = inject(GoalsService);
+  readonly isDemoUser = computed(() => this.auth.user()?.email === 'demo@expense.test');
+  readonly showSavingsGoals = computed(() => this.isDemoUser() || this.goalsService.goals().length > 0);
   readonly TIER_COLORS=TIER_COLORS; readonly money=money; readonly signedMoney=signedMoney;
   readonly trackById = (_: number, e: Expense): number => e.id;
   readonly expenses=signal<Expense[]>([]); readonly total=signal(0); readonly categories=signal<Category[]>([]); readonly budgets=signal<Budget[]>([]); readonly summary=signal<SummaryDto|null>(null); readonly insights=signal<Insights|null>(null); readonly loading=signal(false); readonly flash=signal<{type:'ok'|'warn'|'err';text:string}|null>(null); readonly exportBusy=signal(false); readonly formOpen=signal(false); readonly editing=signal<Expense|null>(null); readonly hadData=signal(false);
@@ -728,6 +732,10 @@ export class DashboardPage {
     if (this.categories().length === 0) {
       void this.loadCategories();
     }
+  }
+
+  openCreateGoal(): void {
+    this.goalsService.createModalRequested.set(true);
   }
 
   openSplitBill(total = 0, desc = ''): void {
