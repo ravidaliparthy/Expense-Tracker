@@ -253,7 +253,7 @@ export class FastEntryModalComponent implements OnInit {
   }
 
   onTextChange(text: string): void {
-    const p = this.smartEntry.parseInput(text);
+    const p = this.smartEntry.parseInput(text, this.categories);
     if (p) {
       this.parsed = p;
     } else {

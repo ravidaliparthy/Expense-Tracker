@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { PaymentSource, TransactionKind, TransactionTag } from './models';
+import { Category, PaymentSource, TransactionKind, TransactionTag } from './models';
 
 export interface ParsedTransaction {
   amount: number;
@@ -35,9 +35,10 @@ export class SmartEntryService {
    * Parse Indian Bank/UPI SMS or natural language string:
    * e.g. "Sent Rs 450 to Swiggy on UPI", "Debited INR 1,299 at Netflix", "Paid 200 for coffee"
    */
-  parseInput(input: string): ParsedTransaction | null {
+  parseInput(input: string, availableCategories?: (Category | string)[]): ParsedTransaction | null {
     if (!input || !input.trim()) return null;
     const text = input.trim();
+    const lower = text.toLowerCase();
 
     // 1. Determine Kind (Debit vs Credit)
     const isCredit = /(credited|deposited|received|refund|salary|income|added)/i.test(text) &&
@@ -79,35 +80,108 @@ export class SmartEntryService {
       merchant = isCredit ? 'Direct Credit' : 'Quick Payment';
     }
 
-    // 4. Guess Category & 50/30/20 Tag
-    const lower = text.toLowerCase();
+    // 4. Extract Category & 50/30/20 Tag
+    const catNames: string[] = (availableCategories || []).map((c) =>
+      typeof c === 'string' ? c : c.name
+    );
+    const systemCats = ['Food', 'Travel', 'Shopping', 'Utilities', 'Health', 'Entertainment', 'Salary', 'Freelance', 'Bonus'];
+    const allKnownCats = Array.from(new Set([...catNames, ...systemCats]));
+
     let categoryGuess = 'Food';
     let tag: TransactionTag = 'need';
 
-    if (isCredit) {
-      categoryGuess = 'Salary';
-      tag = 'saving';
-    } else if (/(swiggy|zomato|starbucks|mcdonald|kfc|pizza|burger|lunch|dinner|cafe|restaurant|food|groceries|blinkit|zepto|instamart|dmart)/i.test(lower)) {
-      categoryGuess = 'Food';
-      tag = /(groceries|blinkit|zepto|instamart|dmart)/i.test(lower) ? 'need' : 'want';
-    } else if (/(uber|ola|rapido|metro|fuel|petrol|diesel|flight|airline|train|irctc|travel|bus|toll)/i.test(lower)) {
-      categoryGuess = 'Travel';
-      tag = 'need';
-    } else if (/(amazon|flipkart|myntra|zara|shopping|mall|clothes|shoes)/i.test(lower)) {
-      categoryGuess = 'Shopping';
-      tag = 'want';
-    } else if (/(electricity|power|bescom|water|gas|wifi|broadband|airtel|jio|recharge|bill|rent|emi|maintenance)/i.test(lower)) {
-      categoryGuess = 'Utilities';
-      tag = 'need';
-    } else if (/(pharmacy|apollo|hospital|doctor|medicine|clinic|health|gym|cult)/i.test(lower)) {
-      categoryGuess = 'Health';
-      tag = 'need';
-    } else if (/(netflix|spotify|prime|hotstar|cinema|pvr|inox|movie|gaming|steam|entertainment)/i.test(lower)) {
-      categoryGuess = 'Entertainment';
-      tag = 'want';
-    } else if (/(sip|mutual fund|zerodha|groww|stocks|investment|savings|deposit)/i.test(lower)) {
-      categoryGuess = 'Salary';
-      tag = 'saving';
+    // A. Check for explicit purpose / category phrase (e.g. "for Travel", "towards Rent", "category: Health", "cat Shopping")
+    const purposeMatch = text.match(/(?:for|towards|under|as|category:?|cat:?)\s+([A-Za-z0-9\s&'-]{2,30}?)(?=\s+(?:on|via|ref|upi|using|to|at|avlbl|bal)|[.,!?;]|$|\s*$)/i);
+    let matchedFromPurpose = false;
+
+    if (purposeMatch && purposeMatch[1]) {
+      const pStr = purposeMatch[1].trim().toLowerCase();
+
+      // Check exact / partial category name match
+      const exactCat = allKnownCats.find((c) => {
+        const cLower = c.toLowerCase();
+        return cLower === pStr || pStr.split(/\s+/).includes(cLower);
+      });
+
+      if (exactCat) {
+        categoryGuess = exactCat;
+        matchedFromPurpose = true;
+        if (/travel|utilities|health/i.test(exactCat)) tag = 'need';
+        else if (/shopping|entertainment/i.test(exactCat)) tag = 'want';
+        else if (/salary|saving/i.test(exactCat)) tag = 'saving';
+      } else if (/(groceries|grocery|food|lunch|dinner|breakfast|snack|snacks|meal|coffee|tea|cafe|restaurant|burger|pizza|biryani|bakery|fruits|vegetables|dining)/i.test(pStr)) {
+        categoryGuess = 'Food';
+        tag = /(groceries|fruits|vegetables)/i.test(pStr) ? 'need' : 'want';
+        matchedFromPurpose = true;
+      } else if (/(travel|flight|flights|airline|plane|train|metro|bus|cab|taxi|uber|ola|rapido|fuel|petrol|diesel|gas|toll|parking|hotel|trip|commute)/i.test(pStr)) {
+        categoryGuess = 'Travel';
+        tag = 'need';
+        matchedFromPurpose = true;
+      } else if (/(shopping|clothes|clothing|shoes|apparel|electronics|gadget|mall|books|gift|order|store)/i.test(pStr)) {
+        categoryGuess = 'Shopping';
+        tag = 'want';
+        matchedFromPurpose = true;
+      } else if (/(utilities|utility|bill|bills|rent|electricity|power|water|wifi|broadband|internet|recharge|mobile|phone|maintenance|emi)/i.test(pStr)) {
+        categoryGuess = 'Utilities';
+        tag = 'need';
+        matchedFromPurpose = true;
+      } else if (/(health|medicine|medicines|pharmacy|doctor|hospital|clinic|gym|fitness|dental|medical|care|tests|lab)/i.test(pStr)) {
+        categoryGuess = 'Health';
+        tag = 'need';
+        matchedFromPurpose = true;
+      } else if (/(entertainment|movie|movies|cinema|theatre|film|netflix|spotify|hotstar|prime|game|gaming|show|concert|events|party)/i.test(pStr)) {
+        categoryGuess = 'Entertainment';
+        tag = 'want';
+        matchedFromPurpose = true;
+      } else if (/(salary|freelance|bonus|stipend|wages|income|payout|dividend)/i.test(pStr)) {
+        categoryGuess = 'Salary';
+        tag = 'saving';
+        matchedFromPurpose = true;
+      }
+    }
+
+    // B. If not matched from explicit purpose phrase, check if text explicitly mentions any known category
+    if (!matchedFromPurpose) {
+      let detectedCatFromText: string | null = null;
+      for (const c of allKnownCats) {
+        const cLower = c.toLowerCase();
+        const reg = new RegExp(`\\b${cLower}\\b`, 'i');
+        if (reg.test(lower)) {
+          detectedCatFromText = c;
+          break;
+        }
+      }
+
+      if (detectedCatFromText) {
+        categoryGuess = detectedCatFromText;
+        if (/travel|utilities|health/i.test(detectedCatFromText)) tag = 'need';
+        else if (/shopping|entertainment/i.test(detectedCatFromText)) tag = 'want';
+        else if (/salary|saving/i.test(detectedCatFromText)) tag = 'saving';
+      } else if (isCredit) {
+        categoryGuess = 'Salary';
+        tag = 'saving';
+      } else if (/(swiggy|zomato|starbucks|mcdonald|kfc|pizza|burger|lunch|dinner|cafe|restaurant|food|groceries|blinkit|zepto|instamart|dmart)/i.test(lower)) {
+        categoryGuess = 'Food';
+        tag = /(groceries|blinkit|zepto|instamart|dmart)/i.test(lower) ? 'need' : 'want';
+      } else if (/(uber|ola|rapido|metro|fuel|petrol|diesel|flight|airline|train|irctc|travel|bus|toll)/i.test(lower)) {
+        categoryGuess = 'Travel';
+        tag = 'need';
+      } else if (/(amazon|flipkart|myntra|zara|shopping|mall|clothes|shoes)/i.test(lower)) {
+        categoryGuess = 'Shopping';
+        tag = 'want';
+      } else if (/(electricity|power|bescom|water|gas|wifi|broadband|airtel|jio|recharge|bill|rent|emi|maintenance)/i.test(lower)) {
+        categoryGuess = 'Utilities';
+        tag = 'need';
+      } else if (/(pharmacy|apollo|hospital|doctor|medicine|clinic|health|gym|cult)/i.test(lower)) {
+        categoryGuess = 'Health';
+        tag = 'need';
+      } else if (/(netflix|spotify|prime|hotstar|cinema|pvr|inox|movie|gaming|steam|entertainment)/i.test(lower)) {
+        categoryGuess = 'Entertainment';
+        tag = 'want';
+      } else if (/(sip|mutual fund|zerodha|groww|stocks|investment|savings|deposit)/i.test(lower)) {
+        categoryGuess = 'Salary';
+        tag = 'saving';
+      }
     }
 
     // 5. Extract Time & Date if present (fallback to random daytime time)
