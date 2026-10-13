@@ -20,7 +20,6 @@ import { SplitBillModalComponent, SplitRecordPayload } from './split-bill-modal.
 import { FastEntryModalComponent } from './fast-entry-modal.component';
 import { StatementImportModalComponent } from '../transactions/statement-import-modal.component';
 import { RecurringBillsCardComponent } from './recurring-bills-card.component';
-import { CashFlowCardComponent } from './cash-flow-card.component';
 import { safeUuid } from '../../core/uuid';
 const pad = (n: number) => String(n).padStart(2, '0');
 
@@ -48,8 +47,7 @@ export interface BreakdownRow {
     SplitBillModalComponent,
     FastEntryModalComponent,
     StatementImportModalComponent,
-    RecurringBillsCardComponent,
-    CashFlowCardComponent
+    RecurringBillsCardComponent
   ],
   templateUrl: './dashboard.page.html',
   styles: [`

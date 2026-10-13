@@ -562,7 +562,7 @@ expense-tracker/
             ├── core/             ← Models, api, auth, filter, smart-entry, offline queue, keep-alive services
             └── features/
                 ├── auth/login.page.ts
-                ├── dashboard/    ← page, filter-bar, cash-flow-card, recurring-bills-card, fast-entry-modal, table, form
+                ├── dashboard/    ← page, filter-bar, recurring-bills-card, fast-entry-modal, table, form
                 ├── transactions/ ← transactions.page (bulk actions, search) & statement-import-modal (CSV parser)
                 ├── onboarding/onboarding-overlay.component.ts ← 9-step interactive coach mark tour with adaptive positioning
                 ├── categories/categories.page.ts    ← Custom categories with emoji picker & color swatches
