@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, firstValueFrom, of, throwError } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
-import { Budget, Category, Expense, ExpensePage, Filters, Insights, TransactionKind } from './models';
+import { Budget, Category, Expense, ExpensePage, Filters, Insights, RecurringBill, TransactionKind, TransactionTag } from './models';
 import { OfflineQueueService } from './offline-queue.service';
 import { safeUuid } from './uuid';
 
@@ -78,13 +78,23 @@ export class ApiService {
       })
     );
   }
-  async createExpense(body: { clientUuid?: string; amountCents: number; occurredAt: string; categoryId: number | null; kind: TransactionKind; merchant?: string | null; notes?: string | null; }): Promise<{ id: number; status?: string } | 'queued'> {
+  async createExpense(body: { clientUuid?: string; amountCents: number; occurredAt: string; categoryId: number | null; kind: TransactionKind; tag?: TransactionTag; merchant?: string | null; notes?: string | null; }): Promise<{ id: number; status?: string } | 'queued'> {
     try { return await firstValueFrom(this.http.post<{ id: number; status?: string }>('/api/expenses', body)); }
     catch (err) { if (this.isNetworkError(err)) { this.queue.enqueue({ clientUuid: body.clientUuid ?? safeUuid(), op: 'create', payload: body }); return 'queued'; } return throwError(() => err) as never; }
   }
   updateExpense(id: number, body: Record<string, unknown>): Observable<Expense> { return this.http.patch<Expense>(`/api/expenses/${id}`, body); }
   deleteExpense(id: number): Observable<void> { return this.http.delete<void>(`/api/expenses/${id}`); }
   seedSample(): Observable<{ ok: boolean; count: number }> { return this.http.post<{ ok: boolean; count: number }>('/api/expenses/seed-sample', {}); }
+
+  bulkDeleteExpenses(ids: number[]): Observable<{ ok: boolean; deletedCount: number }> { return this.http.post<{ ok: boolean; deletedCount: number }>('/api/expenses/bulk-delete', { ids }); }
+  bulkUpdateExpenses(ids: number[], payload: { categoryId?: number | null; tag?: TransactionTag }): Observable<{ ok: boolean; updatedCount: number }> { return this.http.post<{ ok: boolean; updatedCount: number }>('/api/expenses/bulk-update', { ids, ...payload }); }
+  bulkImportExpenses(items: any[]): Observable<{ ok: boolean; count: number }> { return this.http.post<{ ok: boolean; count: number }>('/api/expenses/bulk-import', { items }); }
+
+  getRecurringBills(): Observable<RecurringBill[]> { return this.http.get<RecurringBill[]>('/api/recurring'); }
+  createRecurringBill(body: Partial<RecurringBill>): Observable<RecurringBill> { return this.http.post<RecurringBill>('/api/recurring', body); }
+  updateRecurringBill(id: number, body: Partial<RecurringBill>): Observable<RecurringBill> { return this.http.patch<RecurringBill>(`/api/recurring/${id}`, body); }
+  deleteRecurringBill(id: number): Observable<void> { return this.http.delete<void>(`/api/recurring/${id}`); }
+  payRecurringBill(id: number): Observable<{ ok: boolean; expenseId: number; billId: number }> { return this.http.post<{ ok: boolean; expenseId: number; billId: number }>(`/api/recurring/${id}/pay`, {}); }
 
   getBudgets(period: 'monthly' | 'yearly', year: number, month: number): Observable<Budget[]> { return this.http.get<Budget[]>('/api/budgets', { params: { period, year, month } }); }
   saveBudget(body: Record<string, unknown>): Observable<Budget> { return this.http.put<Budget>('/api/budgets', body); }
@@ -114,6 +124,11 @@ export class ApiService {
 
   async exportCsv(f: Filters): Promise<void> { await this.download('/api/export/csv?' + this.filterParams(f).toString(), 'transactions.csv'); }
   async exportPdf(f: Filters): Promise<void> { await this.download('/api/export/pdf?' + this.filterParams(f).toString(), 'transaction-report.pdf'); }
+  async exportFullArchive(): Promise<void> { await this.download('/api/auth/export-data', `expense-tracker-backup-${new Date().toISOString().slice(0, 10)}.json`); }
+
+  deleteAccount(password: string): Observable<{ ok: boolean; message: string }> {
+    return this.http.request<{ ok: boolean; message: string }>('DELETE', '/api/auth/account', { body: { password } });
+  }
 
   private async download(url: string, fallbackName: string): Promise<void> {
     const token = sessionStorage.getItem('et.token') || localStorage.getItem('et.token');
@@ -124,8 +139,10 @@ export class ApiService {
   }
   filterParams(f: Filters): HttpParams {
     let p = new HttpParams().set('from', f.from).set('to', f.to);
-    if (f.categoryIds.length) p = p.set('categoryIds', f.categoryIds.join(','));
+    if (f.categoryIds && f.categoryIds.length) p = p.set('categoryIds', f.categoryIds.join(','));
     if (f.kind && f.kind !== 'all') p = p.set('kind', f.kind);
+    if (f.tag && f.tag !== 'all') p = p.set('tag', f.tag);
+    if (f.q) p = p.set('q', f.q);
     return p;
   }
   private isNetworkError(err: unknown): boolean {

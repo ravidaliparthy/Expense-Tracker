@@ -222,4 +222,57 @@ router.post('/onboarding/complete', requireAuth, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+/** GET /api/auth/export-data — Full data export for privacy and portability */
+router.get('/export-data', requireAuth, (req, res, next) => {
+  try {
+    const db = getDb();
+    const userId = req.user.id;
+    const user = db.prepare(`SELECT id, email, display_name AS displayName, base_currency AS baseCurrency, timezone, created_at AS createdAt FROM users WHERE id = ?`).get(userId);
+    const categories = db.prepare(`SELECT id, name, color_hex AS colorHex, icon, is_system AS isSystem, is_archived AS isArchived, created_at AS createdAt FROM categories WHERE user_id = ? AND deleted_at IS NULL`).all(userId);
+    const expenses = db.prepare(`SELECT id, category_id AS categoryId, category_name_snapshot AS categoryName, amount_cents AS amountCents, currency, kind, tag, occurred_at_utc AS occurredAtUtc, local_date AS localDate, merchant, notes, created_at AS createdAt FROM expenses WHERE user_id = ? AND deleted_at IS NULL ORDER BY local_date DESC`).all(userId);
+    const budgets = db.prepare(`SELECT id, category_id AS categoryId, period, period_year AS periodYear, period_month AS periodMonth, amount_cents AS amountCents, warn_pct AS warnPct, crit_pct AS critPct, over_pct AS overPct FROM budgets WHERE user_id = ?`).all(userId);
+    const recurring = db.prepare(`SELECT id, category_id AS categoryId, title, amount_cents AS amountCents, frequency, due_day AS dueDay, notes, is_active AS isActive FROM recurring_bills WHERE user_id = ? AND deleted_at IS NULL`).all(userId);
+
+    const archive = {
+      exportedAt: new Date().toISOString(),
+      user,
+      categories,
+      expenses,
+      budgets,
+      recurringBills: recurring,
+    };
+
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename="expense-tracker-data-${userId}-${Date.now()}.json"`);
+    res.json(archive);
+  } catch (err) { next(err); }
+});
+
+/** DELETE /api/auth/account — Delete account and wipe all personal data */
+router.delete('/account', requireAuth, async (req, res, next) => {
+  try {
+    const password = req.body?.password || req.headers['x-confirm-password'] || req.query?.password;
+    if (!password) {
+      return res.status(400).json({ error: 'Password required to confirm account deletion' });
+    }
+    const db = getDb();
+    const row = db.prepare('SELECT * FROM users WHERE id = ? AND deleted_at IS NULL').get(req.user.id);
+    if (!row || !bcrypt.compareSync(password, row.password_hash)) {
+      return res.status(401).json({ error: 'Incorrect password' });
+    }
+
+    const now = new Date().toISOString();
+    db.transaction(() => {
+      db.prepare(`UPDATE users SET deleted_at = ?, updated_at = ? WHERE id = ?`).run(now, now, row.id);
+      db.prepare(`UPDATE expenses SET deleted_at = ?, updated_at = ? WHERE user_id = ?`).run(now, now, row.id);
+      db.prepare(`UPDATE categories SET deleted_at = ?, updated_at = ? WHERE user_id = ?`).run(now, now, row.id);
+      db.prepare(`UPDATE recurring_bills SET deleted_at = ?, updated_at = ? WHERE user_id = ?`).run(now, now, row.id);
+      db.prepare(`DELETE FROM budgets WHERE user_id = ?`).run(row.id);
+    })();
+
+    audit(row.id, 'expense', row.id, 'soft_delete', { accountDeleted: true });
+    res.json({ ok: true, message: 'Account and associated data deleted successfully' });
+  } catch (err) { next(err); }
+});
+
 module.exports = router;

@@ -15,6 +15,7 @@ function validate(schema, data) {
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'expected YYYY-MM-DD');
 const currency = z.string().regex(/^[A-Z]{3}$/, 'expected ISO currency code');
 const txKind = z.enum(['expense', 'income']);
+const txTag = z.enum(['need', 'want', 'saving']);
 
 const registerSchema = z.object({
   email: z.string().email(),
@@ -55,6 +56,7 @@ const expenseCreateSchema = z.object({
   occurredAt: z.string().datetime({ offset: true }),
   categoryId: z.number().int().positive().nullable().default(null),
   kind: txKind.default('expense'),
+  tag: txTag.default('need').optional(),
   merchant: z.string().max(120).nullable().optional(),
   notes: z.string().max(10000).nullable().optional(),
   receiptUrl: z.string().max(512).optional(),
@@ -65,9 +67,33 @@ const expensePatchSchema = z.object({
   occurredAt: z.string().datetime({ offset: true }).optional(),
   categoryId: z.number().int().positive().nullable().optional(),
   kind: txKind.optional(),
+  tag: txTag.optional(),
   merchant: z.string().max(120).nullable().optional(),
   notes: z.string().max(10000).nullable().optional(),
   baseVersion: z.number().int().optional(),
+});
+
+const bulkDeleteSchema = z.object({
+  ids: z.array(z.number().int().positive()).min(1).max(500),
+});
+
+const bulkUpdateSchema = z.object({
+  ids: z.array(z.number().int().positive()).min(1).max(500),
+  categoryId: z.number().int().positive().nullable().optional(),
+  tag: txTag.optional(),
+});
+
+const recurringBillSchema = z.object({
+  title: z.string().min(1).max(120),
+  amountCents: z.number().int().positive(),
+  frequency: z.enum(['monthly', 'yearly', 'weekly']).default('monthly'),
+  dueDay: z.number().int().min(1).max(31).default(1),
+  categoryId: z.number().int().positive().nullable().optional(),
+  notes: z.string().max(1000).nullable().optional(),
+});
+
+const deleteAccountSchema = z.object({
+  password: z.string().min(1),
 });
 
 const budgetSchema = z.object({
@@ -86,6 +112,7 @@ const expenseQuerySchema = z.object({
   to: isoDate.optional(),
   categoryIds: z.string().optional(),
   kind: z.enum(['expense', 'income', 'all']).default('all'),
+  tag: z.enum(['need', 'want', 'saving', 'all']).default('all').optional(),
   minAmount: z.coerce.number().nonnegative().optional(),
   maxAmount: z.coerce.number().nonnegative().optional(),
   q: z.string().max(120).optional(),
@@ -99,5 +126,6 @@ module.exports = {
   validate, registerSchema, loginSchema, profileSchema,
   categoryCreateSchema, categoryPatchSchema,
   expenseCreateSchema, expensePatchSchema, expenseQuerySchema,
+  bulkDeleteSchema, bulkUpdateSchema, recurringBillSchema, deleteAccountSchema,
   budgetSchema,
 };

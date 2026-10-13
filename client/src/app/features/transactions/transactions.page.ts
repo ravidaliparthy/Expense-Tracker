@@ -5,15 +5,16 @@ import { firstValueFrom } from 'rxjs';
 import { ApiService } from '../../core/api.service';
 import { FilterService } from '../../core/filter.service';
 import { AuthService } from '../../core/auth.service';
-import { Category, Expense, money, signedMoney } from '../../core/models';
+import { Category, Expense, TransactionTag, money, signedMoney } from '../../core/models';
 import { FilterBarComponent } from '../dashboard/filter-bar.component';
 import { ExpenseFormComponent, ExpenseFormValue } from '../dashboard/expense-form.component';
+import { StatementImportModalComponent } from './statement-import-modal.component';
 import { safeUuid } from '../../core/uuid';
 
 @Component({
   selector: 'app-transactions-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, FilterBarComponent, ExpenseFormComponent],
+  imports: [CommonModule, FormsModule, FilterBarComponent, ExpenseFormComponent, StatementImportModalComponent],
   template: `
     <div class="toolbar">
       <div>
@@ -21,6 +22,7 @@ import { safeUuid } from '../../core/uuid';
         <div class="sub">{{ filter.activePresetLabel() }} · {{ total() }} total records · {{ currency() }}</div>
       </div>
       <div class="actions">
+        <button class="btn-ghost" (click)="openImport()" title="Import CSV or bank statement">📂 Import Statement</button>
         <button class="btn-ghost" [disabled]="exportBusy()" (click)="exportCsv()">⤓ CSV</button>
         <button class="btn-ghost" [disabled]="exportBusy()" (click)="exportPdf()">⤓ PDF</button>
         <button class="btn-primary" (click)="openCreate()">+ Add transaction</button>
@@ -92,6 +94,35 @@ import { safeUuid } from '../../core/uuid';
       </div>
     </div>
 
+    <!-- Bulk Actions Floating Bar -->
+    <div class="bulk-bar" *ngIf="selectedIds().size > 0">
+      <div class="bulk-count">
+        <strong>{{ selectedIds().size }}</strong> selected
+      </div>
+      <div class="bulk-actions">
+        <div class="bulk-group">
+          <span class="bulk-lbl">Tag:</span>
+          <button type="button" class="btn-bulk" (click)="bulkSetTag('need')" [disabled]="bulkBusy()">🛡️ Need</button>
+          <button type="button" class="btn-bulk" (click)="bulkSetTag('want')" [disabled]="bulkBusy()">💡 Want</button>
+          <button type="button" class="btn-bulk" (click)="bulkSetTag('saving')" [disabled]="bulkBusy()">🎯 Saving</button>
+        </div>
+
+        <div class="bulk-group">
+          <span class="bulk-lbl">Category:</span>
+          <select class="bulk-select" (change)="onBulkCategoryChange($event)" [disabled]="bulkBusy()">
+            <option value="">Move to category...</option>
+            <option *ngFor="let c of categories()" [value]="c.id">{{ c.icon || '🏷️' }} {{ c.name }}</option>
+          </select>
+        </div>
+
+        <button type="button" class="btn-bulk danger" (click)="bulkDelete()" [disabled]="bulkBusy()">
+          🗑️ Delete ({{ selectedIds().size }})
+        </button>
+
+        <button type="button" class="btn-bulk ghost" (click)="clearSelection()">✕ Deselect</button>
+      </div>
+    </div>
+
     <!-- Transactions Table Card -->
     <div class="card tx-card">
       <div class="table-header-row">
@@ -111,10 +142,19 @@ import { safeUuid } from '../../core/uuid';
         <table>
           <thead>
             <tr>
+              <th style="width:36px;text-align:center">
+                <input
+                  type="checkbox"
+                  [checked]="isAllSelected()"
+                  (change)="toggleSelectAll()"
+                  title="Select all transactions in view"
+                />
+              </th>
               <th class="sortable" (click)="toggleSort('date')" title="Click to sort by date">
                 Date <span class="sort-icon">{{ sortField() === 'date' ? (sortDirection() === 'desc' ? '▼' : '▲') : '↕' }}</span>
               </th>
               <th>Type</th>
+              <th>Tag</th>
               <th>Category</th>
               <th>Merchant / Source</th>
               <th class="notes">Notes</th>
@@ -129,11 +169,24 @@ import { safeUuid } from '../../core/uuid';
               *ngFor="let e of sortedFilteredExpenses(); trackBy: trackById"
               [class.income]="e.kind === 'income'"
               [class.deleting]="deletingIds().has(e.id)"
+              [class.selected-row]="selectedIds().has(e.id)"
             >
+              <td style="width:36px;text-align:center">
+                <input
+                  type="checkbox"
+                  [checked]="selectedIds().has(e.id)"
+                  (change)="toggleSelect(e.id)"
+                />
+              </td>
               <td class="mono">{{ e.localDate }}</td>
               <td>
                 <span class="kind" [class.income]="e.kind === 'income'">
                   {{ e.kind === 'income' ? 'Credit' : 'Expense' }}
+                </span>
+              </td>
+              <td>
+                <span class="tag-chip" [class]="e.tag || 'need'">
+                  {{ e.tag === 'want' ? '💡 Want' : (e.tag === 'saving' ? '🎯 Saving' : '🛡️ Need') }}
                 </span>
               </td>
               <td>
@@ -179,6 +232,15 @@ import { safeUuid } from '../../core/uuid';
       (createCategory)="onCreateCategory($event)"
       (close)="formOpen.set(false)"
     ></app-expense-form>
+
+    <!-- Bank Statement / CSV Import Modal -->
+    <app-statement-import-modal
+      *ngIf="importOpen()"
+      [categories]="categories()"
+      [currency]="currency()"
+      (imported)="onStatementImported($event)"
+      (close)="importOpen.set(false)"
+    ></app-statement-import-modal>
   `,
   styles: [`
     .toolbar {
@@ -306,6 +368,68 @@ import { safeUuid } from '../../core/uuid';
     :host-context([data-theme='dark']) .amount.plus { color: #34D399 !important; }
     :host-context([data-theme='dark']) .pval.neg,
     :host-context([data-theme='dark']) .amount.minus { color: #F87171 !important; }
+
+    /* Bulk actions bar & Tag chips */
+    .bulk-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #1E293B;
+      color: #F8FAFC;
+      padding: 10px 16px;
+      border-radius: 10px;
+      margin-bottom: 14px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.15);
+      flex-wrap: wrap;
+      gap: 10px;
+      animation: slideDown .15s ease-out;
+    }
+    @keyframes slideDown { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+    .bulk-count { font-size: 13px; color: #94A3B8; }
+    .bulk-count strong { color: #60A5FA; }
+    .bulk-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .bulk-group { display: flex; align-items: center; gap: 6px; }
+    .bulk-lbl { font-size: 11px; text-transform: uppercase; color: #94A3B8; font-weight: 600; }
+    .btn-bulk {
+      background: #334155;
+      border: 1px solid #475569;
+      color: #F1F5F9;
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .1s ease;
+    }
+    .btn-bulk:hover:not(:disabled) { background: #475569; border-color: #64748B; }
+    .btn-bulk.danger { background: #7F1D1D; border-color: #991B1B; color: #FCA5A5; }
+    .btn-bulk.danger:hover:not(:disabled) { background: #991B1B; }
+    .btn-bulk.ghost { background: transparent; border-color: transparent; color: #94A3B8; }
+    .btn-bulk.ghost:hover { color: #F1F5F9; }
+    .bulk-select {
+      background: #334155;
+      border: 1px solid #475569;
+      color: #F1F5F9;
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 11px;
+    }
+    .tag-chip {
+      font-size: 10px;
+      font-weight: 600;
+      border-radius: 999px;
+      padding: 2px 8px;
+      text-transform: capitalize;
+      display: inline-block;
+    }
+    .tag-chip.need { background: #E0E7FF; color: #3730A3; }
+    .tag-chip.want { background: #FEF3C7; color: #92400E; }
+    .tag-chip.saving { background: #DCFCE7; color: #166534; }
+    :host-context([data-theme='dark']) .tag-chip.need { background: rgba(99,102,241,0.2); color: #A5B4FC; }
+    :host-context([data-theme='dark']) .tag-chip.want { background: rgba(245,158,11,0.2); color: #FCD34D; }
+    :host-context([data-theme='dark']) .tag-chip.saving { background: rgba(34,197,94,0.2); color: #86EFAC; }
+    tr.selected-row { background: rgba(99,102,241,0.06); }
+    :host-context([data-theme='dark']) tr.selected-row { background: rgba(99,102,241,0.15); }
   `],
 })
 export class TransactionsPage {
@@ -326,6 +450,9 @@ export class TransactionsPage {
   readonly formOpen = signal(false);
   readonly editing = signal<Expense | null>(null);
   readonly deletingIds = signal<Set<number>>(new Set());
+  readonly selectedIds = signal<Set<number>>(new Set());
+  readonly importOpen = signal(false);
+  readonly bulkBusy = signal(false);
   readonly searchQuery = signal('');
 
   // Sorting
@@ -534,6 +661,102 @@ export class TransactionsPage {
       this.categories.set([...this.categories(), cat]);
     }
     this.flash.set({ type: 'ok', text: `${cat.icon || '🏷️'} ${cat.name} created` });
+  }
+
+  openImport(): void {
+    this.importOpen.set(true);
+  }
+
+  onStatementImported(count: number): void {
+    this.importOpen.set(false);
+    this.flash.set({ type: 'ok', text: `Imported ${count} statement transaction${count === 1 ? '' : 's'}` });
+    this.load();
+  }
+
+  toggleSelect(id: number): void {
+    this.selectedIds.update((s) => {
+      const next = new Set(s);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  toggleSelectAll(): void {
+    const list = this.sortedFilteredExpenses();
+    if (this.isAllSelected()) {
+      this.selectedIds.set(new Set());
+    } else {
+      this.selectedIds.set(new Set(list.map((e) => e.id)));
+    }
+  }
+
+  isAllSelected(): boolean {
+    const list = this.sortedFilteredExpenses();
+    if (list.length === 0) return false;
+    const sel = this.selectedIds();
+    return list.every((e) => sel.has(e.id));
+  }
+
+  clearSelection(): void {
+    this.selectedIds.set(new Set());
+  }
+
+  async bulkDelete(): Promise<void> {
+    const ids = Array.from(this.selectedIds());
+    if (ids.length === 0) return;
+    if (!confirm(`Permanently delete ${ids.length} selected transaction${ids.length === 1 ? '' : 's'}?`)) return;
+
+    this.bulkBusy.set(true);
+    try {
+      await firstValueFrom(this.api.bulkDeleteExpenses(ids));
+      this.flash.set({ type: 'ok', text: `Deleted ${ids.length} transactions successfully.` });
+      this.selectedIds.set(new Set());
+      await this.load();
+    } catch {
+      this.flash.set({ type: 'err', text: 'Failed to delete selected transactions.' });
+    } finally {
+      this.bulkBusy.set(false);
+    }
+  }
+
+  async bulkSetTag(tag: TransactionTag): Promise<void> {
+    const ids = Array.from(this.selectedIds());
+    if (ids.length === 0) return;
+
+    this.bulkBusy.set(true);
+    try {
+      await firstValueFrom(this.api.bulkUpdateExpenses(ids, { tag }));
+      this.flash.set({ type: 'ok', text: `Updated ${ids.length} transaction${ids.length === 1 ? '' : 's'} tag to "${tag}".` });
+      this.selectedIds.set(new Set());
+      await this.load();
+    } catch {
+      this.flash.set({ type: 'err', text: 'Failed to update transaction tags.' });
+    } finally {
+      this.bulkBusy.set(false);
+    }
+  }
+
+  async onBulkCategoryChange(event: Event): Promise<void> {
+    const select = event.target as HTMLSelectElement;
+    const catId = Number(select.value);
+    if (!catId) return;
+
+    const ids = Array.from(this.selectedIds());
+    if (ids.length === 0) return;
+
+    this.bulkBusy.set(true);
+    try {
+      await firstValueFrom(this.api.bulkUpdateExpenses(ids, { categoryId: catId }));
+      this.flash.set({ type: 'ok', text: `Moved ${ids.length} transaction${ids.length === 1 ? '' : 's'} to selected category.` });
+      this.selectedIds.set(new Set());
+      select.value = '';
+      await this.load();
+    } catch {
+      this.flash.set({ type: 'err', text: 'Failed to update category.' });
+    } finally {
+      this.bulkBusy.set(false);
+    }
   }
 
   async exportCsv(): Promise<void> {

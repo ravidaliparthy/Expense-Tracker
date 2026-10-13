@@ -106,6 +106,7 @@ function createApp() {
   app.use('/api/analytics', require('./routes/analytics'));
   app.use('/api/export', require('./routes/export'));
   app.use('/api/sync', require('./routes/sync'));
+  app.use('/api/recurring', require('./routes/recurring'));
 
   app.use((_req, res) => res.status(404).json({ error: 'Not found' }));
 

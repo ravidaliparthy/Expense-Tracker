@@ -3,7 +3,7 @@ const express = require('express');
 const crypto = require('crypto');
 const { getDb, audit, pushToTurso } = require('../db');
 const { requireAuth } = require('../middleware/auth');
-const { validate, expenseCreateSchema, expensePatchSchema, expenseQuerySchema } = require('../lib/validate');
+const { validate, expenseCreateSchema, expensePatchSchema, expenseQuerySchema, bulkDeleteSchema, bulkUpdateSchema } = require('../lib/validate');
 const { resolveInstant } = require('../lib/time');
 
 const router = express.Router();
@@ -25,7 +25,7 @@ const SELECT_EXP = `
          e.category_name_snapshot AS categorySnapshot,
          e.category_color_snapshot AS categoryColor,
          e.category_icon_snapshot AS categoryIcon,
-         e.amount_cents AS amountCents, e.currency, e.kind,
+         e.amount_cents AS amountCents, e.currency, e.kind, e.tag,
          e.occurred_at_utc AS occurredAtUtc, e.local_date AS localDate,
          e.tz_offset_minutes AS tzOffsetMinutes,
          e.merchant, e.notes, e.receipt_url AS receiptUrl,
@@ -40,6 +40,7 @@ function buildFilters(query, userId) {
   if (query.from) where.push('e.local_date >= ?'), params.push(query.from);
   if (query.to) where.push('e.local_date <= ?'), params.push(query.to);
   if (query.kind && query.kind !== 'all') where.push('e.kind = ?'), params.push(query.kind);
+  if (query.tag && query.tag !== 'all') where.push('e.tag = ?'), params.push(query.tag);
   if (query.categoryIds) {
     const ids = query.categoryIds.split(',').map(Number).filter((n) => Number.isInteger(n) && n > 0);
     if (ids.length) {
@@ -111,12 +112,12 @@ router.post('/', async (req, res, next) => {
     const info = db.prepare(
       `INSERT INTO expenses
          (user_id, category_id, category_name_snapshot, category_color_snapshot, category_icon_snapshot,
-          amount_cents, currency, kind, occurred_at_utc, local_date, tz_offset_minutes,
+          amount_cents, currency, kind, tag, occurred_at_utc, local_date, tz_offset_minutes,
           merchant, notes, receipt_url, client_uuid)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ).run(
       req.user.id, snap.categoryId, snap.name, snap.color, snap.icon,
-      body.amountCents, req.user.baseCurrency, body.kind,
+      body.amountCents, req.user.baseCurrency, body.kind, body.tag || 'need',
       inst.occurredAtUtc, inst.localDate, inst.tzOffsetMinutes,
       body.merchant ?? null, body.notes ?? null, body.receiptUrl ?? null,
       body.clientUuid || crypto.randomUUID()
@@ -162,6 +163,7 @@ router.patch('/:id', async (req, res, next) => {
     const sets = []; const args = [];
     if (body.amountCents !== undefined) { sets.push('amount_cents = ?'); args.push(body.amountCents); }
     if (body.kind !== undefined) { sets.push('kind = ?'); args.push(body.kind); }
+    if (body.tag !== undefined) { sets.push('tag = ?'); args.push(body.tag); }
     if (body.merchant !== undefined) { sets.push('merchant = ?'); args.push(body.merchant || null); }
     if (body.notes !== undefined) { sets.push('notes = ?'); args.push(body.notes || null); }
     if (snap) {
@@ -216,6 +218,123 @@ router.post('/restore/:id', async (req, res, next) => {
     if (!row) return res.status(404).json({ error: 'Transaction not found' });
     audit(req.user.id, 'expense', row.id, 'restore');
     res.json(row);
+  } catch (err) { next(err); }
+});
+
+router.post('/bulk-delete', async (req, res, next) => {
+  try {
+    const body = validate(bulkDeleteSchema, req.body);
+    const db = getDb();
+    const now = new Date().toISOString();
+    const placeholders = body.ids.map(() => '?').join(',');
+    const info = db.prepare(
+      `UPDATE expenses SET deleted_at = ?, updated_at = ?
+       WHERE user_id = ? AND id IN (${placeholders}) AND deleted_at IS NULL`
+    ).run(now, now, req.user.id, ...body.ids);
+    audit(req.user.id, 'expense', 0, 'soft_delete', { count: info.changes, ids: body.ids });
+    res.json({ ok: true, deletedCount: info.changes });
+  } catch (err) { next(err); }
+});
+
+router.post('/bulk-update', async (req, res, next) => {
+  try {
+    const body = validate(bulkUpdateSchema, req.body);
+    const db = getDb();
+    const sets = [];
+    const args = [];
+    if (body.categoryId !== undefined) {
+      const snap = getCategorySnapshot(db, req.user.id, body.categoryId);
+      if (!snap) return res.status(400).json({ error: 'Unknown category' });
+      sets.push('category_id = ?', 'category_name_snapshot = ?', 'category_color_snapshot = ?', 'category_icon_snapshot = ?');
+      args.push(snap.categoryId, snap.name, snap.color, snap.icon);
+    }
+    if (body.tag) {
+      sets.push('tag = ?');
+      args.push(body.tag);
+    }
+    if (!sets.length) return res.status(400).json({ error: 'Nothing to update' });
+    sets.push(`updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now')`);
+    const placeholders = body.ids.map(() => '?').join(',');
+    const info = db.prepare(
+      `UPDATE expenses SET ${sets.join(', ')}
+       WHERE user_id = ? AND id IN (${placeholders}) AND deleted_at IS NULL`
+    ).run(...args, req.user.id, ...body.ids);
+    audit(req.user.id, 'expense', 0, 'update', { count: info.changes, ids: body.ids });
+    res.json({ ok: true, updatedCount: info.changes });
+  } catch (err) { next(err); }
+});
+
+router.post('/bulk-import', async (req, res, next) => {
+  try {
+    const { items } = req.body;
+    if (!Array.isArray(items) || !items.length) {
+      return res.status(400).json({ error: 'Array of items required' });
+    }
+    if (items.length > 1000) {
+      return res.status(400).json({ error: 'Max 1000 items per import' });
+    }
+    const db = getDb();
+    const userId = req.user.id;
+    const cats = db.prepare(
+      `SELECT id, name, color_hex AS colorHex, icon FROM categories WHERE user_id = ? AND deleted_at IS NULL`
+    ).all(userId);
+    const catMap = new Map();
+    for (const c of cats) {
+      catMap.set(c.name.toLowerCase().trim(), c);
+      catMap.set(String(c.id), c);
+    }
+    const defaultCat = cats[0] || { id: null, name: 'General', colorHex: '#64748B', icon: '🏷️' };
+
+    const insert = db.prepare(
+      `INSERT INTO expenses
+         (user_id, category_id, category_name_snapshot, category_color_snapshot, category_icon_snapshot,
+          amount_cents, currency, kind, tag, occurred_at_utc, local_date, tz_offset_minutes,
+          merchant, notes, client_uuid)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    );
+
+    const importTx = db.transaction(() => {
+      let imported = 0;
+      for (const item of items) {
+        if (!item.amountCents || item.amountCents <= 0) continue;
+        const kind = item.kind === 'income' ? 'income' : 'expense';
+        const tag = ['need', 'want', 'saving'].includes(item.tag) ? item.tag : 'need';
+        const occurredAt = item.occurredAt || new Date().toISOString();
+        const inst = resolveInstant(occurredAt, req.user.timezone);
+        let cat = defaultCat;
+        if (item.category) {
+          const match = catMap.get(String(item.category).toLowerCase().trim());
+          if (match) cat = match;
+        } else if (item.categoryId) {
+          const match = catMap.get(String(item.categoryId));
+          if (match) cat = match;
+        }
+
+        insert.run(
+          userId,
+          cat.id || null,
+          cat.name,
+          cat.colorHex || '#64748B',
+          cat.icon || '🏷️',
+          Math.round(item.amountCents),
+          req.user.baseCurrency || 'USD',
+          kind,
+          tag,
+          inst.occurredAtUtc,
+          inst.localDate,
+          inst.tzOffsetMinutes,
+          item.merchant ?? null,
+          item.notes ?? null,
+          crypto.randomUUID()
+        );
+        imported++;
+      }
+      return imported;
+    });
+
+    const count = importTx();
+    audit(userId, 'expense', 0, 'create', { count });
+    res.json({ ok: true, count });
   } catch (err) { next(err); }
 });
 
@@ -281,7 +400,7 @@ router.post('/seed-sample', (req, res, next) => {
     });
 
     const inserted = seedTx();
-    audit(userId, 'expense', userId, 'seed_sample', { count: inserted });
+    audit(userId, 'expense', 0, 'create', { count: inserted });
     res.json({ ok: true, count: inserted });
   } catch (err) { next(err); }
 });

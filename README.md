@@ -300,6 +300,13 @@ Tap the **✨ Tour** button in the header at any time to launch a 9-step interac
 
 * **Progressive Web App (PWA)**: Installable, full-screen standalone mobile experience with high-resolution app icons.
 * **🛡️ Privacy Shield / Ghost Mode**: Instantly mask numbers with `P` hotkey or toolbar toggle (`👁️`) for shoulder-surfing protection in public.
+* **⚡ Smart Fast Entry & Indian Bank / UPI SMS Parser**: Paste SMS notifications from HDFC, SBI, ICICI, Axis, PhonePe, GPay, Paytm, Swiggy, Zomato, or Blinkit or type natural text ("Coffee 120") for automatic amount, merchant, date, and category extraction with last-used defaults persistence.
+* **💵 Comprehensive Income Tracking & Cash-Flow Forecasting**: Visual Inflow vs. Outflow breakdown, Net Cash Flow indicators, month-end spend extrapolation, and comparative period trend deltas ("Food is up 18%").
+* **🎯 50/30/20 Rule & Needs vs. Wants Tagging**: Granular transaction tagging (`Need`, `Want`, `Saving`) with interactive distribution metrics to maintain healthy financial proportions.
+* **🔄 Recurring Expenses & Subscription Reminders**: Track rent, EMIs, and recurring subscriptions with due-day status indicators, calendar alerts, and 1-tap "Pay & Log" transaction recording.
+* **☑️ Search, Filters & Bulk Actions**: Real-time multi-field search and multi-select checkboxes for batch transaction deletion, bulk tag updates, and category reassignment.
+* **📂 Bank Statement & CSV Batch Importer**: Drag-and-drop CSV parser with live preview table, column auto-mapping, and 1-click batch import into cloud persistence.
+* **🔐 Full Data Portability & Account Erasure**: Download complete JSON data backup archives and execute password-verified GDPR/DPDP account deletion directly in Settings.
 * **🔥 Daily Tracking Streak Flow**: Celebrates daily logging consistency with dynamic streak flames, milestone tier badges (`⚡ Starter` to `👑 Monthly Legend`), and a 7-day consistency dot trail.
 * **🎯 Client-Edge Savings Goals with Progress Bars**: Set and track personalized savings goals with live animated progress bars, target dates, and quick 1-tap deposits without adding server RAM overhead.
 * **👥 Split Expense Calculator & Universal Sharing**: Split bills, customize tip percentages, copy formatted payment request messages with 1-tap, and optionally save your personal share directly to your transactions.
@@ -397,6 +404,8 @@ All endpoints except `POST /auth/register`, `POST /auth/login`, and `GET /health
 | `POST` | `/auth/set-pin` | `{ pin: 4..8 digits }` | `200 { message: "Secret recovery PIN set successfully" }` (bcrypt-hashed) |
 | `POST` | `/auth/reset-password` | `{ email, recoveryPin, newPassword>=8 }` | `200 { token, user }` (Zero-takeover private PIN recovery) |
 | `POST` | `/auth/onboarding/complete` | — | `200 { ok: true }` (Sets `is_first_login = 0`) |
+| `GET` | `/auth/export-data` | — | `200 { user, categories, expenses, budgets, recurringBills }` (Full GDPR data archive download) |
+| `DELETE` | `/auth/account` | `{ password }` | `200 { ok: true }` (Password-verified cascade account erasure) |
 
 ### 3. Categories (`/api/categories`)
 | Method | Endpoint | Description |
@@ -409,11 +418,23 @@ All endpoints except `POST /auth/register`, `POST /auth/login`, and `GET /health
 ### 4. Expenses (`/api/expenses`)
 | Method | Endpoint | Description |
 |---|---|---|
-| `GET` | `/expenses` | Query filters: `from`, `to`, `categoryIds`, `minAmount`, `maxAmount`, `q`, `page`, `pageSize`, `sort` |
-| `POST` | `/expenses` | `{ clientUuid?, amountCents, kind, occurredAt, categoryId?, merchant?, notes? }` |
+| `GET` | `/expenses` | Query filters: `from`, `to`, `categoryIds`, `kind`, `tag`, `minAmount`, `maxAmount`, `q`, `page`, `pageSize`, `sort` |
+| `POST` | `/expenses` | `{ clientUuid?, amountCents, kind, tag?, occurredAt, categoryId?, merchant?, notes? }` |
 | `PATCH` | `/expenses/:id` | Updates expense with optimistic concurrency locking (`baseVersion`) |
 | `DELETE` | `/expenses/:id` | **Soft-deletes** expense |
 | `POST` | `/expenses/restore/:id` | Restores a soft-deleted expense |
+| `POST` | `/expenses/bulk-delete` | `{ ids: number[] }` — Atomic multi-select soft-deletion with user isolation |
+| `POST` | `/expenses/bulk-update` | `{ ids: number[], categoryId?, tag? }` — Batch category or tag reassignment |
+| `POST` | `/expenses/bulk-import` | `{ items: Array<{ amountCents, kind, tag, occurredAt, merchant, notes, category }> }` — 1-click statement ingestion |
+
+### 5. Recurring Bills & Subscriptions (`/api/recurring`)
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/recurring` | Lists user's configured recurring bills, EMIs, and subscriptions |
+| `POST` | `/recurring` | `{ title, amountCents, frequency, dueDay, categoryId?, notes? }` — Registers recurring bill |
+| `PATCH` | `/recurring/:id` | Updates title, due day, frequency, amount, or active state |
+| `DELETE` | `/recurring/:id` | Soft-deletes recurring bill |
+| `POST` | `/recurring/:id/pay` | Stamps `last_paid_at` and automatically records the payment as a live expense transaction |
 
 ### 5. Budgets (`/api/budgets`)
 | Method | Endpoint | Description |
@@ -498,8 +519,8 @@ All components are covered with automated test suites:
 | Suite | Command | Passing Tests | Validated Features |
 |---|---|---|---|
 | **Client Unit Tests** | `npm test` in `client` | ✅ **13 of 13 PASS** | AuthService, FilterService, OfflineQueueService, BudgetStatus tier math |
-| **Server Integration Tests** | `npm test` in `server` | ✅ **24 of 24 PASS** | Auth, PIN recovery, Categories, Expenses, Budgets, Analytics, Export, Sync, Rate limiting |
-| **Production Build** | `npm run build` in `client` | ✅ **0 ERRORS** | Tree-shaken, gzipped production bundle (~95 kB initial transfer) |
+| **Server Integration Tests** | `npm test` in `server` | ✅ **29 of 29 PASS** | Auth, PIN recovery, Categories, Expenses, Budgets, Analytics, Export, Sync, Bulk actions, Statement import, Recurring bills & Pay action, GDPR data export, Password-verified account erasure, Cross-user isolation |
+| **Production Build** | `npm run build` in `client` | ✅ **0 ERRORS** | Tree-shaken, gzipped production bundle (~97 kB initial transfer) |
 | **GitHub Actions CI** | Push to `main` / PR | ✅ **All Jobs PASS** | Automated CI matrix executing backend integration tests & Angular production compile |
 | **Turso Cloud Persistence** | Live libSQL verification | ✅ **VERIFIED** | Cloud schema applied, multi-user records hydrated, instant write-through push |
 
@@ -516,7 +537,7 @@ expense-tracker/
 │   └── seed-data.json            ← Offline seed fallback data
 ├── server/
 │   ├── package.json              ← Server dependencies (@libsql/client, better-sqlite3, express, zod, etc.)
-│   ├── test.js                   ← 24 comprehensive API integration tests (100% passing)
+│   ├── test.js                   ← 29 comprehensive API integration tests (100% passing)
 │   └── src/
 │       ├── index.js              ← Express bootstrap, Helmet, CORS, rate limiting, error handler
 │       ├── db.js                 ← SQLite WAL connection + startup syncFromTursoToLocal()
@@ -528,7 +549,7 @@ expense-tracker/
 │       │   └── validate.js       ← Zod validation schemas
 │       ├── middleware/auth.js    ← JWT sign & verify with requireAuth guard
 │       ├── services/budgetStatus.js ← Server-side budget tier calculations
-│       └── routes/               ← auth, categories, expenses, budgets, analytics, export, sync
+│       └── routes/               ← auth, categories, expenses, budgets, analytics, export, sync, recurring
 └── client/
     ├── package.json · angular.json · proxy.conf.json · tsconfig*
     ├── vercel.json               ← Vercel deployment configuration (SPA routing & API rewrites)
@@ -538,15 +559,15 @@ expense-tracker/
         └── app/
             ├── app.component.ts  ← Shell (topbar, navigation dock, dark mode toggle, tour trigger)
             ├── app.routes.ts     ← Lazy standalone routes with auth guards
-            ├── core/             ← Models, api, auth, filter, offline queue, keep-alive services
+            ├── core/             ← Models, api, auth, filter, smart-entry, offline queue, keep-alive services
             └── features/
                 ├── auth/login.page.ts
-                ├── dashboard/    ← page, filter-bar (10-yr calendar, horizontal categories), table, form
-                ├── transactions/transactions.page.ts ← Dedicated transaction manager with sort/search
+                ├── dashboard/    ← page, filter-bar, cash-flow-card, recurring-bills-card, fast-entry-modal, table, form
+                ├── transactions/ ← transactions.page (bulk actions, search) & statement-import-modal (CSV parser)
                 ├── onboarding/onboarding-overlay.component.ts ← 9-step interactive coach mark tour with adaptive positioning
                 ├── categories/categories.page.ts    ← Custom categories with emoji picker & color swatches
                 ├── budgets/budgets.page.ts          ← Monthly/yearly budgets with interactive gauges
-                └── settings/settings.page.ts        ← Preferences, password change, and secret recovery PIN setup
+                └── settings/settings.page.ts        ← Preferences, PIN setup, full data export & account deletion
 ```
 
 ---

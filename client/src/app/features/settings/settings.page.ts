@@ -2,6 +2,7 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../core/auth.service';
+import { ApiService } from '../../core/api.service';
 import { CURRENCIES } from '../../core/models';
 
 const COMMON_TIMEZONES = [
@@ -150,12 +151,63 @@ const COMMON_TIMEZONES = [
           </button>
         </div>
       </div>
+
+      <!-- Data Portability & GDPR Archive -->
+      <div class="card form">
+        <div class="card-header">
+          <span class="card-icon">📦</span>
+          <div>
+            <h2 class="card-title">Data Portability</h2>
+            <p class="card-subtitle">Export your complete data archive</p>
+          </div>
+        </div>
+
+        <p class="pin-desc">Download a comprehensive, machine-readable JSON backup containing all your transactions, custom categories, budgets, recurring bills, and preferences.</p>
+
+        <div class="modal-actions">
+          <button class="btn-secondary" (click)="downloadFullArchive()" [disabled]="exportingArchive">
+            {{ exportingArchive ? 'Exporting...' : '⤓ Download Full Data Backup (JSON)' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Account Deletion Danger Zone -->
+      <div class="card form danger-card">
+        <div class="card-header">
+          <span class="card-icon">⚠️</span>
+          <div>
+            <h2 class="card-title text-danger">Delete Account</h2>
+            <p class="card-subtitle">Permanently erase your account and all data</p>
+          </div>
+        </div>
+
+        <p class="pin-desc">Permanent deletion is irreversible. All transactions, recurring bills, budgets, and categories will be wiped in accordance with privacy regulations.</p>
+
+        <div *ngIf="confirmingDelete" class="delete-confirm-box">
+          <label for="delete-password">Confirm your password to proceed</label>
+          <input id="delete-password" type="password" [(ngModel)]="deletePassword" placeholder="Enter password to confirm" />
+          <div class="confirm-actions">
+            <button class="btn-secondary" (click)="confirmingDelete = false; deletePassword = ''">Cancel</button>
+            <button class="btn-danger" [disabled]="!deletePassword || deletingAccount" (click)="executeDeleteAccount()">
+              {{ deletingAccount ? 'Deleting...' : 'Permanently Delete Everything' }}
+            </button>
+          </div>
+        </div>
+
+        <div *ngIf="!confirmingDelete" class="modal-actions">
+          <button class="btn-danger" (click)="confirmingDelete = true">
+            🗑 Delete My Account
+          </button>
+        </div>
+      </div>
     </div>
   `,
   styles: [`
     .lede { color: #64748B; margin-top: 0; max-width: 700px; margin-bottom: 24px; }
     .settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; align-items: start; }
     .card { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; padding: 24px; }
+    .danger-card { border-color: rgba(239, 68, 68, 0.3); }
+    .text-danger { color: #F87171 !important; }
     .card-header { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
     .card-icon { font-size: 24px; }
     .card-title { margin: 0; font-size: 1.15rem; font-weight: 600; color: #F8FAFC; }
@@ -182,8 +234,11 @@ const COMMON_TIMEZONES = [
     .badge-status.badge-session-only { background: rgba(234, 179, 8, 0.2); color: #FDE047; border-color: rgba(234, 179, 8, 0.3); }
     .session-action-group { margin-top: 10px; margin-bottom: 16px; }
     .danger-zone { border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 16px; margin-top: 16px; display: flex; justify-content: flex-end; }
+    .delete-confirm-box { margin-top: 14px; display: flex; flex-direction: column; gap: 8px; }
+    .confirm-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px; }
     .btn-danger { background: rgba(239, 68, 68, 0.15); color: #FCA5A5; border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 8px; padding: 10px 18px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
     .btn-danger:hover { background: #EF4444; color: #FFFFFF; }
+    .btn-danger:disabled { opacity: 0.5; cursor: not-allowed; }
     .flash { padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; font-size: 0.9rem; font-weight: 500; }
     .flash.ok { background: rgba(34, 197, 94, 0.2); color: #86EFAC; border: 1px solid rgba(34, 197, 94, 0.4); }
     .flash.err { background: rgba(239, 68, 68, 0.2); color: #FCA5A5; border: 1px solid rgba(239, 68, 68, 0.4); }
@@ -191,12 +246,17 @@ const COMMON_TIMEZONES = [
 })
 export class SettingsPage {
   readonly auth = inject(AuthService);
+  private readonly api = inject(ApiService);
   readonly currencies = CURRENCIES;
   readonly timezones = COMMON_TIMEZONES;
 
   saving = false;
   changingPass = false;
   savingPin = false;
+  exportingArchive = false;
+  deletingAccount = false;
+  confirmingDelete = false;
+  deletePassword = '';
   flash: { type: string; text: string } | null = null;
 
   displayName = this.auth.user()?.displayName || '';
@@ -283,5 +343,33 @@ export class SettingsPage {
         ? 'Session persistence enabled — your session will be remembered across browser restarts.'
         : 'Session-only mode active — closing your browser window or tab will log you out automatically.'
     };
+  }
+
+  async downloadFullArchive(): Promise<void> {
+    try {
+      this.exportingArchive = true;
+      await this.api.exportFullArchive();
+      this.flash = { type: 'ok', text: 'Full data backup downloaded successfully' };
+    } catch {
+      this.flash = { type: 'err', text: 'Failed to download data archive' };
+    } finally {
+      this.exportingArchive = false;
+    }
+  }
+
+  executeDeleteAccount(): void {
+    if (!this.deletePassword) return;
+    this.deletingAccount = true;
+    this.api.deleteAccount(this.deletePassword).subscribe({
+      next: () => {
+        this.deletingAccount = false;
+        this.auth.logout();
+      },
+      error: (err: any) => {
+        this.deletingAccount = false;
+        const msg = err?.error?.error || 'Incorrect password. Account deletion aborted.';
+        this.flash = { type: 'err', text: msg };
+      }
+    });
   }
 }

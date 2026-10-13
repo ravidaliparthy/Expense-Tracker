@@ -199,6 +199,31 @@ function migrate() {
   if (!userCols.includes('recovery_pin_hash')) {
     db.exec(`ALTER TABLE users ADD COLUMN recovery_pin_hash TEXT`);
   }
+
+  // Needs vs Wants vs Savings tagging (50/30/20 budgeting rule)
+  if (!expCols.includes('tag')) {
+    db.exec(`ALTER TABLE expenses ADD COLUMN tag TEXT NOT NULL DEFAULT 'need'`);
+  }
+
+  // Recurring bills table for subscriptions, rent, and EMI tracking
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS recurring_bills (
+      id           INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id      INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      category_id  INTEGER REFERENCES categories(id) ON DELETE SET NULL,
+      title        TEXT    NOT NULL,
+      amount_cents INTEGER NOT NULL CHECK (amount_cents > 0),
+      frequency    TEXT    NOT NULL DEFAULT 'monthly' CHECK (frequency IN ('monthly', 'yearly', 'weekly')),
+      due_day      INTEGER NOT NULL DEFAULT 1 CHECK (due_day BETWEEN 1 AND 31),
+      notes        TEXT,
+      is_active    INTEGER NOT NULL DEFAULT 1,
+      last_paid_at TEXT,
+      created_at   TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+      updated_at   TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+      deleted_at   TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_rec_user_live ON recurring_bills(user_id, deleted_at, is_active);
+  `);
 }
 
 function getDb() {

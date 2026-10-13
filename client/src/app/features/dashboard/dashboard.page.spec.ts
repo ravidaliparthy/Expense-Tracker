@@ -39,6 +39,7 @@ describe('DashboardPage Actions', () => {
       'deleteExpense',
       'updateExpense',
       'createExpense',
+      'getRecurringBills',
     ]);
     apiSpy.getCategories.and.returnValue(of([{ id: 1, name: 'Food', colorHex: '#F97316', icon: '🍔', isSystem: true, isArchived: false }]));
     apiSpy.getExpenses.and.returnValue(of({ items: [mockExpense], total: 1, page: 1, pageSize: 200 }));
@@ -46,6 +47,7 @@ describe('DashboardPage Actions', () => {
     apiSpy.getSummary.and.returnValue(of(null as any));
     apiSpy.getInsights.and.returnValue(of(null as any));
     apiSpy.deleteExpense.and.returnValue(of(void 0));
+    apiSpy.getRecurringBills.and.returnValue(of([]));
 
     await TestBed.configureTestingModule({
       imports: [DashboardPage, HttpClientTestingModule, RouterTestingModule],

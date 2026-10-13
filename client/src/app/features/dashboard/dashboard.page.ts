@@ -17,6 +17,10 @@ import { StreakService } from '../../core/streak.service';
 import { StreakCardComponent } from './streak-card.component';
 import { SavingsGoalsComponent, SavingsRecordPayload } from './savings-goals.component';
 import { SplitBillModalComponent, SplitRecordPayload } from './split-bill-modal.component';
+import { FastEntryModalComponent } from './fast-entry-modal.component';
+import { StatementImportModalComponent } from '../transactions/statement-import-modal.component';
+import { RecurringBillsCardComponent } from './recurring-bills-card.component';
+import { CashFlowCardComponent } from './cash-flow-card.component';
 import { safeUuid } from '../../core/uuid';
 const pad = (n: number) => String(n).padStart(2, '0');
 
@@ -41,7 +45,11 @@ export interface BreakdownRow {
     OnboardingOverlayComponent,
     StreakCardComponent,
     SavingsGoalsComponent,
-    SplitBillModalComponent
+    SplitBillModalComponent,
+    FastEntryModalComponent,
+    StatementImportModalComponent,
+    RecurringBillsCardComponent,
+    CashFlowCardComponent
   ],
   templateUrl: './dashboard.page.html',
   styles: [`
@@ -181,6 +189,8 @@ export class DashboardPage {
   readonly splitBillOpen = signal(false);
   readonly splitBillInitialTotal = signal(0);
   readonly splitBillInitialDesc = signal('');
+  readonly fastEntryOpen = signal(false);
+  readonly importModalOpen = signal(false);
 
   // Customizable breakdown mode & sub-filter keys
   readonly breakdownMode=signal<'weekday'|'weekly'|'monthly'|'yearly'>('weekday');
@@ -870,6 +880,44 @@ export class DashboardPage {
       this.categories.set([...this.categories(), cat]);
     }
     this.flash.set({ type: 'ok', text: `${cat.icon || '🏷️'} ${cat.name} created` });
+  }
+
+  openFastEntry(): void {
+    this.fastEntryOpen.set(true);
+  }
+
+  openImportModal(): void {
+    this.importModalOpen.set(true);
+  }
+
+  async onFastEntrySave(payload: {
+    amountCents: number;
+    kind: any;
+    tag: any;
+    merchant: string;
+    notes: string;
+    categoryId: number | null;
+    occurredAt: string;
+  }): Promise<void> {
+    try {
+      await this.api.createExpense({ ...payload, clientUuid: safeUuid() });
+      this.fastEntryOpen.set(false);
+      this.flash.set({ type: 'ok', text: `⚡ Transaction logged via Fast Entry: ${money(payload.amountCents, this.currency())}` });
+      await this.reload();
+    } catch {
+      this.flash.set({ type: 'err', text: 'Failed to record fast entry transaction' });
+    }
+  }
+
+  onStatementImported(count: number): void {
+    this.importModalOpen.set(false);
+    this.flash.set({ type: 'ok', text: `Successfully imported ${count} statement transaction${count === 1 ? '' : 's'}` });
+    this.reload();
+  }
+
+  onPaymentLogged(_billId?: number): void {
+    this.flash.set({ type: 'ok', text: 'Recurring bill payment recorded as expense transaction' });
+    this.reload();
   }
 
   async exportCsv():Promise<void>{this.exportBusy.set(true);try{await this.api.exportCsv(this.filter.filters());}catch{this.flash.set({type:'err',text:'CSV export failed'});}finally{this.exportBusy.set(false);}}

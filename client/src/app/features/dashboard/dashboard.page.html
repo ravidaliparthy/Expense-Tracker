@@ -1,6 +1,8 @@
 <div class="toolbar">
   <div><h1>Dashboard</h1><div class="sub">{{ filter.activePresetLabel() }} · {{ currency() }} · income, expenses, net cashflow</div></div>
   <div class="actions">
+    <button class="btn-ghost" (click)="openFastEntry()" title="Smart entry: parse SMS, UPI, or natural text">⚡ Fast entry</button>
+    <button class="btn-ghost" (click)="openImportModal()" title="Import CSV or bank statement">📂 Import</button>
     <button class="btn-ghost" routerLink="/transactions" data-tour="view-transactions" title="View & edit all transactions">📋 View transactions</button>
     <button class="btn-ghost" (click)="openSplitBill()" title="Split a bill with friends">👥 Split bill</button>
     <button class="btn-ghost" data-tour="export-menu" [disabled]="exportBusy()" (click)="exportCsv()">⤓ CSV</button>
@@ -153,6 +155,18 @@
   (recordTransaction)="onRecordSavingsTransaction($event)"
 ></app-savings-goals>
 
+<!-- Recurring Expenses & Bill Reminders -->
+<app-recurring-bills-card
+  [currency]="currency()"
+  (paymentLogged)="onPaymentLogged($event)">
+</app-recurring-bills-card>
+
+<!-- Comprehensive Cash-Flow & 50/30/20 Insights -->
+<app-cash-flow-card
+  [expenses]="expenses()"
+  [currency]="currency()">
+</app-cash-flow-card>
+
 <div class="grid-2">
   <div class="card" data-tour="transactions-table">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
@@ -243,4 +257,6 @@
 
 <app-expense-form *ngIf="formOpen()" [expense]="editing()" [categories]="categories()" [currency]="currency()" (save)="onSave($event)" (createCategory)="onCreateCategory($event)" (close)="formOpen.set(false)"></app-expense-form>
 <app-split-bill-modal *ngIf="splitBillOpen()" [total]="splitBillInitialTotal()" [currency]="currency()" [defaultDescription]="splitBillInitialDesc()" (recordShare)="onRecordSplitShare($event)" (close)="splitBillOpen.set(false)"></app-split-bill-modal>
+<app-fast-entry-modal *ngIf="fastEntryOpen()" [categories]="categories()" [currency]="currency()" (save)="onFastEntrySave($event)" (close)="fastEntryOpen.set(false)"></app-fast-entry-modal>
+<app-statement-import-modal *ngIf="importModalOpen()" [categories]="categories()" [currency]="currency()" (imported)="onStatementImported($event)" (close)="importModalOpen.set(false)"></app-statement-import-modal>
 <app-onboarding-overlay [showZeroState]="isEmpty() && !hadData()"></app-onboarding-overlay>

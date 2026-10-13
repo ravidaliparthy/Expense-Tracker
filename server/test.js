@@ -17,6 +17,11 @@ async function runTests() {
     return new Promise((resolve, reject) => {
       const { method = 'GET', headers = {}, body = null } = options;
       const reqHeaders = { 'Content-Type': 'application/json', ...headers };
+      let payload = null;
+      if (body) {
+        payload = JSON.stringify(body);
+        reqHeaders['Content-Length'] = Buffer.byteLength(payload);
+      }
       const req = http.request(
         {
           hostname: '127.0.0.1',
@@ -46,7 +51,7 @@ async function runTests() {
         }
       );
       req.on('error', reject);
-      if (body) req.write(JSON.stringify(body));
+      if (payload) req.write(payload);
       req.end();
     });
   }
@@ -383,6 +388,160 @@ async function runTests() {
       });
       assert.strictEqual(resDup.status, 200);
       assert.strictEqual(resDup.body.results[0].status, 'duplicate');
+    });
+
+    // 9. Bulk Actions & Multi-User Isolation
+    await test('POST /expenses/bulk-update and /bulk-delete enforce strict cross-user isolation', async () => {
+      const userBEmail = `userb-${Date.now()}@expense.test`;
+      const regB = await request('/auth/register', {
+        method: 'POST',
+        body: { email: userBEmail, password: 'password123', displayName: 'User B', baseCurrency: 'USD', timezone: 'UTC' }
+      });
+      assert.strictEqual(regB.status, 201);
+      const tokenB = regB.body.token;
+
+      const expB = await request('/expenses', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${tokenB}` },
+        body: { amountCents: 9999, kind: 'expense', occurredAt: new Date().toISOString(), merchant: 'Victim Exp' }
+      });
+      assert.strictEqual(expB.status, 201);
+      const expBId = expB.body.id;
+
+      const expA = await request('/expenses', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${authToken}` },
+        body: { amountCents: 5000, kind: 'expense', occurredAt: new Date().toISOString(), merchant: 'My Exp' }
+      });
+      assert.strictEqual(expA.status, 201);
+      const expAId = expA.body.id;
+
+      // User A attempts to bulk-update User B's expense and User A's expense
+      const updateRes = await request('/expenses/bulk-update', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${authToken}` },
+        body: { ids: [expAId, expBId], tag: 'want' }
+      });
+      assert.strictEqual(updateRes.status, 200);
+      assert.strictEqual(updateRes.body.updatedCount, 1);
+
+      // Verify User B's expense was NOT modified
+      const checkB = await request('/expenses', {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${tokenB}` }
+      });
+      const itemB = checkB.body.items.find((x) => x.id === expBId);
+      assert.strictEqual(itemB.tag, 'need');
+
+      // User A attempts to bulk-delete User B's expense and User A's expense
+      const deleteRes = await request('/expenses/bulk-delete', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${authToken}` },
+        body: { ids: [expAId, expBId] }
+      });
+      assert.strictEqual(deleteRes.status, 200);
+      assert.strictEqual(deleteRes.body.deletedCount, 1);
+
+      // Verify User B's expense was NOT deleted
+      const checkB2 = await request('/expenses', {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${tokenB}` }
+      });
+      const stillB = checkB2.body.items.find((x) => x.id === expBId);
+      assert.ok(stillB, 'User B expense must still exist');
+    });
+
+    // 10. Statement & CSV Bulk Import
+    await test('POST /expenses/bulk-import imports transactions with category matching', async () => {
+      const res = await request('/expenses/bulk-import', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${authToken}` },
+        body: {
+          items: [
+            { amountCents: 4500, kind: 'expense', tag: 'need', merchant: 'Swiggy', notes: 'Dinner order', occurredAt: new Date().toISOString() },
+            { amountCents: 150000, kind: 'income', tag: 'saving', merchant: 'Tech Co', notes: 'Consulting fee', occurredAt: new Date().toISOString() }
+          ]
+        }
+      });
+      assert.strictEqual(res.status, 200);
+      assert.strictEqual(res.body.count, 2);
+    });
+
+    // 11. Recurring Bills & Pay Action
+    await test('POST /recurring creates bill and POST /recurring/:id/pay logs payment', async () => {
+      const createRes = await request('/recurring', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${authToken}` },
+        body: {
+          title: 'High-Speed Internet',
+          amountCents: 7500,
+          frequency: 'monthly',
+          dueDay: 15,
+          notes: 'Fiber broadband'
+        }
+      });
+      assert.strictEqual(createRes.status, 201);
+      const billId = createRes.body.id;
+
+      const listRes = await request('/recurring', {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${authToken}` }
+      });
+      assert.strictEqual(listRes.status, 200);
+      assert.ok(listRes.body.some((b) => b.id === billId));
+
+      const payRes = await request(`/recurring/${billId}/pay`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${authToken}` }
+      });
+      assert.strictEqual(payRes.status, 200);
+      assert.strictEqual(payRes.body.ok, true);
+      assert.ok(payRes.body.expenseId);
+    });
+
+    // 12. Full Data Export
+    await test('GET /auth/export-data returns complete user data archive', async () => {
+      const res = await request('/auth/export-data', {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${authToken}` }
+      });
+      assert.strictEqual(res.status, 200);
+      assert.ok(res.body.user);
+      assert.ok(Array.isArray(res.body.expenses));
+      assert.ok(Array.isArray(res.body.categories));
+      assert.ok(Array.isArray(res.body.recurringBills));
+    });
+
+    // 13. GDPR Right to Erasure / Account Deletion
+    await test('DELETE /auth/account validates password and wipes personal data', async () => {
+      const tempEmail = `wipe-${Date.now()}@expense.test`;
+      const reg = await request('/auth/register', {
+        method: 'POST',
+        body: { email: tempEmail, password: 'securePassword123', displayName: 'Wipe Me', baseCurrency: 'USD', timezone: 'UTC' }
+      });
+      assert.strictEqual(reg.status, 201);
+      const tempToken = reg.body.token;
+
+      const failRes = await request('/auth/account', {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${tempToken}` },
+        body: { password: 'wrongPassword' }
+      });
+      assert.strictEqual(failRes.status, 401);
+
+      const okRes = await request('/auth/account', {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${tempToken}` },
+        body: { password: 'securePassword123' }
+      });
+      assert.strictEqual(okRes.status, 200);
+      assert.strictEqual(okRes.body.ok, true);
+
+      const loginRes = await request('/auth/login', {
+        method: 'POST',
+        body: { email: tempEmail, password: 'securePassword123' }
+      });
+      assert.strictEqual(loginRes.status, 401);
     });
 
     console.log(`\n🎉 All ${passed} tests passed successfully!`);

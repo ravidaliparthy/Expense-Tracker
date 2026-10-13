@@ -1,5 +1,6 @@
 export type TransactionKind = 'expense' | 'income';
 export type KindFilter = 'all' | TransactionKind;
+export type TransactionTag = 'need' | 'want' | 'saving';
 
 export interface User {
   id: number;
@@ -29,12 +30,31 @@ export interface Expense {
   amountCents: number;
   currency: string;
   kind: TransactionKind;
+  tag?: TransactionTag;
   occurredAtUtc: string;
   localDate: string;
   merchant: string | null;
   notes: string | null;
   clientUuid: string;
   syncVersion: number;
+}
+
+export interface RecurringBill {
+  id: number;
+  userId: number;
+  categoryId: number | null;
+  title: string;
+  amountCents: number;
+  frequency: 'monthly' | 'yearly' | 'weekly';
+  dueDay: number;
+  notes: string | null;
+  isActive: boolean;
+  lastPaidAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  categoryName?: string;
+  categoryColor?: string;
+  categoryIcon?: string;
 }
 
 export interface Budget {
@@ -79,6 +99,8 @@ export interface Filters {
   period: 'monthly' | 'yearly';
   groupBy: 'day' | 'week' | 'month' | 'year';
   kind: KindFilter;
+  tag?: 'need' | 'want' | 'saving' | 'all';
+  q?: string;
 }
 
 export const TIER_COLORS: Record<string, string> = {
