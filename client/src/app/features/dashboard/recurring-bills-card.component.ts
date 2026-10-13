@@ -98,7 +98,7 @@ import { Category, RecurringBill, money } from '../../core/models';
               <label>Category</label>
               <select [(ngModel)]="newCategoryId" name="cat">
                 <option [ngValue]="null">Select Category</option>
-                <option *ngFor="let c of categories" [ngValue]="c.id">{{ c.icon }} {{ c.name }}</option>
+                <option *ngFor="let c of categories" [ngValue]="c.id">{{ c.icon || '🏷️' }} {{ c.name }}</option>
               </select>
             </div>
           </div>
@@ -178,8 +178,14 @@ import { Category, RecurringBill, money } from '../../core/models';
       border: 1px solid #CBD5E1; border-radius: 6px; padding: 8px 10px; font-size: 13px;
       background: #FFFFFF; color: #0F172A;
     }
+    .form-row select option {
+      background: #FFFFFF; color: #0F172A;
+    }
     :host-context([data-theme='dark']) .form-row input, :host-context([data-theme='dark']) .form-row select {
       background: #1E293B; border-color: #475569; color: #F8FAFC;
+    }
+    :host-context([data-theme='dark']) .form-row select option {
+      background: #1E293B; color: #F8FAFC;
     }
     .form-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
@@ -200,13 +206,32 @@ export class RecurringBillsCardComponent implements OnInit {
   readonly money = money;
 
   newTitle = '';
-  newAmount = 500;
-  newDueDay = 5;
+  newAmount = 100;
+  newDueDay = 1;
   newFrequency: 'monthly' | 'yearly' | 'weekly' = 'monthly';
   newCategoryId: number | null = null;
 
   ngOnInit(): void {
     this.loadBills();
+    if (!this.categories || this.categories.length === 0) {
+      this.loadCategories();
+    }
+  }
+
+  loadCategories(): void {
+    if (typeof this.api?.getCategories === 'function') {
+      this.api.getCategories().subscribe({
+        next: (cats) => {
+          if (cats && cats.length) {
+            this.categories = cats;
+            if (!this.newCategoryId) {
+              this.newCategoryId = cats[0].id;
+            }
+          }
+        },
+        error: () => {}
+      });
+    }
   }
 
   loadBills(): void {
@@ -256,7 +281,10 @@ export class RecurringBillsCardComponent implements OnInit {
     this.newAmount = 100;
     this.newDueDay = 1;
     this.newFrequency = 'monthly';
-    this.newCategoryId = this.categories.length ? this.categories[0].id : null;
+    if (!this.categories || this.categories.length === 0) {
+      this.loadCategories();
+    }
+    this.newCategoryId = this.categories && this.categories.length ? this.categories[0].id : null;
     this.modalOpen.set(true);
   }
 

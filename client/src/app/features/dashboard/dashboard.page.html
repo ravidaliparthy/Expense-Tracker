@@ -158,6 +158,7 @@
 <!-- Recurring Expenses & Bill Reminders -->
 <app-recurring-bills-card
   [currency]="currency()"
+  [categories]="categories()"
   (paymentLogged)="onPaymentLogged($event)">
 </app-recurring-bills-card>
 
