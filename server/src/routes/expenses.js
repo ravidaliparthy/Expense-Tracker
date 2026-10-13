@@ -405,4 +405,31 @@ router.post('/seed-sample', (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+router.post('/parse-pdf', async (req, res, next) => {
+  try {
+    const { base64 } = req.body || {};
+    if (!base64 || typeof base64 !== 'string') {
+      return res.status(400).json({ error: 'Base64 encoded PDF payload is required.' });
+    }
+
+    const { parsePdfBuffer } = require('../lib/pdf-statement-parser');
+    const pdfBuffer = Buffer.from(base64, 'base64');
+    if (pdfBuffer.length === 0) {
+      return res.status(400).json({ error: 'Empty PDF file received.' });
+    }
+
+    const db = getDb();
+    const userCategories = db.prepare(
+      `SELECT id, name, color_hex AS colorHex, icon FROM categories
+       WHERE user_id = ? AND deleted_at IS NULL`
+    ).all(req.user.id);
+
+    const rows = await parsePdfBuffer(pdfBuffer, userCategories);
+    res.json({ ok: true, rows });
+  } catch (err) {
+    console.error('Error parsing PDF statement:', err);
+    res.status(422).json({ error: 'Could not extract text from PDF statement: ' + (err.message || 'Invalid PDF format') });
+  }
+});
+
 module.exports = { router, buildFilters, SELECT_EXP };

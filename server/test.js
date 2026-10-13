@@ -467,6 +467,51 @@ async function runTests() {
       assert.strictEqual(res.body.count, 2);
     });
 
+    // 10b. PDF Statement Parsing
+    await test('POST /expenses/parse-pdf parses UPI and bank statement PDF with merchant details', async () => {
+      const PDFDocument = require('pdfkit');
+      const doc = new PDFDocument();
+      const buffers = [];
+      doc.on('data', (b) => buffers.push(b));
+      const pdfPromise = new Promise((resolve) => doc.on('end', () => resolve(Buffer.concat(buffers))));
+
+      doc.fontSize(20).text('Transaction History');
+      doc.fontSize(12).text('20 September 2026 to 23 September 2026');
+      doc.text('Name Bank Amount Date Status');
+      doc.text('Indian Institute of HDFC 4194 -2000.00 22 September 2026 SUCCESS');
+      doc.text('Bhalaji rice store HDFC 4194 -111.00 22 September 2026 SUCCESS');
+      doc.text('MUNAVATH SAROJA HDFC 4194 -176.00 21 September 2026 SUCCESS');
+      doc.text('PREMA H A HDFC 4194 -118.00 20 September 2026 SUCCESS');
+      doc.text('Powered by UPI YES BANK');
+      doc.end();
+
+      const pdfBuf = await pdfPromise;
+      const base64 = pdfBuf.toString('base64');
+
+      const res = await request('/expenses/parse-pdf', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${authToken}` },
+        body: { base64, filename: 'statement.pdf' }
+      });
+      assert.strictEqual(res.status, 200);
+      assert.ok(Array.isArray(res.body.rows));
+      assert.strictEqual(res.body.rows.length, 4);
+
+      const r1 = res.body.rows[0];
+      assert.strictEqual(r1.merchant, 'Indian Institute of');
+      assert.strictEqual(r1.amountCents, 200000);
+      assert.strictEqual(r1.date, '2026-09-22');
+      assert.strictEqual(r1.bankRef, 'HDFC 4194');
+      assert.strictEqual(r1.status, 'SUCCESS');
+      assert.strictEqual(r1.kind, 'expense');
+
+      const r2 = res.body.rows[1];
+      assert.strictEqual(r2.merchant, 'Bhalaji rice store');
+      assert.strictEqual(r2.amountCents, 11100);
+      assert.strictEqual(r2.date, '2026-09-22');
+      assert.strictEqual(r2.kind, 'expense');
+    });
+
     // 11. Recurring Bills & Pay Action
     await test('POST /recurring creates bill and POST /recurring/:id/pay logs payment', async () => {
       const createRes = await request('/recurring', {

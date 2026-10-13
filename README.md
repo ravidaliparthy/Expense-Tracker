@@ -547,6 +547,7 @@ expense-tracker/
 │       │   ├── time.js           ← Timezone derivation, localDateInTz, monthRange, yearRange
 │       │   ├── money.js          ← Integer cents math (toCents, fromCents, formatCents)
 │       │   └── validate.js       ← Zod validation schemas
+│       ├── lib/pdf-statement-parser.js ← PDF statement & UPI history parser (pdf-parse)
 │       ├── middleware/auth.js    ← JWT sign & verify with requireAuth guard
 │       ├── services/budgetStatus.js ← Server-side budget tier calculations
 │       └── routes/               ← auth, categories, expenses, budgets, analytics, export, sync, recurring
@@ -563,7 +564,7 @@ expense-tracker/
             └── features/
                 ├── auth/login.page.ts
                 ├── dashboard/    ← page, filter-bar, recurring-bills-card, fast-entry-modal, table, form
-                ├── transactions/ ← transactions.page (bulk actions, search) & statement-import-modal (CSV parser)
+                ├── transactions/ ← transactions.page (bulk actions, search) & statement-import-modal (PDF/CSV parser)
                 ├── onboarding/onboarding-overlay.component.ts ← 9-step interactive coach mark tour with adaptive positioning
                 ├── categories/categories.page.ts    ← Custom categories with emoji picker & color swatches
                 ├── budgets/budgets.page.ts          ← Monthly/yearly budgets with interactive gauges
