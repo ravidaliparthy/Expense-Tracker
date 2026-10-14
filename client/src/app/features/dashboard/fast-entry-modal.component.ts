@@ -508,12 +508,12 @@ export class FastEntryModalComponent implements OnInit, OnDestroy {
               this.speechError = 'No speech detected. Tap 🎙️ to try speaking again.';
             }
           } else if (event.error === 'not-allowed') {
-            this.speechError = 'Microphone permission denied. Please allow microphone access in device or browser settings.';
+            this.speechError = 'Microphone access denied. In Safari: tap AA in the address bar > Website Settings > Microphone > Allow. In iOS Settings > Privacy & Security > Speech Recognition, verify Safari is enabled.';
           } else if (event.error === 'network') {
             if (this.isBrave) {
-              this.speechError = 'Brave Browser blocks Google speech recognition servers for privacy. Please open ExpenseTracker in Chrome or Edge (in your taskbar) for Voice Mode, or type/paste SMS text directly.';
+              this.speechError = 'Brave Browser blocks cloud speech-to-text servers for privacy. Please open in Google Chrome or Microsoft Edge (in your taskbar) for Voice Mode, or type/paste SMS text directly.';
             } else {
-              this.speechError = 'Speech service unreachable (often blocked by privacy browsers/adblockers). Please use Chrome, Edge, or Safari, or type/paste SMS directly.';
+              this.speechError = 'Speech service unreachable. On iPhone: turn OFF Low Power Mode (yellow battery) & check Settings > General > Keyboard > Enable Dictation. On PC: use Chrome or Edge.';
             }
           } else {
             this.speechError = `Voice notice: ${event.error}`;
