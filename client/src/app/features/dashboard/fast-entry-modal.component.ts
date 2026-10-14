@@ -135,6 +135,16 @@ import { Category, PaymentSource, TransactionKind, TransactionTag, money } from 
                     <p>Apple's speech engine strictly closes if silence is detected for 2–4 seconds. Speak your expense clearly immediately after tapping 🎙️ Speak Now (e.g. <em>"Paid 450 to Swiggy via GPay"</em>).</p>
                   </div>
                 </div>
+                <div class="check-item" *ngIf="isStandalone || isIOS">
+                  <span class="check-icon">📱</span>
+                  <div>
+                    <strong>5. Standalone PWA vs Safari Permission Persistence</strong>
+                    <p>Apple WebKit resets media permissions in Home Screen PWAs whenever the app is closed from App Switcher. Inside the PWA, tap <strong>🎙️ Speak Now</strong> once per session to enable it freely. For permanent <em>"Always Allow"</em> (never resets), use the app directly in Safari!</p>
+                    <a *ngIf="isStandalone" href="https://expense-tracker-ochre-eight-80.vercel.app/" target="_blank" rel="noopener" class="btn-safari-ext">
+                      🌐 Open in Safari for Permanent "Always Allow" Permission ↗
+                    </a>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -376,6 +386,16 @@ import { Category, PaymentSource, TransactionKind, TransactionTag, money } from 
     :host-context([data-theme='dark']) .check-item strong { color: #F1F5F9; }
     .check-item p { margin: 2px 0 0; }
     .check-icon { font-size: 14px; flex-shrink: 0; }
+    .btn-safari-ext {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 700;
+      background: #EEF2FF; color: #4F46E5; border: 1px solid #C7D2FE;
+      text-decoration: none; margin-top: 6px; cursor: pointer; transition: all 0.2s ease;
+    }
+    :host-context([data-theme='dark']) .btn-safari-ext {
+      background: #312E81; color: #C7D2FE; border-color: #4338CA;
+    }
+    .btn-safari-ext:hover { background: #E0E7FF; }
     .btn-dismiss { background: none; border: none; cursor: pointer; color: inherit; font-size: 12px; }
 
     .sample-chips { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
@@ -487,6 +507,7 @@ export class FastEntryModalComponent implements OnInit, OnDestroy {
   isBrave = false;
   isSafari = false;
   isIOS = false;
+  isStandalone = false;
   speechLang: 'en-IN' | 'en-US' = 'en-IN';
   showSafariHelp = false;
 
@@ -496,6 +517,11 @@ export class FastEntryModalComponent implements OnInit, OnDestroy {
     if (defaults.categoryId && this.categories.length) {
       const matched = this.categories.find((c) => c.id === defaults.categoryId);
       if (matched) this.selectedCategoryName = matched.name;
+    }
+
+    if (typeof window !== 'undefined') {
+      this.isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+        (navigator as any).standalone === true;
     }
 
     if (typeof navigator !== 'undefined') {
@@ -511,12 +537,17 @@ export class FastEntryModalComponent implements OnInit, OnDestroy {
 
     this.hasSpeechSupport = this.checkSpeechSupport();
     if (this.startWithVoice && this.hasSpeechSupport) {
-      // Initiate immediately within the user gesture execution context from the dashboard click
-      try {
-        this.startListeningSession();
-      } catch {
-        this.isRecording = false;
-        this.cdr.detectChanges();
+      if (this.isStandalone && this.isIOS) {
+        // In iOS PWA, WebKit blocks microphone permission prompts when triggered outside direct tap handlers.
+        // Prompt user to tap "Speak Now" directly so iOS shows the permission prompt cleanly.
+        this.speechError = 'iOS Home Screen PWA: Tap 🎙️ Speak Now to activate microphone for this session.';
+      } else {
+        try {
+          this.startListeningSession();
+        } catch {
+          this.isRecording = false;
+          this.cdr.detectChanges();
+        }
       }
     }
   }
@@ -626,8 +657,10 @@ export class FastEntryModalComponent implements OnInit, OnDestroy {
                 : 'No speech detected. Tap 🎙️ to try speaking again.';
             }
           } else if (event.error === 'not-allowed') {
-            if (this.isSafari || this.isIOS) {
-              this.showSafariHelp = true;
+            this.showSafariHelp = true;
+            if (this.isStandalone && this.isIOS) {
+              this.speechError = 'Microphone permission required for this session. Tap 🎙️ Speak Now directly to allow access, or use Safari for permanent "Always Allow".';
+            } else if (this.isSafari || this.isIOS) {
               this.speechError = 'Microphone permission blocked. In Safari: tap "aA" in address bar > Website Settings > Microphone > Allow. Also check iOS Settings > Privacy & Security > Speech Recognition.';
             } else {
               this.speechError = 'Microphone access denied. Please click the lock icon in your address bar and allow microphone permission.';
