@@ -404,11 +404,11 @@ export interface BreakdownRow {
       top: 0;
       z-index: 3;
       background: #F8FAFC;
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      font-size: 10.5px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 11px;
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.07em;
+      letter-spacing: 0.08em;
       color: #64748B;
       padding: 10px 8px;
       border-bottom: 2px solid #E2E8F0;
@@ -434,6 +434,7 @@ export interface BreakdownRow {
       padding: 11px 8px;
       border-bottom: 1px solid #F1F5F9;
       vertical-align: middle;
+      font-family: 'Outfit', sans-serif;
       transition: color 0.18s ease;
     }
     :host-context([data-theme='dark']) .dashboard-tbl-scroll tbody td {
@@ -470,8 +471,8 @@ export interface BreakdownRow {
     .dashboard-tbl-scroll .col-date {
       width: 92px;
       min-width: 92px;
-      font-family: 'JetBrains Mono', 'Plus Jakarta Sans', monospace;
-      font-size: 12px;
+      font-family: 'Outfit', 'JetBrains Mono', monospace;
+      font-size: 12.5px;
       font-weight: 500;
       color: #64748B;
       white-space: nowrap;
@@ -486,7 +487,7 @@ export interface BreakdownRow {
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-family: 'Outfit', sans-serif;
       font-weight: 600;
       color: #1E293B;
       transition: color 0.15s ease;
@@ -511,8 +512,8 @@ export interface BreakdownRow {
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      font-size: 11px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 11.5px;
       font-weight: 600;
       padding: 3px 9px;
       border-radius: 999px;
@@ -532,7 +533,7 @@ export interface BreakdownRow {
       white-space: nowrap;
     }
     .dashboard-tbl-scroll .col-source .source-chip {
-      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-family: 'Outfit', sans-serif;
       font-size: 11px;
       font-weight: 500;
       padding: 3px 9px;
@@ -566,8 +567,8 @@ export interface BreakdownRow {
       min-width: 105px;
       text-align: right !important;
       white-space: nowrap;
-      font-family: 'JetBrains Mono', 'Plus Jakarta Sans', monospace;
-      font-size: 13.5px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 14px;
       font-weight: 700;
       font-variant-numeric: tabular-nums;
       padding-right: 14px !important;
@@ -667,8 +668,8 @@ export interface BreakdownRow {
       gap: 10px;
     }
     .tx-card-title-group h3 {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      font-size: 13.5px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 14px;
       font-weight: 700;
       letter-spacing: 0.06em;
       text-transform: uppercase;
