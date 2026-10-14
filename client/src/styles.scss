@@ -13,6 +13,9 @@ html, body {
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  -webkit-overflow-scrolling: touch;
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
 }
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -1681,25 +1684,50 @@ html[data-privacy='true'] {
   color: #A5B4FC !important;
 }
 
-/* ── Fluid Micro-Animations & Dynamic Feedback ───────────────────── */
+/* ── Fluid Micro-Animations & Dynamic Feedback (iOS / Android Smooth Transitions) ── */
 router-outlet + * {
-  animation: pageFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  display: block;
+  animation: pageFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform: translate3d(0, 0, 0);
 }
 
 @keyframes pageFadeIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translate3d(0, 8px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
 }
 
 button:not(:disabled):active,
 .btn:not(:disabled):active,
 .chip:active,
 .tbl-icon-btn:active {
-  transform: scale(0.965);
+  transform: scale(0.965) translate3d(0, 0, 0);
+  transition-duration: 0.1s;
 }
 
 .kpi, .card {
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.2s ease;
+  will-change: transform, box-shadow;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* iOS & Android Smooth Touch Optimizations */
+@media (hover: none) and (pointer: coarse) {
+  * {
+    -webkit-tap-highlight-color: transparent !important;
+  }
+  .card:active, .kpi:active {
+    transform: scale(0.985) translate3d(0, 0, 0);
+    transition-duration: 0.1s;
+  }
+  .tbl-wrap, .dashboard-tbl-scroll, .action-cluster {
+    -webkit-overflow-scrolling: touch !important;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

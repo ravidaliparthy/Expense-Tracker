@@ -58,10 +58,6 @@ import { PrivacyService } from './core/privacy.service';
           <span class="logo">◆</span> Expense<span class="accent">Tracker</span>
         </div>
         <div class="topbar-right">
-          <div class="live-radar-badge" title="Real-time encrypted offline-first synchronization active">
-            <span class="radar-dot"></span>
-            <span class="radar-text">Live Sync</span>
-          </div>
           <button class="ghost install-btn" *ngIf="pwa.canInstall()" (click)="pwa.installApp()" title="Install app on your phone">
             📲 Install
           </button>
@@ -233,25 +229,6 @@ import { PrivacyService } from './core/privacy.service';
     }
     .accent { color: #818CF8; -webkit-text-fill-color: #818CF8; }
     .topbar-right { display: flex; align-items: center; gap: 10px; font-size: 13px; }
-    .live-radar-badge {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 4px 10px; border-radius: 9999px;
-      background: rgba(16, 185, 129, 0.1);
-      border: 1px solid rgba(16, 185, 129, 0.3);
-      color: #34D399; font-size: 11.5px; font-weight: 600;
-      letter-spacing: 0.02em;
-    }
-    .radar-dot {
-      width: 7px; height: 7px; border-radius: 50%;
-      background: #10B981;
-      box-shadow: 0 0 0 rgba(16, 185, 129, 0.6);
-      animation: radarPulse 2s infinite;
-    }
-    @keyframes radarPulse {
-      0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.8); }
-      70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
-      100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-    }
     .user { color: #94A3B8; font-weight: 500; font-size: 13px; }
     .ghost {
       background: rgba(30, 41, 59, 0.6); border: 1px solid rgba(255, 255, 255, 0.09);
