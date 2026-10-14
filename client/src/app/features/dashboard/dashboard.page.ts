@@ -349,10 +349,13 @@ export interface BreakdownRow {
 
     @media (max-width: 640px) {
       .card-tx-table, .card-spending-breakdown {
-        padding: 14px 10px;
+        padding: 14px 8px;
       }
       .dashboard-tbl-scroll {
-        max-height: 310px;
+        max-height: 325px;
+        overflow-y: auto;
+        overflow-x: hidden !important;
+        padding-bottom: 4px;
       }
       .dashboard-tbl-scroll .col-source,
       .dashboard-tbl-scroll .col-type,
@@ -363,12 +366,49 @@ export interface BreakdownRow {
       .dashboard-tbl-scroll table {
         min-width: 0 !important;
         font-size: 12px;
-        width: 100%;
-        table-layout: auto;
+        width: 100% !important;
+        table-layout: fixed !important;
+        border-collapse: collapse;
       }
-      .dashboard-tbl-scroll th,
-      .dashboard-tbl-scroll td {
-        padding: 9px 5px;
+      .dashboard-tbl-scroll th.col-date,
+      .dashboard-tbl-scroll td.col-date {
+        width: 52px !important;
+        max-width: 52px !important;
+        padding: 9px 2px 9px 4px !important;
+      }
+      .dashboard-tbl-scroll th.col-category,
+      .dashboard-tbl-scroll td.col-category {
+        width: 102px !important;
+        max-width: 102px !important;
+        padding: 9px 3px !important;
+      }
+      .dashboard-tbl-scroll .col-category .chip {
+        padding: 2px 6px;
+        font-size: 10.5px;
+        max-width: 100%;
+        box-sizing: border-box;
+      }
+      .dashboard-tbl-scroll th.col-merchant,
+      .dashboard-tbl-scroll td.col-merchant {
+        width: auto !important;
+        padding: 9px 4px !important;
+        font-size: 11.5px;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        white-space: nowrap !important;
+      }
+      .dashboard-tbl-scroll th.col-amount,
+      .dashboard-tbl-scroll td.col-amount {
+        width: 96px !important;
+        max-width: 96px !important;
+        min-width: 96px !important;
+        padding: 9px 6px 9px 2px !important;
+        text-align: right !important;
+        white-space: nowrap !important;
+        box-sizing: border-box !important;
+        font-size: 12px;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
       }
       .dashboard-tbl-scroll tbody tr {
         cursor: pointer;
@@ -379,35 +419,7 @@ export interface BreakdownRow {
         background: rgba(99, 102, 241, 0.12) !important;
       }
       .desktop-only-date { display: none !important; }
-      .mobile-only-date { display: inline !important; font-size: 11.5px; }
-      .dashboard-tbl-scroll .col-merchant {
-        max-width: 130px;
-        min-width: 75px;
-        font-size: 11.5px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-      .dashboard-tbl-scroll .col-category {
-        max-width: 125px;
-        min-width: 80px;
-      }
-      .dashboard-tbl-scroll .col-category .chip {
-        padding: 2px 7px;
-        font-size: 11px;
-        max-width: 100%;
-      }
-      .dashboard-tbl-scroll .col-amount {
-        white-space: nowrap !important;
-        text-align: right;
-        font-size: 12px;
-        font-weight: 600;
-        padding-right: 2px;
-      }
-      .dashboard-tbl-scroll th.col-amount {
-        white-space: nowrap !important;
-        text-align: right;
-      }
+      .mobile-only-date { display: inline !important; font-size: 11px; }
       .sort-controls {
         width: 100%;
         justify-content: flex-end;
