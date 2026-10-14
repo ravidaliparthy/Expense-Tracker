@@ -207,7 +207,7 @@ import { PrivacyService } from './core/privacy.service';
       padding: 0 24px; background: rgba(14, 17, 24, 0.94);
       backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
       border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      color: #E2E8F0; position: sticky; top: 0; z-index: 1000;
+      color: #E2E8F0; position: sticky; top: 0; z-index: 30;
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
     }
     .brand {
@@ -245,12 +245,12 @@ import { PrivacyService } from './core/privacy.service';
     .badge { padding: 4px 10px; border-radius: 9999px; font-size: 12px; font-weight: 600; }
     .badge.warn { background: rgba(245, 158, 11, 0.15); color: #FBBF24; border: 1px solid rgba(245, 158, 11, 0.3); }
     .badge.off { background: rgba(239, 68, 68, 0.15); color: #F87171; border: 1px solid rgba(239, 68, 68, 0.3); }
-    .shell { display: flex; min-height: calc(100vh - 58px); }
+    .shell { display: flex; min-height: calc(100vh - 58px); position: relative; z-index: 1; }
     .sidenav {
       width: 220px; background: #0C0F17; padding: 20px 14px; display: flex;
       flex-direction: column; justify-content: space-between; position: sticky;
       top: 58px; height: calc(100vh - 58px); flex-shrink: 0; box-sizing: border-box;
-      border-right: 1px solid rgba(255, 255, 255, 0.07);
+      border-right: 1px solid rgba(255, 255, 255, 0.07); z-index: 20;
     }
     .sidenav-links { display: flex; flex-direction: column; gap: 7px; }
     .sidenav a {
@@ -298,6 +298,30 @@ import { PrivacyService } from './core/privacy.service';
     :host-context([data-theme='dark']) .content { background: #0B1220 !important; color: #F8FAFC !important; }
     :host-context([data-theme='dark']) .shell { background: #0B1220 !important; }
 
+    /* When any modal overlay is active anywhere across iOS, Android, and PC */
+    :root:has(.overlay, .modal-overlay),
+    body:has(.overlay, .modal-overlay) {
+      overflow: hidden !important;
+      touch-action: none;
+    }
+
+    :has(.overlay, .modal-overlay) .topbar {
+      z-index: 10 !important;
+    }
+
+    :has(.overlay, .modal-overlay) .sidenav {
+      z-index: 10 !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+      visibility: hidden !important;
+      transform: translateY(100%) !important;
+    }
+
+    .shell:has(.overlay, .modal-overlay) {
+      position: relative !important;
+      z-index: 99998 !important;
+    }
+
     @media (max-width: 820px) {
       .sidenav-pc-footer { display: none !important; }
       .sidenav-links {
@@ -312,7 +336,7 @@ import { PrivacyService } from './core/privacy.service';
         min-height: calc(100vh - 56px) !important;
         padding-bottom: calc(85px + env(safe-area-inset-bottom, 0px)) !important;
         max-width: 100vw !important;
-        overflow-x: hidden !important;
+        overflow-x: clip !important;
       }
       .sidenav {
         position: fixed !important;
@@ -323,7 +347,7 @@ import { PrivacyService } from './core/privacy.service';
         width: 100% !important;
         height: auto !important;
         min-height: 56px !important;
-        z-index: 100 !important;
+        z-index: 35 !important;
         background: rgba(15, 23, 42, 0.94) !important;
         backdrop-filter: blur(20px) !important;
         -webkit-backdrop-filter: blur(20px) !important;
@@ -336,6 +360,7 @@ import { PrivacyService } from './core/privacy.service';
         align-items: center !important;
         box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.35) !important;
         overflow: visible !important;
+        transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease, visibility 0.2s ease !important;
       }
       .sidenav a {
         flex: 1 !important;
@@ -367,7 +392,7 @@ import { PrivacyService } from './core/privacy.service';
         width: 100% !important;
         max-width: 100vw !important;
         box-sizing: border-box !important;
-        overflow-x: hidden !important;
+        overflow-x: clip !important;
       }
       .user { display: none !important; }
     }

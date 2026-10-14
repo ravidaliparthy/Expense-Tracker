@@ -191,8 +191,18 @@ import { Category, RecurringBill, money } from '../../core/models';
     .empty-icon { font-size: 26px; }
     .empty-msg { font-size: 12px; color: #64748B; margin: 0; }
     .btn-add-mini { background: #4F46E5; color: #FFFFFF; border: none; padding: 6px 14px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; }
-    .overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 16px; }
-    .modal-box { background: #FFFFFF; border-radius: 14px; width: 100%; max-width: 480px; padding: 20px; border: 1px solid #E2E8F0; }
+    .overlay {
+      position: fixed !important; inset: 0 !important; background: rgba(15, 23, 42, 0.72) !important;
+      backdrop-filter: blur(8px) !important; -webkit-backdrop-filter: blur(8px) !important;
+      z-index: 999999 !important; display: flex !important; align-items: center !important;
+      justify-content: center !important; padding: max(16px, env(safe-area-inset-top, 16px)) max(16px, env(safe-area-inset-right, 16px)) max(20px, env(safe-area-inset-bottom, 20px)) max(16px, env(safe-area-inset-left, 16px)) !important;
+      overflow-y: auto !important; -webkit-overflow-scrolling: touch !important; overscroll-behavior: contain !important;
+    }
+    .modal-box {
+      background: #FFFFFF; border-radius: 16px; width: 100%; max-width: 480px; padding: 22px 24px;
+      border: 1px solid #E2E8F0; max-height: calc(100dvh - 36px); overflow-y: auto; -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain; box-shadow: 0 25px 60px -10px rgba(0, 0, 0, 0.35);
+    }
     :host-context([data-theme='dark']) .modal-box { background: #0F172A; border-color: #334155; color: #F8FAFC; }
     .modal-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
     .modal-top h4 { margin: 0; font-size: 15px; font-weight: 700; }

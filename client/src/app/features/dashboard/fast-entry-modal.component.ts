@@ -207,12 +207,13 @@ import { Category, PaymentSource, TransactionKind, TransactionTag, money } from 
   `,
   styles: [`
     .overlay {
-      position: fixed; inset: 0; top: 0; left: 0; right: 0; bottom: 0;
-      width: 100vw; height: 100vh; height: 100dvh;
-      background: rgba(15, 23, 42, 0.72);
-      backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); z-index: 99999;
-      display: flex; align-items: center; justify-content: center; padding: 16px;
-      box-sizing: border-box;
+      position: fixed !important; inset: 0 !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important;
+      width: 100vw !important; width: 100dvw !important; height: 100vh !important; height: 100dvh !important;
+      background: rgba(15, 23, 42, 0.72) !important;
+      backdrop-filter: blur(8px) !important; -webkit-backdrop-filter: blur(8px) !important; z-index: 999999 !important;
+      display: flex !important; align-items: center !important; justify-content: center !important;
+      padding: max(16px, env(safe-area-inset-top, 16px)) max(16px, env(safe-area-inset-right, 16px)) max(20px, env(safe-area-inset-bottom, 20px)) max(16px, env(safe-area-inset-left, 16px)) !important;
+      box-sizing: border-box !important; overflow-y: auto !important; -webkit-overflow-scrolling: touch !important; overscroll-behavior: contain !important;
       animation: overlayFadeIn 0.2s ease-out;
     }
     @keyframes overlayFadeIn {
@@ -221,9 +222,9 @@ import { Category, PaymentSource, TransactionKind, TransactionTag, money } from 
     }
     .modal-box {
       background: #FFFFFF; border-radius: 18px; width: 100%; max-width: 580px;
-      max-height: 88vh; display: flex; flex-direction: column;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
-      border: 1px solid #E2E8F0; overflow: hidden;
+      max-height: calc(100dvh - 36px) !important; display: flex; flex-direction: column;
+      box-shadow: 0 25px 60px -10px rgba(0, 0, 0, 0.35);
+      border: 1px solid #E2E8F0; overflow: hidden; -webkit-overflow-scrolling: touch;
       animation: modalScaleIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
     }
     @keyframes modalScaleIn {

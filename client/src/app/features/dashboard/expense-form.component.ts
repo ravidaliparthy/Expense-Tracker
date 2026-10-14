@@ -84,7 +84,7 @@ export interface ExpenseFormValue {
         <div style="font-size:0.75rem; color:#94A3B8; margin-top:-6px; margin-bottom:8px;">🔒 Plain text &amp; numbers only (no images or scripts)</div>
         <div class="modal-actions">
           <button type="button" class="btn-ghost" (click)="close.emit()">Cancel</button>
-          <button class="btn-primary" [disabled]="f.invalid || busy">
+          <button class="btn-primary" [disabled]="busy">
             {{ busy ? 'Saving...' : (expense ? 'Save changes' : 'Add transaction') }}
           </button>
         </div>
@@ -226,6 +226,8 @@ export class ExpenseFormComponent implements OnInit, OnChanges {
   submit(): void {
     if (!this.amount || this.amount <= 0) {
       this.error.set('Enter a valid amount');
+      const amtInput = document.getElementById('expense-amount');
+      if (amtInput) amtInput.focus();
       return;
     }
     let iso = new Date().toISOString();
