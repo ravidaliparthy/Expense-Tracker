@@ -374,9 +374,13 @@ export class FastEntryModalComponent implements OnInit, OnDestroy {
 
     this.hasSpeechSupport = this.checkSpeechSupport();
     if (this.startWithVoice && this.hasSpeechSupport) {
-      setTimeout(() => {
-        this.toggleVoice();
-      }, 250);
+      // Initiate immediately within the user gesture execution context from the dashboard click
+      try {
+        this.startListeningSession();
+      } catch {
+        this.isRecording = false;
+        this.cdr.detectChanges();
+      }
     }
   }
 
@@ -389,28 +393,54 @@ export class FastEntryModalComponent implements OnInit, OnDestroy {
       (('SpeechRecognition' in window) || ('webkitSpeechRecognition' in window));
   }
 
-  initSpeech(): void {
+  toggleVoice(): void {
+    if (this.isRecording) {
+      this.stopListeningSession();
+    } else {
+      this.startListeningSession();
+    }
+  }
+
+  private startListeningSession(): void {
+    // 1. Cleanly tear down any previous recognition session
+    if (this.recognition) {
+      try {
+        this.recognition.onstart = null;
+        this.recognition.onresult = null;
+        this.recognition.onerror = null;
+        this.recognition.onend = null;
+        this.recognition.abort();
+      } catch {}
+      this.recognition = null;
+    }
+
     const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRec) {
       this.hasSpeechSupport = false;
+      this.isRecording = false;
       this.speechError = 'Voice input is not supported in this browser. Please use Chrome, Edge, or Safari.';
       this.cdr.detectChanges();
       return;
     }
 
     try {
-      this.recognition = new SpeechRec();
-      this.recognition.continuous = false;
-      this.recognition.interimResults = true;
-      this.recognition.lang = 'en-IN'; // Optimized for INR, UPI, and common financial phrases
+      // 2. In WebKit (iOS Safari, Android Chrome), SpeechRecognition MUST be freshly instantiated per session
+      const rec = new SpeechRec();
+      rec.continuous = false;
+      rec.interimResults = true;
+      rec.maxAlternatives = 1;
 
-      this.recognition.onstart = () => {
+      // Locale: detect user language with safe fallback to en-IN / en-US
+      const userLang = (typeof navigator !== 'undefined' && navigator.language) ? navigator.language : 'en-IN';
+      rec.lang = userLang.startsWith('en') ? userLang : 'en-IN';
+
+      rec.onstart = () => {
         this.isRecording = true;
         this.speechError = null;
         this.cdr.detectChanges();
       };
 
-      this.recognition.onresult = (event: any) => {
+      rec.onresult = (event: any) => {
         let transcript = '';
         for (let i = event.resultIndex; i < event.results.length; ++i) {
           transcript += event.results[i][0].transcript;
@@ -422,83 +452,57 @@ export class FastEntryModalComponent implements OnInit, OnDestroy {
         }
       };
 
-      this.recognition.onerror = (event: any) => {
+      rec.onerror = (event: any) => {
         this.isRecording = false;
         if (event.error === 'aborted') {
-          // Normal stop/switch; do not display error banner
           this.speechError = null;
         } else if (event.error === 'not-allowed') {
-          this.speechError = 'Microphone permission denied. Please allow microphone access in browser settings.';
+          this.speechError = 'Microphone permission denied. Please allow microphone access in your browser or device settings.';
         } else if (event.error === 'no-speech') {
           this.speechError = 'No speech detected. Tap 🎙️ to try speaking again.';
+        } else if (event.error === 'network') {
+          this.speechError = 'Network error during speech recognition. Check your internet connection.';
         } else {
-          this.speechError = `Voice error: ${event.error}`;
+          this.speechError = `Voice notice: ${event.error}`;
         }
+        this.recognition = null;
         this.cdr.detectChanges();
       };
 
-      this.recognition.onend = () => {
+      rec.onend = () => {
         this.isRecording = false;
+        this.recognition = null;
         this.cdr.detectChanges();
       };
-    } catch (err: any) {
-      this.hasSpeechSupport = false;
-      this.speechError = 'Could not initialize speech recognition: ' + (err?.message || '');
-      this.cdr.detectChanges();
-    }
-  }
 
-  toggleVoice(): void {
-    if (!this.recognition) {
-      this.initSpeech();
-      if (!this.recognition) return;
-    }
-
-    if (this.isRecording) {
-      try {
-        this.recognition.stop();
-      } catch {}
-      this.isRecording = false;
-      this.cdr.detectChanges();
-    } else {
-      this.speechError = null;
+      this.recognition = rec;
       this.isRecording = true;
+      this.speechError = null;
       this.cdr.detectChanges();
-      try {
-        this.recognition.start();
-      } catch {
-        // If recognition was in an invalid state, reinitialize
-        try {
-          this.recognition.abort();
-          setTimeout(() => {
-            try {
-              this.recognition.start();
-              this.isRecording = true;
-              this.cdr.detectChanges();
-            } catch {
-              this.isRecording = false;
-              this.speechError = 'Microphone busy. Please click again.';
-              this.cdr.detectChanges();
-            }
-          }, 100);
-        } catch {
-          this.isRecording = false;
-          this.speechError = 'Microphone busy. Please click again.';
-          this.cdr.detectChanges();
-        }
-      }
+
+      // 3. Start synchronously within user gesture
+      rec.start();
+    } catch (err: any) {
+      this.isRecording = false;
+      this.recognition = null;
+      this.speechError = 'Could not start voice input: ' + (err?.message || 'Please tap 🎙️ to try again.');
+      this.cdr.detectChanges();
     }
   }
 
-  private cleanupVoice(): void {
+  private stopListeningSession(): void {
     if (this.recognition) {
       try {
-        this.recognition.abort();
+        this.recognition.stop();
       } catch {}
       this.recognition = null;
     }
     this.isRecording = false;
     this.cdr.detectChanges();
+  }
+
+  private cleanupVoice(): void {
+    this.stopListeningSession();
   }
 
   setSample(text: string): void {
