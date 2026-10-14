@@ -386,13 +386,44 @@ import { safeUuid } from '../../core/uuid';
       font-size: 14px;
     }
 
-    .tbl-wrap { overflow-x: auto; }
-    .mono { font-variant-numeric: tabular-nums; color: #475569; white-space: nowrap; font-size: 13px; }
+    .tbl-wrap { overflow-x: auto; border-radius: 10px; }
+    table { width: 100%; border-collapse: separate; border-spacing: 0; }
+    tbody tr {
+      transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+                  background-color 0.2s ease,
+                  box-shadow 0.2s ease;
+      cursor: pointer;
+    }
+    tbody td {
+      padding: 11px 8px;
+      border-bottom: 1px solid #F1F5F9;
+      vertical-align: middle;
+      transition: color 0.15s ease;
+    }
+    tbody tr:hover {
+      background: linear-gradient(90deg, rgba(99, 102, 241, 0.05) 0%, rgba(99, 102, 241, 0.01) 100%) !important;
+      transform: translateX(4px);
+      box-shadow: inset 3.5px 0 0 #6366F1, 0 4px 12px rgba(15, 23, 42, 0.04);
+    }
+    tbody tr:active {
+      transform: scale(0.995) translateX(2px);
+    }
+    .mono { font-family: 'JetBrains Mono', 'Plus Jakarta Sans', monospace; font-variant-numeric: tabular-nums; color: #475569; white-space: nowrap; font-size: 12.5px; }
     .notes-cell { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #64748B; }
     .kind { font-size: 11px; border-radius: 999px; padding: 3px 8px; background: #FEE2E2; color: #B91C1C; }
     .kind.income { background: #DCFCE7; color: #047857; }
+    .amount {
+      font-family: 'JetBrains Mono', 'Plus Jakarta Sans', monospace;
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+      font-size: 13.5px;
+      transition: transform 0.18s ease, text-shadow 0.18s ease;
+    }
     .amount.plus { color: #047857; }
     .amount.minus { color: #DC2626; }
+    tbody tr:hover .amount {
+      transform: scale(1.03);
+    }
     tr.income { background: #F0FDF4; }
 
     /* Dark mode */
@@ -405,6 +436,24 @@ import { safeUuid } from '../../core/uuid';
       background: rgba(30, 41, 59, 0.85);
       border-color: rgba(255, 255, 255, 0.16);
       box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+    }
+    :host-context([data-theme='dark']) tbody td {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      color: #CBD5E1;
+    }
+    :host-context([data-theme='dark']) tbody tr:hover {
+      background: linear-gradient(90deg, rgba(99, 102, 241, 0.14) 0%, rgba(139, 92, 246, 0.04) 65%, transparent 100%) !important;
+      transform: translateX(4px);
+      box-shadow: inset 3.5px 0 0 #6366F1, 0 6px 16px rgba(0, 0, 0, 0.35);
+    }
+    :host-context([data-theme='dark']) tbody tr.income:hover {
+      box-shadow: inset 3.5px 0 0 #10B981, 0 6px 16px rgba(0, 0, 0, 0.35);
+    }
+    :host-context([data-theme='dark']) tbody tr:hover .amount.minus {
+      text-shadow: 0 0 10px rgba(244, 63, 94, 0.35);
+    }
+    :host-context([data-theme='dark']) tbody tr:hover .amount.plus {
+      text-shadow: 0 0 10px rgba(16, 185, 129, 0.35);
     }
     :host-context([data-theme='dark']) .mono { color: #94A3B8; }
     :host-context([data-theme='dark']) .notes-cell { color: #94A3B8; }
