@@ -165,18 +165,46 @@ export interface BreakdownRow {
 
     /* Contained table scroll & mobile responsiveness */
     .tbl-wrap { width:100%; max-width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; border-radius:8px; box-sizing:border-box; }
-    table { width:100%; min-width:480px; border-collapse:collapse; }
+    table { width:100%; min-width:0; border-collapse:collapse; }
 
-    /* Dashboard transactions scroll container: compact with scrollbar & sticky header */
+    /* Dashboard transactions scroll container: compact with smooth vertical scroll & sticky header */
     .dashboard-tbl-scroll {
       width: 100%;
       max-width: 100%;
-      max-height: 380px;
+      max-height: 345px;
       overflow-y: auto;
-      overflow-x: auto;
+      overflow-x: hidden !important;
       -webkit-overflow-scrolling: touch;
       border-radius: 8px;
       box-sizing: border-box;
+      scrollbar-width: thin;
+      scrollbar-color: #CBD5E1 transparent;
+      scrollbar-gutter: stable;
+      color-scheme: light;
+    }
+    :host-context([data-theme='dark']) .dashboard-tbl-scroll {
+      scrollbar-color: #374151 transparent;
+      color-scheme: dark;
+    }
+    .dashboard-tbl-scroll::-webkit-scrollbar {
+      width: 6px;
+      height: 0px;
+    }
+    .dashboard-tbl-scroll::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .dashboard-tbl-scroll::-webkit-scrollbar-thumb {
+      background: #CBD5E1;
+      border-radius: 999px;
+    }
+    :host-context([data-theme='dark']) .dashboard-tbl-scroll::-webkit-scrollbar-thumb {
+      background: #374151;
+    }
+    .dashboard-tbl-scroll table {
+      width: 100%;
+      min-width: 0 !important;
+      table-layout: auto;
+      border-collapse: collapse;
     }
     .dashboard-tbl-scroll table thead th {
       position: sticky;
@@ -185,33 +213,101 @@ export interface BreakdownRow {
       background: #F8FAFC;
     }
     :host-context([data-theme='dark']) .dashboard-tbl-scroll table thead th {
-      background: #1E293B;
+      background: #111827;
+      color: #94A3B8;
+      border-bottom: 2px solid #1F2937;
     }
-    .dashboard-tbl-scroll::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
+
+    /* Column styling & responsiveness within the compact dashboard widget */
+    .dashboard-tbl-scroll .col-type,
+    .dashboard-tbl-scroll .col-notes {
+      display: none;
     }
-    .dashboard-tbl-scroll::-webkit-scrollbar-track {
-      background: rgba(0, 0, 0, 0.04);
-      border-radius: 4px;
+    .dashboard-tbl-scroll .col-merchant {
+      max-width: 130px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
-    .dashboard-tbl-scroll::-webkit-scrollbar-thumb {
-      background: #CBD5E1;
-      border-radius: 4px;
+    .dashboard-tbl-scroll .col-category {
+      max-width: 135px;
     }
-    :host-context([data-theme='dark']) .dashboard-tbl-scroll::-webkit-scrollbar-thumb {
-      background: #475569;
+    .dashboard-tbl-scroll .col-category .chip {
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* Header styling for transaction card */
+    .tx-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .tx-card-title-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .view-all-link {
+      font-size: 11px;
+      padding: 3px 8px;
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: 600;
+      color: #6366F1;
+      border-color: #C7D2FE;
+    }
+    :host-context([data-theme='dark']) .view-all-link {
+      color: #A5B4FC;
+      border-color: #312E81;
+    }
+
+    /* Breakdown card header: single line, no wrapping */
+    .breakdown-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      gap: 8px;
+    }
+    .breakdown-card-header h3 {
+      margin: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .manage-btn {
+      font-size: 12px;
+      padding: 4px 10px;
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: 600;
+      flex-shrink: 0;
+      white-space: nowrap;
     }
 
     /* Transactions & Spending Breakdown Layout */
     .tx-breakdown-grid {
       display: grid;
-      grid-template-columns: 2fr 1fr;
+      grid-template-columns: minmax(0, 1.45fr) minmax(330px, 1fr);
       gap: 16px;
       margin-bottom: 16px;
+      align-items: start;
     }
-    .tx-breakdown-grid .card-tx-table { order: 1; }
-    .tx-breakdown-grid .card-spending-breakdown { order: 2; }
+    .tx-breakdown-grid .card-tx-table {
+      order: 1;
+      min-width: 0;
+      overflow: hidden;
+    }
+    .tx-breakdown-grid .card-spending-breakdown {
+      order: 2;
+      min-width: 0;
+    }
 
     /* On iOS and Android devices, move spending filter/breakdown ABOVE transactions */
     .tx-breakdown-grid.mobile-order {
@@ -220,9 +316,11 @@ export interface BreakdownRow {
     }
     .tx-breakdown-grid.mobile-order .card-spending-breakdown {
       order: 1 !important;
+      width: 100%;
     }
     .tx-breakdown-grid.mobile-order .card-tx-table {
       order: 2 !important;
+      width: 100%;
     }
 
     @media (max-width: 980px) {
@@ -232,16 +330,75 @@ export interface BreakdownRow {
       }
       .tx-breakdown-grid .card-spending-breakdown {
         order: 1;
+        width: 100%;
       }
       .tx-breakdown-grid .card-tx-table {
         order: 2;
+        width: 100%;
       }
     }
+
+    @media (max-width: 860px) {
+      .dashboard-tbl-scroll .col-source {
+        display: none;
+      }
+    }
+
     @media (max-width: 640px) {
-      .notes, .notes-cell { display:none !important; }
-      table { min-width:380px !important; }
-      .tbl-wrap { margin:0 -4px; padding:0 4px; }
-      .sort-controls { width:100%; justify-content:flex-end; margin-top:4px; }
+      .card-tx-table, .card-spending-breakdown {
+        padding: 14px 12px;
+      }
+      .dashboard-tbl-scroll {
+        max-height: 320px;
+      }
+      .dashboard-tbl-scroll .col-source,
+      .dashboard-tbl-scroll .col-type,
+      .dashboard-tbl-scroll .col-notes {
+        display: none !important;
+      }
+      .dashboard-tbl-scroll table {
+        min-width: 0 !important;
+        font-size: 12px;
+      }
+      .dashboard-tbl-scroll th,
+      .dashboard-tbl-scroll td {
+        padding: 8px 4px;
+      }
+      .dashboard-tbl-scroll .col-merchant {
+        max-width: 85px;
+      }
+      .dashboard-tbl-scroll .col-category {
+        max-width: 95px;
+      }
+      .dashboard-tbl-scroll .tbl-icon-btn {
+        width: 28px;
+        height: 28px;
+        min-width: 28px;
+        font-size: 12px;
+        margin-left: 2px;
+      }
+      .sort-controls {
+        width: 100%;
+        justify-content: flex-end;
+        margin-top: 4px;
+      }
+      .sort-lbl {
+        display: none;
+      }
+      .breakdown-card-header {
+        flex-wrap: nowrap;
+      }
+      .donutrow {
+        gap: 12px;
+        justify-content: center;
+      }
+      .catbar .name {
+        flex: 0 1 100px;
+        min-width: 65px;
+      }
+      .catbar .val {
+        min-width: 60px;
+      }
     }
   `]
 })

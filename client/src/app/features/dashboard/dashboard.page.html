@@ -166,8 +166,11 @@
 
 <div class="grid-2 tx-breakdown-grid" [class.mobile-order]="isMobileDevice()">
   <div class="card card-tx-table" data-tour="transactions-table">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
-      <h3>Transactions ({{ total() }})</h3>
+    <div class="tx-card-header">
+      <div class="tx-card-title-group">
+        <h3 style="margin:0">Transactions ({{ total() }})</h3>
+        <a routerLink="/transactions" class="btn-ghost view-all-link" title="View all transactions in full table">View All ↗</a>
+      </div>
       <div class="sort-controls">
         <span class="sort-lbl">Sort:</span>
         <button type="button" class="sort-btn" [class.active]="sortField() === 'date'" (click)="toggleSort('date')" title="Toggle date sort">
@@ -193,30 +196,30 @@
       <table>
         <thead>
           <tr>
-            <th class="sortable" (click)="toggleSort('date')" title="Click to sort by date">
+            <th class="col-date sortable" (click)="toggleSort('date')" title="Click to sort by date">
               Date <span class="sort-icon">{{ sortField() === 'date' ? (sortDirection() === 'desc' ? '▼' : '▲') : '↕' }}</span>
             </th>
-            <th>Type</th>
-            <th>Category</th>
-            <th>Merchant</th>
-            <th>Payment Source</th>
-            <th class="notes">Notes</th>
-            <th class="amount sortable" (click)="toggleSort('amount')" title="Click to sort by amount">
+            <th class="col-type">Type</th>
+            <th class="col-category">Category</th>
+            <th class="col-merchant">Merchant</th>
+            <th class="col-source">Payment Source</th>
+            <th class="col-notes">Notes</th>
+            <th class="col-amount amount sortable" (click)="toggleSort('amount')" title="Click to sort by amount">
               Amount <span class="sort-icon">{{ sortField() === 'amount' ? (sortDirection() === 'desc' ? '▼' : '▲') : '↕' }}</span>
             </th>
-            <th style="text-align:right;width:85px">Actions</th>
+            <th class="col-actions" style="text-align:right">Actions</th>
           </tr>
         </thead>
         <tbody>
           <tr *ngFor="let e of sortedExpenses(); trackBy: trackById" [class.income]="e.kind === 'income'" [class.deleting]="deletingIds().has(e.id)">
-            <td class="mono">{{ e.localDate }}</td>
-            <td><span class="kind" [class.income]="e.kind === 'income'">{{ e.kind === 'income' ? 'Credit' : 'Expense' }}</span></td>
-            <td><span class="chip" [style.background]="hex(e.categoryColor, .14)" [style.color]="e.categoryColor">{{ e.categoryIcon || '🏷️' }} {{ e.categorySnapshot }}</span></td>
-            <td>{{ e.merchant || '—' }}</td>
-            <td><span class="source-chip">{{ paymentSourceLabel(e.source) }}</span></td>
-            <td class="notes-cell" [title]="e.notes || ''">{{ e.notes || '—' }}</td>
-            <td class="amount" [class.plus]="e.kind === 'income'" [class.minus]="e.kind !== 'income'">{{ e.kind === 'income' ? '+' : '-' }}{{ money(e.amountCents, e.currency) }}</td>
-            <td style="white-space:nowrap;text-align:right">
+            <td class="col-date mono">{{ e.localDate }}</td>
+            <td class="col-type"><span class="kind" [class.income]="e.kind === 'income'">{{ e.kind === 'income' ? 'Credit' : 'Expense' }}</span></td>
+            <td class="col-category"><span class="chip" [style.background]="hex(e.categoryColor, .14)" [style.color]="e.categoryColor">{{ e.categoryIcon || '🏷️' }} {{ e.categorySnapshot }}</span></td>
+            <td class="col-merchant" [title]="e.notes ? (e.merchant || '—') + ' (' + e.notes + ')' : (e.merchant || '—')">{{ e.merchant || '—' }}</td>
+            <td class="col-source"><span class="source-chip">{{ paymentSourceLabel(e.source) }}</span></td>
+            <td class="col-notes notes-cell" [title]="e.notes || ''">{{ e.notes || '—' }}</td>
+            <td class="col-amount amount" [class.plus]="e.kind === 'income'" [class.minus]="e.kind !== 'income'">{{ e.kind === 'income' ? '+' : '-' }}{{ money(e.amountCents, e.currency) }}</td>
+            <td class="col-actions" style="white-space:nowrap;text-align:right">
               <button type="button" class="tbl-icon-btn" title="Split this expense with friends" (click)="openSplitBill(e.amountCents / 100, e.merchant || e.categorySnapshot)">👥</button>
               <button type="button" class="tbl-icon-btn" title="Edit transaction" [id]="'edit-tx-' + e.id" (click)="openEdit(e)">✎</button>
               <button type="button" class="tbl-icon-btn danger" [disabled]="deletingIds().has(e.id)" title="Delete transaction" [id]="'delete-tx-' + e.id" (click)="onRemove(e)">🗑</button>
@@ -227,9 +230,9 @@
     </div>
   </div>
   <div class="card card-spending-breakdown" data-tour="category-breakdown">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
-      <h3 style="margin:0">🏷️ Category Spending Breakdown</h3>
-      <a routerLink="/categories" class="btn-ghost" style="font-size:12px;padding:4px 10px;text-decoration:none;border-radius:6px;font-weight:600">Manage ▦</a>
+    <div class="breakdown-card-header">
+      <h3 style="margin:0">🏷️ Category Breakdown</h3>
+      <a routerLink="/categories" class="btn-ghost manage-btn">Manage ▦</a>
     </div>
     <div class="donutrow" *ngIf="donutSegments().length">
       <svg viewBox="0 0 120 120" class="donut">
