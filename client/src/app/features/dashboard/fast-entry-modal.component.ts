@@ -43,6 +43,15 @@ import { Category, PaymentSource, TransactionKind, TransactionTag, money } from 
                 <button
                   *ngIf="isSafari || isIOS"
                   type="button"
+                  class="ios-tip-pill"
+                  (click)="showSafariHelp = !showSafariHelp"
+                  title="View 2 instant iPhone voice methods"
+                >
+                  💡 iPhone Voice Tips
+                </button>
+                <button
+                  *ngIf="isSafari || isIOS"
+                  type="button"
                   class="lang-pill-btn"
                   (click)="toggleLanguage()"
                   [title]="'Speech language: ' + (speechLang === 'en-IN' ? 'Indian English' : 'Global English (US)')"
@@ -94,55 +103,44 @@ import { Category, PaymentSource, TransactionKind, TransactionTag, money } from 
                   class="safari-guide-link"
                   (click)="showSafariHelp = !showSafariHelp"
                 >
-                  {{ showSafariHelp ? 'Hide Safari Checklist ▲' : 'Open Safari Checklist ▼' }}
+                  {{ showSafariHelp ? 'Hide iPhone Shortcuts ▲' : '💡 See 2 Instant iPhone Voice Methods ▼' }}
                 </button>
               </div>
               <button type="button" class="btn-dismiss" (click)="speechError = null">✕</button>
             </div>
 
-            <!-- Safari / iOS Configuration Checklist Card -->
-            <div *ngIf="showSafariHelp" class="safari-help-card">
-              <div class="safari-help-header">
-                <span class="safari-help-title">🍎 Safari & iPhone Microphone Configuration Checklist</span>
+            <!-- Sleek iOS 2-Method Voice Shortcuts Card -->
+            <div *ngIf="showSafariHelp" class="ios-voice-card">
+              <div class="ios-card-head">
+                <span class="ios-card-title">🎙️ 2 Real Ways to Speak on iPhone (No Permissions Required)</span>
                 <button type="button" class="btn-dismiss" (click)="showSafariHelp = false">✕</button>
               </div>
-              <div class="safari-checklist">
-                <div class="check-item">
-                  <span class="check-icon">🔋</span>
-                  <div>
-                    <strong>1. Turn OFF Low Power Mode</strong>
-                    <p>Go to <em>Settings → Battery</em> and toggle <strong>Low Power Mode OFF</strong>. When the battery icon is yellow, iOS suspends Apple dictation network sockets after 1–3 seconds, causing immediate microphone cutoff.</p>
+
+              <div class="ios-methods-grid">
+                <!-- Method 1: Keyboard Mic -->
+                <div class="ios-method-box highlight">
+                  <div class="method-badge">✨ Recommended • Zero Permissions</div>
+                  <div class="method-body">
+                    <span class="method-icon">⌨️</span>
+                    <div class="method-text">
+                      <strong>1. Tap the 🎙️ mic on your iPhone keyboard</strong>
+                      <p>Tap inside the text box above, then tap the 🎙️ microphone icon on your iPhone keyboard (bottom right, next to the space bar). Speak naturally (e.g. <em>"Paid 450 to Swiggy via GPay"</em>)—text transcribes instantly with zero permission prompts!</p>
+                    </div>
                   </div>
                 </div>
-                <div class="check-item">
-                  <span class="check-icon">⌨️</span>
-                  <div>
-                    <strong>2. Enable Dictation in Keyboard Settings</strong>
-                    <p>Safari requires system dictation. Go to <em>Settings → General → Keyboard</em> → turn <strong>Enable Dictation ON</strong>. Ensure English is listed under Dictation Languages.</p>
-                  </div>
-                </div>
-                <div class="check-item">
-                  <span class="check-icon">🎙️</span>
-                  <div>
-                    <strong>3. Safari Address Bar Microphone Permission</strong>
-                    <p>On this page in Safari, tap the <strong>aA</strong> (or lock) icon on the left of the address bar → tap <strong>Website Settings</strong> → set <strong>Microphone</strong> to <strong>Allow</strong>.</p>
-                  </div>
-                </div>
-                <div class="check-item">
-                  <span class="check-icon">🗣️</span>
-                  <div>
-                    <strong>4. Speak Promptly (2–4 Second Silence Limit)</strong>
-                    <p>Apple's speech engine strictly closes if silence is detected for 2–4 seconds. Speak your expense clearly immediately after tapping 🎙️ Speak Now (e.g. <em>"Paid 450 to Swiggy via GPay"</em>).</p>
-                  </div>
-                </div>
-                <div class="check-item" *ngIf="isStandalone || isIOS">
-                  <span class="check-icon">📱</span>
-                  <div>
-                    <strong>5. Standalone PWA vs Safari Permission Persistence</strong>
-                    <p>Apple WebKit resets media permissions in Home Screen PWAs whenever the app is closed from App Switcher. Inside the PWA, tap <strong>🎙️ Speak Now</strong> once per session to enable it freely. For permanent <em>"Always Allow"</em> (never resets), use the app directly in Safari!</p>
-                    <a *ngIf="isStandalone" href="https://expense-tracker-ochre-eight-80.vercel.app/" target="_blank" rel="noopener" class="btn-safari-ext">
-                      🌐 Open in Safari for Permanent "Always Allow" Permission ↗
-                    </a>
+
+                <!-- Method 2: Safari Always Allow -->
+                <div class="ios-method-box">
+                  <div class="method-badge permanent">🔒 Permanent Safari Mode</div>
+                  <div class="method-body">
+                    <span class="method-icon">🌐</span>
+                    <div class="method-text">
+                      <strong>2. Safari with "Always Allow"</strong>
+                      <p>In Safari: tap <strong>aA</strong> in the address bar → <strong>Website Settings</strong> → set <strong>Microphone</strong> to <strong>Allow</strong>. The in-app 🎙️ Voice Mode will work permanently without asking again!</p>
+                      <a *ngIf="isStandalone" href="https://expense-tracker-ochre-eight-80.vercel.app/" target="_blank" rel="noopener" class="btn-safari-ext">
+                        Open in Safari for Permanent Mode ↗
+                      </a>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -367,28 +365,83 @@ import { Category, PaymentSource, TransactionKind, TransactionTag, money } from 
     }
     :host-context([data-theme='dark']) .safari-guide-link { color: #FDE68A; }
 
-    .safari-help-card {
-      margin-top: 8px; padding: 12px; border-radius: 10px;
-      background: #F8FAFC; border: 1px solid #E2E8F0; display: flex; flex-direction: column; gap: 10px;
+    .ios-tip-pill {
+      background: #EEF2FF; border: 1px solid #C7D2FE; color: #4F46E5;
+      padding: 4px 9px; border-radius: 999px; font-size: 11px; font-weight: 700;
+      cursor: pointer; transition: all 0.2s ease;
     }
-    :host-context([data-theme='dark']) .safari-help-card {
-      background: #0F172A; border-color: #334155;
+    :host-context([data-theme='dark']) .ios-tip-pill {
+      background: #1E1B4B; border-color: #4338CA; color: #C7D2FE;
     }
-    .safari-help-header {
+    .ios-tip-pill:hover { background: #E0E7FF; }
+
+    .ios-voice-card {
+      margin-top: 8px; padding: 12px; border-radius: 12px;
+      background: linear-gradient(135deg, #F8FAFC 0%, #EEF2FF 100%);
+      border: 1px solid #C7D2FE; display: flex; flex-direction: column; gap: 10px;
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.08);
+    }
+    :host-context([data-theme='dark']) .ios-voice-card {
+      background: linear-gradient(135deg, #0F172A 0%, #1E1B4B 100%);
+      border-color: #4338CA;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    }
+    .ios-card-head {
       display: flex; justify-content: space-between; align-items: center;
     }
-    .safari-help-title { font-size: 12px; font-weight: 700; color: #1E293B; }
-    :host-context([data-theme='dark']) .safari-help-title { color: #F8FAFC; }
-    .safari-checklist { display: flex; flex-direction: column; gap: 8px; font-size: 11px; }
-    .check-item { display: flex; align-items: flex-start; gap: 8px; line-height: 1.4; color: #475569; }
-    :host-context([data-theme='dark']) .check-item { color: #CBD5E1; }
-    .check-item strong { color: #0F172A; }
-    :host-context([data-theme='dark']) .check-item strong { color: #F1F5F9; }
-    .check-item p { margin: 2px 0 0; }
-    .check-icon { font-size: 14px; flex-shrink: 0; }
+    .ios-card-title {
+      font-size: 12px; font-weight: 800; color: #3730A3; letter-spacing: -0.2px;
+    }
+    :host-context([data-theme='dark']) .ios-card-title { color: #E0E7FF; }
+    .ios-methods-grid {
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .ios-method-box {
+      background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 10px;
+      padding: 10px 12px; display: flex; flex-direction: column; gap: 6px;
+      transition: all 0.2s ease;
+    }
+    :host-context([data-theme='dark']) .ios-method-box {
+      background: #111827; border-color: #374151;
+    }
+    .ios-method-box.highlight {
+      border-color: #818CF8; background: #FAF5FF;
+    }
+    :host-context([data-theme='dark']) .ios-method-box.highlight {
+      background: #1F1535; border-color: #6366F1;
+    }
+    .method-badge {
+      display: inline-flex; align-self: flex-start; align-items: center;
+      padding: 2px 7px; border-radius: 999px; font-size: 10px; font-weight: 800;
+      background: #EDE9FE; color: #6D28D9; text-transform: uppercase; letter-spacing: 0.3px;
+    }
+    :host-context([data-theme='dark']) .method-badge {
+      background: #4C1D95; color: #DDD6FE;
+    }
+    .method-badge.permanent {
+      background: #DCFCE7; color: #15803D;
+    }
+    :host-context([data-theme='dark']) .method-badge.permanent {
+      background: #14532D; color: #86EFAC;
+    }
+    .method-body {
+      display: flex; align-items: flex-start; gap: 10px;
+    }
+    .method-icon {
+      font-size: 20px; flex-shrink: 0; line-height: 1.2;
+    }
+    .method-text {
+      flex: 1; font-size: 11.5px; line-height: 1.4; color: #475569;
+    }
+    :host-context([data-theme='dark']) .method-text { color: #CBD5E1; }
+    .method-text strong {
+      display: block; font-size: 12px; color: #0F172A; margin-bottom: 2px;
+    }
+    :host-context([data-theme='dark']) .method-text strong { color: #F8FAFC; }
+    .method-text p { margin: 0; }
     .btn-safari-ext {
       display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-      padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 700;
+      padding: 5px 11px; border-radius: 7px; font-size: 11px; font-weight: 700;
       background: #EEF2FF; color: #4F46E5; border: 1px solid #C7D2FE;
       text-decoration: none; margin-top: 6px; cursor: pointer; transition: all 0.2s ease;
     }
@@ -539,8 +592,8 @@ export class FastEntryModalComponent implements OnInit, OnDestroy {
     if (this.startWithVoice && this.hasSpeechSupport) {
       if (this.isStandalone && this.isIOS) {
         // In iOS PWA, WebKit blocks microphone permission prompts when triggered outside direct tap handlers.
-        // Prompt user to tap "Speak Now" directly so iOS shows the permission prompt cleanly.
-        this.speechError = 'iOS Home Screen PWA: Tap 🎙️ Speak Now to activate microphone for this session.';
+        // Prompt user to tap "Speak Now" or use the iPhone keyboard mic.
+        this.speechError = 'iPhone tip: Tap 🎙️ Speak Now, or tap the 🎙️ mic on your iPhone keyboard (next to space bar) for zero prompts!';
       } else {
         try {
           this.startListeningSession();
@@ -658,10 +711,8 @@ export class FastEntryModalComponent implements OnInit, OnDestroy {
             }
           } else if (event.error === 'not-allowed') {
             this.showSafariHelp = true;
-            if (this.isStandalone && this.isIOS) {
-              this.speechError = 'Microphone permission required for this session. Tap 🎙️ Speak Now directly to allow access, or use Safari for permanent "Always Allow".';
-            } else if (this.isSafari || this.isIOS) {
-              this.speechError = 'Microphone permission blocked. In Safari: tap "aA" in address bar > Website Settings > Microphone > Allow. Also check iOS Settings > Privacy & Security > Speech Recognition.';
+            if (this.isSafari || this.isIOS) {
+              this.speechError = 'Microphone permission needed. Tap inside the box & use the 🎙️ mic on your iPhone keyboard (next to space bar), or set Safari to "Always Allow"!';
             } else {
               this.speechError = 'Microphone access denied. Please click the lock icon in your address bar and allow microphone permission.';
             }
@@ -670,12 +721,7 @@ export class FastEntryModalComponent implements OnInit, OnDestroy {
               this.speechError = 'Brave Browser blocks cloud speech-to-text servers for privacy. Please open in Google Chrome or Microsoft Edge (in your taskbar) for Voice Mode, or type/paste SMS text directly.';
             } else if (this.isSafari || this.isIOS) {
               this.showSafariHelp = true;
-              if (this.speechLang === 'en-IN') {
-                this.speechLang = 'en-US';
-                this.speechError = 'Safari speech service unreachable. Auto-switched to Global English (en-US). Also verify Low Power Mode (yellow battery) is turned OFF in Settings > Battery.';
-              } else {
-                this.speechError = 'Safari speech unreachable. Check that Low Power Mode is OFF (yellow battery icon) & Settings > General > Keyboard > Enable Dictation is ON.';
-              }
+              this.speechError = 'Voice service paused. Tap inside the box & use the 🎙️ mic on your iPhone keyboard (next to space bar) for 100% instant voice!';
             } else {
               this.speechError = 'Speech service unreachable. Ensure you have an active internet connection, or try Chrome/Edge.';
             }
