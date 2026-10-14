@@ -251,6 +251,8 @@ import { PrivacyService } from './core/privacy.service';
         display: block !important;
         min-height: calc(100vh - 56px) !important;
         padding-bottom: calc(85px + env(safe-area-inset-bottom, 0px)) !important;
+        max-width: 100vw !important;
+        overflow-x: hidden !important;
       }
       .sidenav {
         position: fixed !important;
@@ -300,7 +302,9 @@ import { PrivacyService } from './core/privacy.service';
       .content {
         padding: 14px 10px 24px !important;
         width: 100% !important;
+        max-width: 100vw !important;
         box-sizing: border-box !important;
+        overflow-x: hidden !important;
       }
       .user { display: none !important; }
     }

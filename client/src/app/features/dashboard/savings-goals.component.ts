@@ -399,8 +399,13 @@ export interface SavingsRecordPayload {
 
     .goals-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
       gap: 14px;
+    }
+    @media (max-width: 480px) {
+      .goals-card { padding: 14px 12px; }
+      .goals-grid { gap: 10px; }
+      .goal-item { padding: 12px; }
     }
     .goal-item {
       background: #F8FAFC;

@@ -24,11 +24,13 @@ import { Category, PaymentSource, TransactionKind, TransactionTag, money } from 
               type="button"
               class="voice-toggle-btn"
               [class.recording]="isRecording"
+              [class.connecting]="isConnectingMic"
               (click)="toggleVoice()"
               [title]="isRecording ? 'Click to stop listening' : 'Start speaking your expense'"
             >
               <span class="mic-dot" *ngIf="isRecording"></span>
-              <span>{{ isRecording ? '🔴 Listening...' : '🎙️ Voice Mode' }}</span>
+              <span class="connecting-spinner" *ngIf="isConnectingMic">⏳</span>
+              <span>{{ isRecording ? '🔴 Listening...' : (isConnectingMic ? 'Connecting...' : '🎙️ Voice Mode') }}</span>
             </button>
             <button type="button" class="btn-close" (click)="close.emit()">✕</button>
           </div>
@@ -43,9 +45,12 @@ import { Category, PaymentSource, TransactionKind, TransactionTag, money } from 
                 type="button"
                 class="mic-pill-btn"
                 [class.active]="isRecording"
+                [class.connecting]="isConnectingMic"
                 (click)="toggleVoice()"
               >
-                <span>{{ isRecording ? '⏹ Stop Listening' : '🎙️ Speak Now' }}</span>
+                <span *ngIf="isRecording" class="mic-dot"></span>
+                <span *ngIf="isConnectingMic" class="connecting-spinner">⏳</span>
+                <span>{{ isRecording ? '⏹ Stop Listening' : (isConnectingMic ? 'Connecting...' : '🎙️ Speak Now') }}</span>
               </button>
             </div>
             <textarea
@@ -56,6 +61,12 @@ import { Category, PaymentSource, TransactionKind, TransactionTag, money } from 
               [class.listening]="isRecording"
               placeholder="e.g. 'Paid Rs 450 to Swiggy via GPay for Travel' or tap 🎙️ Voice Mode to speak"
             ></textarea>
+
+            <!-- Connecting State Banner -->
+            <div *ngIf="isConnectingMic" class="voice-connecting-bar">
+              <div class="connecting-dot"></div>
+              <span>Connecting microphone... Please tap Allow if prompted.</span>
+            </div>
 
             <!-- Dynamic Voice Wave / Status Indicator -->
             <div *ngIf="isRecording" class="voice-listening-bar">
@@ -200,6 +211,13 @@ import { Category, PaymentSource, TransactionKind, TransactionTag, money } from 
     .voice-toggle-btn:hover, .mic-pill-btn:hover {
       background: #E0E7FF; border-color: #818CF8; transform: translateY(-1px);
     }
+    .voice-toggle-btn.connecting, .mic-pill-btn.connecting {
+      background: #EEF2FF !important; border-color: #818CF8 !important; color: #4F46E5 !important;
+    }
+    :host-context([data-theme='dark']) .voice-toggle-btn.connecting,
+    :host-context([data-theme='dark']) .mic-pill-btn.connecting {
+      background: #1E1B4B !important; border-color: #6366F1 !important; color: #A5B4FC !important;
+    }
     .voice-toggle-btn.recording, .mic-pill-btn.active {
       background: #FEE2E2 !important; border-color: #F87171 !important; color: #DC2626 !important;
       box-shadow: 0 0 12px rgba(239, 68, 68, 0.4); animation: mic-pulse 1.6s infinite;
@@ -218,6 +236,25 @@ import { Category, PaymentSource, TransactionKind, TransactionTag, money } from 
       display: inline-block; animation: blink 1s infinite alternate;
     }
     @keyframes blink { from { opacity: 0.3; } to { opacity: 1; } }
+    .connecting-spinner {
+      display: inline-block; animation: rotateSpinner 1.2s linear infinite; font-size: 11px;
+    }
+    @keyframes rotateSpinner {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .voice-connecting-bar {
+      display: flex; align-items: center; gap: 8px; padding: 8px 12px; margin-top: 6px;
+      border-radius: 8px; background: #EEF2FF; border: 1px solid #C7D2FE;
+      font-size: 12px; color: #4338CA;
+    }
+    :host-context([data-theme='dark']) .voice-connecting-bar {
+      background: #1E1B4B; border-color: #3730A3; color: #C7D2FE;
+    }
+    .connecting-dot {
+      width: 8px; height: 8px; border-radius: 50%; background: #6366F1;
+      animation: blink 0.8s infinite alternate; flex-shrink: 0;
+    }
 
     .modal-body { padding: 18px 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; }
     .input-wrap label { font-size: 12px; font-weight: 600; color: #475569; }
@@ -332,6 +369,17 @@ import { Category, PaymentSource, TransactionKind, TransactionTag, money } from 
     :host-context([data-theme='dark']) .btn-ghost { border-color: #475569; color: #E2E8F0; }
     .btn-primary { background: #4F46E5; color: #FFFFFF; border: none; padding: 8px 18px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
     .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    @media (max-width: 480px) {
+      .overlay { padding: 10px; }
+      .modal-box { max-height: 94dvh; border-radius: 14px; }
+      .modal-header { padding: 12px 14px; }
+      .modal-body { padding: 14px; gap: 12px; }
+      .modal-footer { padding: 12px 14px; }
+      .header-left h3 { font-size: 14px; }
+      .subtitle { font-size: 11px; }
+      .amt-highlight { font-size: 16px; }
+    }
   `]
 })
 export class FastEntryModalComponent implements OnInit, OnDestroy {
@@ -369,6 +417,7 @@ export class FastEntryModalComponent implements OnInit, OnDestroy {
 
   // Voice Mode State
   isRecording = false;
+  isConnectingMic = false;
   speechError: string | null = null;
   hasSpeechSupport = true;
   private recognition: any = null;
@@ -388,13 +437,14 @@ export class FastEntryModalComponent implements OnInit, OnDestroy {
         this.startListeningSession();
       } catch {
         this.isRecording = false;
+        this.isConnectingMic = false;
         this.cdr.detectChanges();
       }
     }
   }
 
   ngOnDestroy(): void {
-    this.cleanupVoice();
+    this.cleanupVoiceSession();
   }
 
   checkSpeechSupport(): boolean {
@@ -402,21 +452,15 @@ export class FastEntryModalComponent implements OnInit, OnDestroy {
       (('SpeechRecognition' in window) || ('webkitSpeechRecognition' in window));
   }
 
-  toggleVoice(): void {
-    if (this.isRecording) {
+  async toggleVoice(): Promise<void> {
+    if (this.isRecording || this.isConnectingMic) {
       this.stopListeningSession();
     } else {
-      this.startListeningSession();
+      await this.startListeningSession();
     }
   }
 
-  private startListeningSession(): void {
-    // Dismiss mobile virtual keyboard so OS does not mute microphone
-    if (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
-      document.activeElement.blur();
-    }
-
-    // 1. Cleanly tear down any previous recognition session
+  private cleanupVoiceSession(): void {
     if (this.recognition) {
       try {
         this.recognition.onstart = null;
@@ -427,28 +471,81 @@ export class FastEntryModalComponent implements OnInit, OnDestroy {
       } catch {}
       this.recognition = null;
     }
+  }
+
+  async startListeningSession(): Promise<void> {
+    // Dismiss mobile virtual keyboard so OS does not mute microphone
+    if (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+
+    this.cleanupVoiceSession();
 
     const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRec) {
       this.hasSpeechSupport = false;
       this.isRecording = false;
+      this.isConnectingMic = false;
       this.speechError = 'Voice input is not supported in this browser. Please use Chrome, Edge, or Safari.';
       this.cdr.detectChanges();
       return;
     }
 
+    this.isConnectingMic = true;
+    this.speechError = null;
+    this.cdr.detectChanges();
+
+    // Check if permission is already granted via Permissions API
+    let alreadyGranted = false;
     try {
-      // 2. In WebKit (iOS Safari, Android Chrome), SpeechRecognition MUST be freshly instantiated per session
+      if (typeof navigator !== 'undefined' && navigator.permissions?.query) {
+        const p = await navigator.permissions.query({ name: 'microphone' as any });
+        if (p?.state === 'granted') {
+          alreadyGranted = true;
+        }
+      }
+    } catch {
+      // Permissions API query not supported on older iOS WebKit, proceed safely
+    }
+
+    // On iOS Safari / WebKit: If permission is not verified as already granted,
+    // request microphone access to trigger the native permission prompt.
+    // Once the user taps "Allow", getUserMedia resolves, and we start speech recognition immediately!
+    if (!alreadyGranted && typeof navigator !== 'undefined' && navigator.mediaDevices?.getUserMedia) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        // Immediately release tracks so speech recognition can acquire the microphone
+        stream.getTracks().forEach((track) => track.stop());
+      } catch (err: any) {
+        this.isConnectingMic = false;
+        this.isRecording = false;
+        if (err?.name === 'NotAllowedError' || err?.name === 'PermissionDeniedError') {
+          this.speechError = 'Microphone permission was denied. Please allow microphone in device Settings.';
+        } else {
+          this.speechError = 'Microphone access unavailable. Tap 🎙️ to try again.';
+        }
+        this.cdr.detectChanges();
+        return;
+      }
+    }
+
+    // Start recognition engine with guaranteed permission!
+    this.launchRecognitionEngine(SpeechRec);
+  }
+
+  private launchRecognitionEngine(SpeechRec: any): void {
+    try {
       const rec = new SpeechRec();
       rec.continuous = false;
       rec.interimResults = true;
       rec.maxAlternatives = 1;
 
-      // Locale: detect user language with safe fallback to en-IN / en-US
+      // Locale detection
       const userLang = (typeof navigator !== 'undefined' && navigator.language) ? navigator.language : 'en-IN';
       rec.lang = userLang.startsWith('en') ? userLang : 'en-IN';
 
       rec.onstart = () => {
+        this.isConnectingMic = false;
         this.isRecording = true;
         this.speechError = null;
         this.cdr.detectChanges();
@@ -468,36 +565,27 @@ export class FastEntryModalComponent implements OnInit, OnDestroy {
       };
 
       rec.onerror = (event: any) => {
+        this.isConnectingMic = false;
         this.isRecording = false;
+        this.recognition = null;
         if (event.error === 'aborted') {
           this.speechError = null;
-        } else if (event.error === 'not-allowed') {
-          if (typeof navigator !== 'undefined' && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-            navigator.mediaDevices.getUserMedia({ audio: true })
-              .then((stream) => {
-                stream.getTracks().forEach((t) => t.stop());
-                this.speechError = 'Microphone permission ready! Tap 🎙️ to start speaking.';
-                this.cdr.detectChanges();
-              })
-              .catch(() => {
-                this.speechError = 'Microphone permission denied. Please allow microphone access in device Settings.';
-                this.cdr.detectChanges();
-              });
-          } else {
-            this.speechError = 'Microphone permission denied. Please allow microphone access in device Settings.';
-          }
         } else if (event.error === 'no-speech') {
-          this.speechError = 'No speech detected. Tap 🎙️ to try speaking again.';
+          if (!this.rawText.trim()) {
+            this.speechError = 'No speech detected. Tap 🎙️ to try speaking again.';
+          }
+        } else if (event.error === 'not-allowed') {
+          this.speechError = 'Microphone permission was not allowed. Please allow microphone access in device Settings.';
         } else if (event.error === 'network') {
-          this.speechError = 'Network error during speech recognition. Check your connection.';
+          this.speechError = 'Network error during speech recognition. Please check your internet connection.';
         } else {
           this.speechError = `Voice notice: ${event.error}`;
         }
-        this.recognition = null;
         this.cdr.detectChanges();
       };
 
       rec.onend = () => {
+        this.isConnectingMic = false;
         this.isRecording = false;
         this.recognition = null;
         if (this.rawText.trim()) {
@@ -507,13 +595,9 @@ export class FastEntryModalComponent implements OnInit, OnDestroy {
       };
 
       this.recognition = rec;
-      this.isRecording = true;
-      this.speechError = null;
-      this.cdr.detectChanges();
-
-      // 3. Start synchronously within user gesture
       rec.start();
     } catch (err: any) {
+      this.isConnectingMic = false;
       this.isRecording = false;
       this.recognition = null;
       this.speechError = 'Could not start voice input: ' + (err?.message || 'Please tap 🎙️ to try again.');
@@ -522,18 +606,10 @@ export class FastEntryModalComponent implements OnInit, OnDestroy {
   }
 
   private stopListeningSession(): void {
-    if (this.recognition) {
-      try {
-        this.recognition.stop();
-      } catch {}
-      this.recognition = null;
-    }
+    this.cleanupVoiceSession();
     this.isRecording = false;
+    this.isConnectingMic = false;
     this.cdr.detectChanges();
-  }
-
-  private cleanupVoice(): void {
-    this.stopListeningSession();
   }
 
   setSample(text: string): void {
@@ -589,7 +665,7 @@ export class FastEntryModalComponent implements OnInit, OnDestroy {
       categoryId: catId,
       occurredAt
     });
-    this.cleanupVoice();
+    this.cleanupVoiceSession();
     this.close.emit();
   }
 }
