@@ -39,15 +39,26 @@ import { Category, PaymentSource, TransactionKind, TransactionTag, money } from 
           <div class="input-wrap">
             <div class="input-label-row">
               <label>Paste Transaction SMS / UPI Text, or Speak:</label>
-              <button
-                type="button"
-                class="mic-pill-btn"
-                [class.active]="isRecording"
-                (click)="toggleVoice()"
-              >
-                <span *ngIf="isRecording" class="mic-dot"></span>
-                <span>{{ isRecording ? '⏹ Stop Listening' : '🎙️ Speak Now' }}</span>
-              </button>
+              <div class="voice-ctrl-cluster">
+                <button
+                  *ngIf="isSafari || isIOS"
+                  type="button"
+                  class="lang-pill-btn"
+                  (click)="toggleLanguage()"
+                  [title]="'Speech language: ' + (speechLang === 'en-IN' ? 'Indian English' : 'Global English (US)')"
+                >
+                  <span>{{ speechLang === 'en-IN' ? '🇮🇳 IN' : '🌐 US' }}</span>
+                </button>
+                <button
+                  type="button"
+                  class="mic-pill-btn"
+                  [class.active]="isRecording"
+                  (click)="toggleVoice()"
+                >
+                  <span *ngIf="isRecording" class="mic-dot"></span>
+                  <span>{{ isRecording ? '⏹ Stop' : '🎙️ Speak Now' }}</span>
+                </button>
+              </div>
             </div>
             <textarea
               [(ngModel)]="rawText"
@@ -75,8 +86,56 @@ import { Category, PaymentSource, TransactionKind, TransactionTag, money } from 
 
             <!-- Voice Notice / Error Banner -->
             <div *ngIf="speechError" class="voice-error-banner">
-              <span>⚠️ {{ speechError }}</span>
+              <div class="error-msg-wrap">
+                <span>⚠️ {{ speechError }}</span>
+                <button
+                  *ngIf="isSafari || isIOS"
+                  type="button"
+                  class="safari-guide-link"
+                  (click)="showSafariHelp = !showSafariHelp"
+                >
+                  {{ showSafariHelp ? 'Hide Safari Checklist ▲' : 'Open Safari Checklist ▼' }}
+                </button>
+              </div>
               <button type="button" class="btn-dismiss" (click)="speechError = null">✕</button>
+            </div>
+
+            <!-- Safari / iOS Configuration Checklist Card -->
+            <div *ngIf="showSafariHelp" class="safari-help-card">
+              <div class="safari-help-header">
+                <span class="safari-help-title">🍎 Safari & iPhone Microphone Configuration Checklist</span>
+                <button type="button" class="btn-dismiss" (click)="showSafariHelp = false">✕</button>
+              </div>
+              <div class="safari-checklist">
+                <div class="check-item">
+                  <span class="check-icon">🔋</span>
+                  <div>
+                    <strong>1. Turn OFF Low Power Mode</strong>
+                    <p>Go to <em>Settings → Battery</em> and toggle <strong>Low Power Mode OFF</strong>. When the battery icon is yellow, iOS suspends Apple dictation network sockets after 1–3 seconds, causing immediate microphone cutoff.</p>
+                  </div>
+                </div>
+                <div class="check-item">
+                  <span class="check-icon">⌨️</span>
+                  <div>
+                    <strong>2. Enable Dictation in Keyboard Settings</strong>
+                    <p>Safari requires system dictation. Go to <em>Settings → General → Keyboard</em> → turn <strong>Enable Dictation ON</strong>. Ensure English is listed under Dictation Languages.</p>
+                  </div>
+                </div>
+                <div class="check-item">
+                  <span class="check-icon">🎙️</span>
+                  <div>
+                    <strong>3. Safari Address Bar Microphone Permission</strong>
+                    <p>On this page in Safari, tap the <strong>aA</strong> (or lock) icon on the left of the address bar → tap <strong>Website Settings</strong> → set <strong>Microphone</strong> to <strong>Allow</strong>.</p>
+                  </div>
+                </div>
+                <div class="check-item">
+                  <span class="check-icon">🗣️</span>
+                  <div>
+                    <strong>4. Speak Promptly (2–4 Second Silence Limit)</strong>
+                    <p>Apple's speech engine strictly closes if silence is detected for 2–4 seconds. Speak your expense clearly immediately after tapping 🎙️ Speak Now (e.g. <em>"Paid 450 to Swiggy via GPay"</em>).</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -270,14 +329,53 @@ import { Category, PaymentSource, TransactionKind, TransactionTag, money } from 
       margin-left: auto; flex-shrink: 0; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
     }
     .btn-voice-done:hover { background: #B91C1C; }
+    .voice-ctrl-cluster { display: flex; align-items: center; gap: 6px; }
+    .lang-pill-btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 4px 8px; border-radius: 999px; font-size: 11px; font-weight: 700;
+      cursor: pointer; transition: all 0.2s ease; border: 1px solid #CBD5E1;
+      background: #F1F5F9; color: #475569;
+    }
+    :host-context([data-theme='dark']) .lang-pill-btn {
+      background: #1E293B; border-color: #475569; color: #CBD5E1;
+    }
+    .lang-pill-btn:hover { background: #E2E8F0; color: #1E293B; }
+    :host-context([data-theme='dark']) .lang-pill-btn:hover { background: #334155; color: #F8FAFC; }
+
     .voice-error-banner {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 6px 10px; margin-top: 6px; border-radius: 6px;
-      background: #FFFBEB; border: 1px solid #FDE68A; color: #B45309; font-size: 11px;
+      display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;
+      padding: 8px 10px; margin-top: 6px; border-radius: 8px;
+      background: #FFFBEB; border: 1px solid #FDE68A; color: #B45309; font-size: 11px; line-height: 1.4;
     }
     :host-context([data-theme='dark']) .voice-error-banner {
       background: #362506; border-color: #78350F; color: #FCD34D;
     }
+    .error-msg-wrap { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+    .safari-guide-link {
+      background: none; border: none; padding: 0; font-size: 11px; font-weight: 700;
+      color: #D97706; text-decoration: underline; cursor: pointer; text-align: left;
+    }
+    :host-context([data-theme='dark']) .safari-guide-link { color: #FDE68A; }
+
+    .safari-help-card {
+      margin-top: 8px; padding: 12px; border-radius: 10px;
+      background: #F8FAFC; border: 1px solid #E2E8F0; display: flex; flex-direction: column; gap: 10px;
+    }
+    :host-context([data-theme='dark']) .safari-help-card {
+      background: #0F172A; border-color: #334155;
+    }
+    .safari-help-header {
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .safari-help-title { font-size: 12px; font-weight: 700; color: #1E293B; }
+    :host-context([data-theme='dark']) .safari-help-title { color: #F8FAFC; }
+    .safari-checklist { display: flex; flex-direction: column; gap: 8px; font-size: 11px; }
+    .check-item { display: flex; align-items: flex-start; gap: 8px; line-height: 1.4; color: #475569; }
+    :host-context([data-theme='dark']) .check-item { color: #CBD5E1; }
+    .check-item strong { color: #0F172A; }
+    :host-context([data-theme='dark']) .check-item strong { color: #F1F5F9; }
+    .check-item p { margin: 2px 0 0; }
+    .check-icon { font-size: 14px; flex-shrink: 0; }
     .btn-dismiss { background: none; border: none; cursor: pointer; color: inherit; font-size: 12px; }
 
     .sample-chips { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
@@ -387,6 +485,10 @@ export class FastEntryModalComponent implements OnInit, OnDestroy {
   private recognition: any = null;
 
   isBrave = false;
+  isSafari = false;
+  isIOS = false;
+  speechLang: 'en-IN' | 'en-US' = 'en-IN';
+  showSafariHelp = false;
 
   ngOnInit(): void {
     const defaults = this.smartEntry.getLastDefaults();
@@ -396,10 +498,15 @@ export class FastEntryModalComponent implements OnInit, OnDestroy {
       if (matched) this.selectedCategoryName = matched.name;
     }
 
-    if (typeof navigator !== 'undefined' && (navigator as any).brave?.isBrave) {
-      (navigator as any).brave.isBrave().then((b: boolean) => {
-        this.isBrave = b;
-      }).catch(() => {});
+    if (typeof navigator !== 'undefined') {
+      const ua = navigator.userAgent;
+      this.isSafari = /^((?!chrome|android|crios|fxios).)*safari/i.test(ua);
+      this.isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      if ((navigator as any).brave?.isBrave) {
+        (navigator as any).brave.isBrave().then((b: boolean) => {
+          this.isBrave = b;
+        }).catch(() => {});
+      }
     }
 
     this.hasSpeechSupport = this.checkSpeechSupport();
@@ -412,6 +519,15 @@ export class FastEntryModalComponent implements OnInit, OnDestroy {
         this.cdr.detectChanges();
       }
     }
+  }
+
+  toggleLanguage(): void {
+    this.speechLang = this.speechLang === 'en-IN' ? 'en-US' : 'en-IN';
+    if (this.isRecording) {
+      this.stopListeningSession();
+      setTimeout(() => this.startListeningSession(), 100);
+    }
+    this.cdr.detectChanges();
   }
 
   ngOnDestroy(): void {
@@ -467,8 +583,8 @@ export class FastEntryModalComponent implements OnInit, OnDestroy {
       rec.interimResults = true;
       rec.maxAlternatives = 1;
 
-      // en-IN recognizes Indian English, UPI terms (Rs, Swiggy, GPay, Lakh) as well as standard English across all devices
-      rec.lang = 'en-IN';
+      // en-IN recognizes Indian English, UPI terms (Rs, Swiggy, GPay, Lakh); fallback to en-US for Safari devices without en-IN dictation model
+      rec.lang = this.speechLang;
 
       rec.onstart = () => {
         this.ngZone.run(() => {
@@ -505,15 +621,30 @@ export class FastEntryModalComponent implements OnInit, OnDestroy {
             this.speechError = null;
           } else if (event.error === 'no-speech') {
             if (!this.rawText.trim()) {
-              this.speechError = 'No speech detected. Tap 🎙️ to try speaking again.';
+              this.speechError = (this.isSafari || this.isIOS)
+                ? 'No speech detected. Safari pauses after 2–4s of silence. Tap 🎙️ and speak promptly.'
+                : 'No speech detected. Tap 🎙️ to try speaking again.';
             }
           } else if (event.error === 'not-allowed') {
-            this.speechError = 'Microphone access denied. In Safari: tap AA in the address bar > Website Settings > Microphone > Allow. In iOS Settings > Privacy & Security > Speech Recognition, verify Safari is enabled.';
+            if (this.isSafari || this.isIOS) {
+              this.showSafariHelp = true;
+              this.speechError = 'Microphone permission blocked. In Safari: tap "aA" in address bar > Website Settings > Microphone > Allow. Also check iOS Settings > Privacy & Security > Speech Recognition.';
+            } else {
+              this.speechError = 'Microphone access denied. Please click the lock icon in your address bar and allow microphone permission.';
+            }
           } else if (event.error === 'network') {
             if (this.isBrave) {
               this.speechError = 'Brave Browser blocks cloud speech-to-text servers for privacy. Please open in Google Chrome or Microsoft Edge (in your taskbar) for Voice Mode, or type/paste SMS text directly.';
+            } else if (this.isSafari || this.isIOS) {
+              this.showSafariHelp = true;
+              if (this.speechLang === 'en-IN') {
+                this.speechLang = 'en-US';
+                this.speechError = 'Safari speech service unreachable. Auto-switched to Global English (en-US). Also verify Low Power Mode (yellow battery) is turned OFF in Settings > Battery.';
+              } else {
+                this.speechError = 'Safari speech unreachable. Check that Low Power Mode is OFF (yellow battery icon) & Settings > General > Keyboard > Enable Dictation is ON.';
+              }
             } else {
-              this.speechError = 'Speech service unreachable. On iPhone: turn OFF Low Power Mode (yellow battery) & check Settings > General > Keyboard > Enable Dictation. On PC: use Chrome or Edge.';
+              this.speechError = 'Speech service unreachable. Ensure you have an active internet connection, or try Chrome/Edge.';
             }
           } else {
             this.speechError = `Voice notice: ${event.error}`;
@@ -528,6 +659,8 @@ export class FastEntryModalComponent implements OnInit, OnDestroy {
           this.recognition = null;
           if (this.rawText.trim()) {
             this.onTextChange(this.rawText);
+          } else if (!this.speechError && (this.isSafari || this.isIOS)) {
+            this.speechError = 'Listening ended. Safari pauses after 2–4s of silence. Tap 🎙️ to speak your expense.';
           }
           this.cdr.detectChanges();
         });
