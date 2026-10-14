@@ -66,7 +66,10 @@ import { Category, PaymentSource, TransactionKind, TransactionTag, money } from 
                 <span class="wave"></span>
                 <span class="wave"></span>
               </div>
-              <span class="voice-text">Listening... Speak naturally (e.g. "Paid 450 to Swiggy via GPay for Travel")</span>
+              <span class="voice-text">
+                {{ rawText ? 'Heard: “' + rawText + '”' : 'Listening... Speak naturally (e.g. "Paid 450 to Swiggy via GPay")' }}
+              </span>
+              <button type="button" class="btn-voice-done" (click)="toggleVoice()">Done ✓</button>
             </div>
 
             <!-- Voice Notice / Error Banner -->
@@ -260,6 +263,12 @@ import { Category, PaymentSource, TransactionKind, TransactionTag, money } from 
       100% { height: 14px; }
     }
     .voice-text { font-weight: 500; font-size: 11px; flex: 1; }
+    .btn-voice-done {
+      background: #DC2626; color: #fff; border: none; border-radius: 6px;
+      padding: 3px 9px; font-size: 11px; font-weight: 700; cursor: pointer;
+      margin-left: auto; flex-shrink: 0; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    .btn-voice-done:hover { background: #B91C1C; }
     .voice-error-banner {
       display: flex; align-items: center; justify-content: space-between;
       padding: 6px 10px; margin-top: 6px; border-radius: 6px;
@@ -402,6 +411,11 @@ export class FastEntryModalComponent implements OnInit, OnDestroy {
   }
 
   private startListeningSession(): void {
+    // Dismiss mobile virtual keyboard so OS does not mute microphone
+    if (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+
     // 1. Cleanly tear down any previous recognition session
     if (this.recognition) {
       try {
@@ -440,13 +454,14 @@ export class FastEntryModalComponent implements OnInit, OnDestroy {
         this.cdr.detectChanges();
       };
 
+      // Accumulate ALL speech chunks from i = 0 to event.results.length to prevent erasing prior words on mobile WebKit
       rec.onresult = (event: any) => {
-        let transcript = '';
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-          transcript += event.results[i][0].transcript;
+        let fullTranscript = '';
+        for (let i = 0; i < event.results.length; ++i) {
+          fullTranscript += event.results[i][0].transcript;
         }
-        if (transcript.trim()) {
-          this.rawText = transcript.trim();
+        if (fullTranscript.trim()) {
+          this.rawText = fullTranscript.trim();
           this.onTextChange(this.rawText);
           this.cdr.detectChanges();
         }
@@ -457,11 +472,24 @@ export class FastEntryModalComponent implements OnInit, OnDestroy {
         if (event.error === 'aborted') {
           this.speechError = null;
         } else if (event.error === 'not-allowed') {
-          this.speechError = 'Microphone permission denied. Please allow microphone access in your browser or device settings.';
+          if (typeof navigator !== 'undefined' && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices.getUserMedia({ audio: true })
+              .then((stream) => {
+                stream.getTracks().forEach((t) => t.stop());
+                this.speechError = 'Microphone permission ready! Tap 🎙️ to start speaking.';
+                this.cdr.detectChanges();
+              })
+              .catch(() => {
+                this.speechError = 'Microphone permission denied. Please allow microphone access in device Settings.';
+                this.cdr.detectChanges();
+              });
+          } else {
+            this.speechError = 'Microphone permission denied. Please allow microphone access in device Settings.';
+          }
         } else if (event.error === 'no-speech') {
           this.speechError = 'No speech detected. Tap 🎙️ to try speaking again.';
         } else if (event.error === 'network') {
-          this.speechError = 'Network error during speech recognition. Check your internet connection.';
+          this.speechError = 'Network error during speech recognition. Check your connection.';
         } else {
           this.speechError = `Voice notice: ${event.error}`;
         }
@@ -472,6 +500,9 @@ export class FastEntryModalComponent implements OnInit, OnDestroy {
       rec.onend = () => {
         this.isRecording = false;
         this.recognition = null;
+        if (this.rawText.trim()) {
+          this.onTextChange(this.rawText);
+        }
         this.cdr.detectChanges();
       };
 
