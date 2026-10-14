@@ -626,13 +626,17 @@ export interface SavingsRecordPayload {
     .modal-overlay {
       position: fixed;
       inset: 0;
+      top: 0; left: 0; right: 0; bottom: 0;
+      width: 100vw; height: 100vh; height: 100dvh;
       background: rgba(15, 23, 42, 0.6);
       backdrop-filter: blur(4px);
-      z-index: 10000;
+      -webkit-backdrop-filter: blur(4px);
+      z-index: 99999;
       display: flex;
       align-items: center;
       justify-content: center;
       padding: 16px;
+      box-sizing: border-box;
     }
     .modal-box {
       background: #FFFFFF;

@@ -155,9 +155,12 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
   `,
   styles: [`
     .overlay {
-      position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65);
-      backdrop-filter: blur(4px); z-index: 10000;
+      position: fixed; inset: 0; top: 0; left: 0; right: 0; bottom: 0;
+      width: 100vw; height: 100vh; height: 100dvh;
+      background: rgba(15, 23, 42, 0.65);
+      backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); z-index: 99999;
       display: flex; align-items: center; justify-content: center; padding: 16px;
+      box-sizing: border-box;
     }
     .modal-box {
       background: #FFFFFF; border-radius: 16px; width: 100%; max-width: 860px;
