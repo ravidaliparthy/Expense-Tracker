@@ -16,56 +16,45 @@ import { Category, PaymentSource, TransactionKind, TransactionTag, money } from 
             <span class="emoji-icon">⚡</span>
             <div>
               <h3>Fast Entry & Voice / SMS Parser</h3>
-              <p class="subtitle">Type, paste Indian Bank/UPI SMS, or speak aloud (Voice Mode)</p>
+              <p class="subtitle">Smart SMS/UPI parser & hands-free voice dictation</p>
             </div>
           </div>
-          <div class="header-actions">
-            <button
-              type="button"
-              class="voice-toggle-btn"
-              [class.recording]="isRecording"
-              (click)="toggleVoice()"
-              [title]="isRecording ? 'Click to stop listening' : 'Start speaking your expense'"
-            >
-              <span class="mic-dot" *ngIf="isRecording"></span>
-              <span>{{ isRecording ? '🔴 Listening...' : '🎙️ Voice Mode' }}</span>
-            </button>
-            <button type="button" class="btn-close" (click)="close.emit()">✕</button>
-          </div>
+          <button type="button" class="btn-close" (click)="close.emit()" title="Close">✕</button>
         </div>
 
         <div class="modal-body">
           <!-- Text Input / SMS Paste & Voice Area -->
           <div class="input-wrap">
-            <div class="input-label-row">
-              <label>Paste Transaction SMS / UPI Text, or Speak:</label>
-              <div class="voice-ctrl-cluster">
+            <div class="input-header-bar">
+              <label class="input-title">Paste Transaction SMS / UPI Text, or Speak:</label>
+              <div class="voice-actions-strip">
                 <button
-                  *ngIf="isSafari || isIOS"
                   type="button"
-                  class="ios-tip-pill"
-                  (click)="showSafariHelp = !showSafariHelp"
-                  title="View 2 instant iPhone voice methods"
+                  class="voice-action-btn primary-voice"
+                  [class.recording]="isRecording"
+                  (click)="toggleVoice()"
+                  [title]="isRecording ? 'Click to stop listening' : 'Start speaking your expense'"
                 >
-                  💡 iPhone Voice Tips
+                  <span class="mic-dot" *ngIf="isRecording"></span>
+                  <span>{{ isRecording ? '⏹ Stop' : '🎙️ Speak Now' }}</span>
                 </button>
                 <button
                   *ngIf="isSafari || isIOS"
                   type="button"
-                  class="lang-pill-btn"
+                  class="voice-action-btn tip-btn"
+                  (click)="showSafariHelp = !showSafariHelp"
+                  title="View 2 instant iPhone voice methods"
+                >
+                  💡 iPhone Tips
+                </button>
+                <button
+                  *ngIf="isSafari || isIOS"
+                  type="button"
+                  class="voice-action-btn lang-btn"
                   (click)="toggleLanguage()"
                   [title]="'Speech language: ' + (speechLang === 'en-IN' ? 'Indian English' : 'Global English (US)')"
                 >
                   <span>{{ speechLang === 'en-IN' ? '🇮🇳 IN' : '🌐 US' }}</span>
-                </button>
-                <button
-                  type="button"
-                  class="mic-pill-btn"
-                  [class.active]="isRecording"
-                  (click)="toggleVoice()"
-                >
-                  <span *ngIf="isRecording" class="mic-dot"></span>
-                  <span>{{ isRecording ? '⏹ Stop' : '🎙️ Speak Now' }}</span>
                 </button>
               </div>
             </div>
@@ -75,7 +64,7 @@ import { Category, PaymentSource, TransactionKind, TransactionTag, money } from 
               rows="3"
               class="sms-textarea"
               [class.listening]="isRecording"
-              placeholder="e.g. 'Paid Rs 450 to Swiggy via GPay for Travel' or tap 🎙️ Voice Mode to speak"
+              placeholder="e.g. 'Paid Rs 450 to Swiggy via GPay for Travel' or tap 🎙️ Speak Now"
             ></textarea>
 
             <!-- Dynamic Voice Wave / Status Indicator -->
@@ -112,7 +101,7 @@ import { Category, PaymentSource, TransactionKind, TransactionTag, money } from 
             <!-- Sleek iOS 2-Method Voice Shortcuts Card -->
             <div *ngIf="showSafariHelp" class="ios-voice-card">
               <div class="ios-card-head">
-                <span class="ios-card-title">🎙️ 2 Real Ways to Speak on iPhone (No Permissions Required)</span>
+                <span class="ios-card-title">🎙️ 2 Real Ways to Speak on iPhone (Zero Errors)</span>
                 <button type="button" class="btn-dismiss" (click)="showSafariHelp = false">✕</button>
               </div>
 
@@ -124,7 +113,7 @@ import { Category, PaymentSource, TransactionKind, TransactionTag, money } from 
                     <span class="method-icon">⌨️</span>
                     <div class="method-text">
                       <strong>1. Tap the 🎙️ mic on your iPhone keyboard</strong>
-                      <p>Tap inside the text box above, then tap the 🎙️ microphone icon on your iPhone keyboard (bottom right, next to the space bar). Speak naturally (e.g. <em>"Paid 450 to Swiggy via GPay"</em>)—text transcribes instantly with zero permission prompts!</p>
+                      <p>Tap inside the text box above, then tap the 🎙️ microphone icon on your iPhone keyboard (bottom right, next to space). Speak naturally (e.g. <em>"Paid 450 to Swiggy via GPay"</em>)—text transcribes instantly!</p>
                     </div>
                   </div>
                 </div>
@@ -174,8 +163,8 @@ import { Category, PaymentSource, TransactionKind, TransactionTag, money } from 
               <div class="field-item">
                 <label>Transaction Type</label>
                 <div class="kind-group">
-                  <button type="button" class="kind-btn" [class.active]="parsed.kind === 'expense'" (click)="parsed.kind = 'expense'">🔴 Expense</button>
-                  <button type="button" class="kind-btn" [class.active]="parsed.kind === 'income'" (click)="parsed.kind = 'income'">🟢 Income</button>
+                  <button type="button" class="kind-btn" [class.active]="parsed.kind === 'expense'" [class.expense]="parsed.kind === 'expense'" (click)="parsed.kind = 'expense'">🔴 Expense</button>
+                  <button type="button" class="kind-btn" [class.active]="parsed.kind === 'income'" [class.income]="parsed.kind === 'income'" (click)="parsed.kind = 'income'">🟢 Income</button>
                 </div>
               </div>
 
@@ -220,7 +209,7 @@ import { Category, PaymentSource, TransactionKind, TransactionTag, money } from 
             [disabled]="!parsed || parsed.amount <= 0"
             (click)="confirmSave()"
           >
-            ✓ Log Transaction ({{ (parsed && parsed.amount > 0) ? money(parsed.amount * 100, currency) : '$0.00' }})
+            ✓ Log Transaction ({{ (parsed && parsed.amount > 0) ? money(parsed.amount * 100, currency) : money(0, currency) }})
           </button>
         </div>
       </div>
@@ -228,54 +217,100 @@ import { Category, PaymentSource, TransactionKind, TransactionTag, money } from 
   `,
   styles: [`
     .overlay {
-      position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65);
-      backdrop-filter: blur(4px); z-index: 10000;
+      position: fixed; inset: 0; background: rgba(15, 23, 42, 0.72);
+      backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); z-index: 10000;
       display: flex; align-items: center; justify-content: center; padding: 16px;
+      animation: overlayFadeIn 0.2s ease-out;
+    }
+    @keyframes overlayFadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
     }
     .modal-box {
-      background: #FFFFFF; border-radius: 16px; width: 100%; max-width: 600px;
-      max-height: 92vh; display: flex; flex-direction: column;
-      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.25);
+      background: #FFFFFF; border-radius: 18px; width: 100%; max-width: 580px;
+      max-height: 88vh; display: flex; flex-direction: column;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
       border: 1px solid #E2E8F0; overflow: hidden;
+      animation: modalScaleIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes modalScaleIn {
+      from { opacity: 0; transform: scale(0.96) translateY(6px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
     }
     :host-context([data-theme='dark']) .modal-box {
-      background: #0F172A; border-color: #334155; color: #F8FAFC;
+      background: #0F172A; border-color: rgba(255, 255, 255, 0.1); color: #F8FAFC;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 25px 50px -12px rgba(0, 0, 0, 0.6);
     }
     .modal-header {
-      padding: 16px 20px; border-bottom: 1px solid #E2E8F0;
+      padding: 14px 18px; border-bottom: 1px solid #E2E8F0;
       display: flex; justify-content: space-between; align-items: center;
     }
-    :host-context([data-theme='dark']) .modal-header { border-bottom-color: #334155; }
-    .header-left { display: flex; align-items: center; gap: 12px; }
-    .header-actions { display: flex; align-items: center; gap: 10px; }
-    .emoji-icon { font-size: 24px; }
-    .header-left h3 { margin: 0; font-size: 16px; font-weight: 700; }
-    .subtitle { margin: 2px 0 0; font-size: 12px; color: #64748B; }
+    :host-context([data-theme='dark']) .modal-header { border-bottom-color: rgba(255, 255, 255, 0.08); }
+    .header-left { display: flex; align-items: center; gap: 10px; }
+    .emoji-icon { font-size: 22px; }
+    .header-left h3 { margin: 0; font-size: 15.5px; font-weight: 700; letter-spacing: -0.2px; }
+    .subtitle { margin: 2px 0 0; font-size: 11.5px; color: #64748B; }
     :host-context([data-theme='dark']) .subtitle { color: #94A3B8; }
-    .btn-close { background: none; border: none; font-size: 18px; color: #64748B; cursor: pointer; }
-
-    /* Voice Buttons */
-    .voice-toggle-btn, .mic-pill-btn {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 5px 12px; border-radius: 999px; font-size: 11px; font-weight: 700;
-      cursor: pointer; transition: all 0.2s ease; border: 1px solid #C7D2FE;
-      background: #EEF2FF; color: #4F46E5;
+    .btn-close {
+      background: none; border: none; font-size: 18px; color: #64748B; cursor: pointer;
+      width: 30px; height: 30px; border-radius: 6px; display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s ease, color 0.15s ease;
     }
-    :host-context([data-theme='dark']) .voice-toggle-btn,
-    :host-context([data-theme='dark']) .mic-pill-btn {
+    .btn-close:hover { background: rgba(148, 163, 184, 0.15); color: #0F172A; }
+    :host-context([data-theme='dark']) .btn-close:hover { color: #FFFFFF; background: rgba(255, 255, 255, 0.1); }
+
+    /* Voice Actions Strip */
+    .input-header-bar {
+      display: flex; flex-direction: column; gap: 6px; margin-bottom: 6px;
+    }
+    .input-title {
+      font-size: 12px; font-weight: 600; color: #475569;
+    }
+    :host-context([data-theme='dark']) .input-title { color: #CBD5E1; }
+    .voice-actions-strip {
+      display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
+    }
+    .voice-action-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 600;
+      cursor: pointer; transition: all 0.15s ease; white-space: nowrap;
+      user-select: none; border: 1px solid transparent; box-sizing: border-box;
+    }
+    .voice-action-btn:active { transform: scale(0.97); }
+    .voice-action-btn.primary-voice {
+      background: #EEF2FF; border-color: #C7D2FE; color: #4F46E5;
+    }
+    :host-context([data-theme='dark']) .voice-action-btn.primary-voice {
       background: #1E1B4B; border-color: #4338CA; color: #C7D2FE;
     }
-    .voice-toggle-btn:hover, .mic-pill-btn:hover {
-      background: #E0E7FF; border-color: #818CF8; transform: translateY(-1px);
+    .voice-action-btn.primary-voice:hover {
+      background: #E0E7FF; border-color: #818CF8;
     }
-    .voice-toggle-btn.recording, .mic-pill-btn.active {
+    .voice-action-btn.primary-voice.recording {
       background: #FEE2E2 !important; border-color: #F87171 !important; color: #DC2626 !important;
       box-shadow: 0 0 12px rgba(239, 68, 68, 0.4); animation: mic-pulse 1.6s infinite;
     }
-    :host-context([data-theme='dark']) .voice-toggle-btn.recording,
-    :host-context([data-theme='dark']) .mic-pill-btn.active {
+    :host-context([data-theme='dark']) .voice-action-btn.primary-voice.recording {
       background: #450A0A !important; border-color: #B91C1C !important; color: #FCA5A5 !important;
     }
+    .voice-action-btn.tip-btn {
+      background: rgba(99, 102, 241, 0.08); border-color: rgba(99, 102, 241, 0.22);
+      color: #4F46E5; font-size: 11.5px; padding: 6px 10px;
+    }
+    :host-context([data-theme='dark']) .voice-action-btn.tip-btn {
+      background: rgba(99, 102, 241, 0.18); border-color: rgba(165, 180, 252, 0.3); color: #A5B4FC;
+    }
+    .voice-action-btn.tip-btn:hover { background: rgba(99, 102, 241, 0.16); }
+    :host-context([data-theme='dark']) .voice-action-btn.tip-btn:hover { background: rgba(99, 102, 241, 0.28); }
+    .voice-action-btn.lang-btn {
+      background: #F1F5F9; border-color: #CBD5E1; color: #475569;
+      font-size: 11.5px; padding: 6px 10px;
+    }
+    :host-context([data-theme='dark']) .voice-action-btn.lang-btn {
+      background: #1E293B; border-color: #475569; color: #CBD5E1;
+    }
+    .voice-action-btn.lang-btn:hover { background: #E2E8F0; color: #1E293B; }
+    :host-context([data-theme='dark']) .voice-action-btn.lang-btn:hover { background: #334155; color: #F8FAFC; }
     @keyframes mic-pulse {
       0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
       70% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
@@ -287,7 +322,10 @@ import { Category, PaymentSource, TransactionKind, TransactionTag, money } from 
     }
     @keyframes blink { from { opacity: 0.3; } to { opacity: 1; } }
 
-    .modal-body { padding: 18px 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; }
+    .modal-body {
+      padding: 16px 18px; overflow-y: auto; -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain; display: flex; flex-direction: column; gap: 14px; flex: 1 1 auto;
+    }
     .input-wrap label { font-size: 12px; font-weight: 600; color: #475569; }
     :host-context([data-theme='dark']) .input-wrap label { color: #CBD5E1; }
     .input-label-row {
@@ -451,15 +489,20 @@ import { Category, PaymentSource, TransactionKind, TransactionTag, money } from 
     .btn-safari-ext:hover { background: #E0E7FF; }
     .btn-dismiss { background: none; border: none; cursor: pointer; color: inherit; font-size: 12px; }
 
-    .sample-chips { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-    .sample-label { font-size: 11px; color: #64748B; font-weight: 600; }
+    .sample-chips { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 2px; }
+    .sample-label { font-size: 11.5px; color: #64748B; font-weight: 600; }
     .chip {
       background: #EEF2FF; color: #4F46E5; border: 1px solid #C7D2FE;
-      padding: 3px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; cursor: pointer;
+      padding: 5px 10px; border-radius: 8px; font-size: 11.5px; font-weight: 600; cursor: pointer;
+      transition: all 0.15s ease;
     }
+    .chip:hover { transform: translateY(-1px); }
+    .chip:active { transform: scale(0.96); }
     :host-context([data-theme='dark']) .chip {
-      background: #312E81; color: #A5B4FC; border-color: #4338CA;
+      background: #1E1B4B; color: #A5B4FC; border-color: #4338CA;
     }
+    :host-context([data-theme='dark']) .chip:hover { background: #312E81; }
+
     .parsed-card {
       background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 14px;
       display: flex; flex-direction: column; gap: 12px;
@@ -468,8 +511,8 @@ import { Category, PaymentSource, TransactionKind, TransactionTag, money } from 
       background: #1E293B; border-color: #334155;
     }
     .card-head { display: flex; justify-content: space-between; align-items: center; }
-    .parsed-status { font-size: 11px; font-weight: 700; color: #10B981; }
-    .amt-highlight { font-size: 18px; font-weight: 800; color: #EF4444; }
+    .parsed-status { font-size: 11.5px; font-weight: 700; color: #10B981; }
+    .amt-highlight { font-size: 18px; font-weight: 800; color: #EF4444; font-variant-numeric: tabular-nums; }
     .amt-highlight.income { color: #10B981; }
     .fields-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     @media (max-width: 520px) { .fields-grid { grid-template-columns: 1fr; } }
@@ -484,36 +527,82 @@ import { Category, PaymentSource, TransactionKind, TransactionTag, money } from 
       background: #0F172A; border-color: #475569; color: #F8FAFC;
     }
     .form-input.bold { font-weight: 700; }
-    .kind-group, .tag-group { display: flex; gap: 4px; }
-    .kind-btn, .tag-btn {
-      flex: 1; padding: 6px; border: 1px solid #CBD5E1; border-radius: 6px;
-      background: transparent; font-size: 11px; font-weight: 600; cursor: pointer; color: #64748B;
+    .kind-group {
+      display: flex; gap: 4px; background: #F1F5F9; padding: 3px; border-radius: 8px; border: 1px solid #CBD5E1;
     }
-    :host-context([data-theme='dark']) .kind-btn, :host-context([data-theme='dark']) .tag-btn {
-      border-color: #475569; color: #94A3B8;
+    :host-context([data-theme='dark']) .kind-group {
+      background: #0B1220; border-color: #334155;
     }
-    .kind-btn.active, .tag-btn.active {
-      background: #4F46E5; color: #FFFFFF; border-color: #4F46E5;
+    .kind-btn {
+      flex: 1; padding: 7px 10px; border: none; border-radius: 6px; background: transparent;
+      font-size: 12px; font-weight: 600; cursor: pointer; color: #64748B;
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      transition: all 0.15s ease;
     }
+    :host-context([data-theme='dark']) .kind-btn { color: #94A3B8; }
+    .kind-btn.active.expense {
+      background: #DC2626 !important; color: #FFFFFF !important;
+      box-shadow: 0 2px 8px rgba(220, 38, 38, 0.4);
+    }
+    .kind-btn.active.income {
+      background: #059669 !important; color: #FFFFFF !important;
+      box-shadow: 0 2px 8px rgba(5, 150, 105, 0.4);
+    }
+    .kind-btn:active { transform: scale(0.97); }
+
     .modal-footer {
       padding: 14px 20px; border-top: 1px solid #E2E8F0;
       display: flex; justify-content: flex-end; gap: 10px;
+      background: #FFFFFF; position: sticky; bottom: 0; z-index: 10;
     }
-    :host-context([data-theme='dark']) .modal-footer { border-top-color: #334155; }
-    .btn-ghost { background: none; border: 1px solid #CBD5E1; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
+    :host-context([data-theme='dark']) .modal-footer {
+      background: #0F172A; border-top-color: rgba(255, 255, 255, 0.08);
+    }
+    .btn-ghost {
+      background: transparent; border: 1px solid #CBD5E1; padding: 8px 16px; border-radius: 8px;
+      font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s ease; color: #475569;
+    }
+    .btn-ghost:hover { background: #F8FAFC; color: #0F172A; }
     :host-context([data-theme='dark']) .btn-ghost { border-color: #475569; color: #E2E8F0; }
-    .btn-primary { background: #4F46E5; color: #FFFFFF; border: none; padding: 8px 18px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
-    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    :host-context([data-theme='dark']) .btn-ghost:hover { background: #1E293B; }
+    .btn-primary {
+      background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%);
+      color: #FFFFFF; border: none; padding: 8px 18px; border-radius: 8px;
+      font-size: 13px; font-weight: 600; cursor: pointer;
+      box-shadow: 0 2px 10px rgba(99, 102, 241, 0.35);
+      transition: all 0.15s ease;
+    }
+    .btn-primary:hover {
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.5);
+      transform: translateY(-1px);
+    }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+    .btn-ghost:active, .btn-primary:active { transform: scale(0.98); }
 
-    @media (max-width: 480px) {
-      .overlay { padding: 10px; }
-      .modal-box { max-height: 94dvh; border-radius: 14px; }
-      .modal-header { padding: 12px 14px; }
-      .modal-body { padding: 14px; gap: 12px; }
-      .modal-footer { padding: 12px 14px; }
-      .header-left h3 { font-size: 14px; }
+    @media (max-width: 540px) {
+      .overlay { padding: 8px; align-items: flex-end; }
+      .modal-box {
+        max-height: 88dvh;
+        border-radius: 18px 18px 12px 12px;
+      }
+      .modal-header { padding: 12px 16px; }
+      .modal-body { padding: 12px 16px; gap: 12px; }
+      .modal-footer {
+        padding: 10px 14px max(14px, env(safe-area-inset-bottom));
+        display: grid;
+        grid-template-columns: 1fr 2fr;
+        gap: 8px;
+      }
+      .modal-footer .btn-ghost,
+      .modal-footer .btn-primary {
+        width: 100%;
+        text-align: center;
+        justify-content: center;
+        padding: 10px 12px;
+      }
+      .header-left h3 { font-size: 14.5px; }
       .subtitle { font-size: 11px; }
-      .amt-highlight { font-size: 16px; }
+      .amt-highlight { font-size: 17px; }
     }
   `]
 })
