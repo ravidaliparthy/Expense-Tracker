@@ -161,6 +161,106 @@ export interface BreakdownRow {
     :host-context([data-theme='dark']) .kpi:hover::after { opacity:0.38; }
     :host-context([data-theme='dark']) .kpi-header h3 { color:#CBD5E1; }
 
+    /* Interactive Connected Rails Ecosystem Strip (Juspay-inspired live payment orchestration channels) */
+    .ecosystem-strip {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+      padding: 9px 16px;
+      border-radius: 9999px;
+      background: rgba(255, 255, 255, 0.75);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(226, 232, 240, 0.9);
+      box-shadow: 0 1px 4px rgba(15, 23, 42, 0.03);
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .ecosystem-strip::-webkit-scrollbar { display: none; }
+    .ecosystem-lbl {
+      font-size: 10.5px;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      color: #6366F1;
+      white-space: nowrap;
+      padding-right: 10px;
+      border-right: 1px solid #E2E8F0;
+    }
+    .ecosystem-pill-track {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: nowrap;
+    }
+    .eco-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 9999px;
+      background: #F8FAFC;
+      border: 1px solid #CBD5E1;
+      color: #334155;
+      white-space: nowrap;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      cursor: default;
+    }
+    .eco-pill:hover {
+      transform: translateY(-1.5px) scale(1.03);
+      background: #FFFFFF;
+      border-color: #818CF8;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
+      color: #4F46E5;
+    }
+    .eco-pill-secure {
+      background: rgba(16, 185, 129, 0.08);
+      border-color: rgba(16, 185, 129, 0.25);
+      color: #059669;
+    }
+    .eco-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .dot-upi { background: #001DB9; }
+    .dot-card { background: #2563EB; }
+    .dot-pe { background: #6739B7; }
+    .dot-gpay { background: #3B82F6; }
+    .dot-sm { background: #F59E0B; }
+    .dot-debit { background: #0EA5E9; }
+    .dot-secure { background: #10B981; }
+
+    :host-context([data-theme='dark']) .ecosystem-strip {
+      background: rgba(18, 21, 29, 0.85) !important;
+      border: 1px solid rgba(255, 255, 255, 0.08) !important;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 8px 24px rgba(0, 0, 0, 0.4) !important;
+    }
+    :host-context([data-theme='dark']) .ecosystem-lbl {
+      color: #818CF8;
+      border-right-color: rgba(255, 255, 255, 0.1);
+    }
+    :host-context([data-theme='dark']) .eco-pill {
+      background: rgba(30, 41, 59, 0.65) !important;
+      border-color: rgba(255, 255, 255, 0.08) !important;
+      color: #CBD5E1 !important;
+    }
+    :host-context([data-theme='dark']) .eco-pill:hover {
+      background: rgba(51, 65, 85, 0.95) !important;
+      border-color: rgba(99, 102, 241, 0.45) !important;
+      color: #FFFFFF !important;
+      box-shadow: 0 0 16px rgba(99, 102, 241, 0.35) !important;
+    }
+    :host-context([data-theme='dark']) .eco-pill-secure {
+      background: rgba(16, 185, 129, 0.12) !important;
+      border-color: rgba(16, 185, 129, 0.3) !important;
+      color: #34D399 !important;
+    }
+
     /* Secondary analysis cards */
     .card-head-mini { display:flex; align-items:center; gap:6px; margin-bottom:8px; }
     .card-head-mini h3 { margin:0; font-size:11.5px; text-transform:uppercase; letter-spacing:0.5px; color:#64748B; font-weight:600; }

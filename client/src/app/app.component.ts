@@ -58,6 +58,10 @@ import { PrivacyService } from './core/privacy.service';
           <span class="logo">◆</span> Expense<span class="accent">Tracker</span>
         </div>
         <div class="topbar-right">
+          <div class="live-radar-badge" title="Real-time encrypted offline-first synchronization active">
+            <span class="radar-dot"></span>
+            <span class="radar-text">Live Sync</span>
+          </div>
           <button class="ghost install-btn" *ngIf="pwa.canInstall()" (click)="pwa.installApp()" title="Install app on your phone">
             📲 Install
           </button>
@@ -203,49 +207,87 @@ import { PrivacyService } from './core/privacy.service';
     .cold-start-icon { font-size: 14px; animation: bounce 1s infinite alternate; }
     @keyframes bounce { from { transform: scale(0.9); } to { transform: scale(1.15); } }
     .topbar {
-      display: flex; justify-content: space-between; align-items: center; height: 56px;
-      padding: 0 20px; background: rgba(15, 23, 42, 0.96);
-      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      display: flex; justify-content: space-between; align-items: center; height: 58px;
+      padding: 0 24px; background: rgba(14, 17, 24, 0.94);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
       border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      color: #E2E8F0; position: sticky; top: 0; z-index: 20;
+      color: #E2E8F0; position: sticky; top: 0; z-index: 30;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
     }
-    .brand { font-weight: 700; font-size: 16px; letter-spacing: .3px; }
-    .logo { color: #6366F1; margin-right: 4px; filter: drop-shadow(0 0 8px rgba(99, 102, 241, 0.6)); display: inline-block; }
-    .accent { color: #A5B4FC; }
-    .topbar-right { display: flex; align-items: center; gap: 12px; font-size: 13px; }
-    .user { color: #94A3B8; font-weight: 500; }
+    .brand {
+      font-weight: 800; font-size: 16.5px; letter-spacing: -0.01em;
+      display: flex; align-items: center; gap: 4px;
+      background: linear-gradient(135deg, #FFFFFF 30%, #C7D2FE 70%, #93C5FD 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .logo {
+      color: #6366F1; margin-right: 4px;
+      filter: drop-shadow(0 0 10px rgba(99, 102, 241, 0.8));
+      display: inline-block;
+      -webkit-text-fill-color: #6366F1;
+      animation: jewelPulse 3s ease-in-out infinite alternate;
+    }
+    @keyframes jewelPulse {
+      0% { filter: drop-shadow(0 0 8px rgba(99, 102, 241, 0.6)); }
+      100% { filter: drop-shadow(0 0 16px rgba(14, 165, 233, 0.9)); }
+    }
+    .accent { color: #818CF8; -webkit-text-fill-color: #818CF8; }
+    .topbar-right { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+    .live-radar-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 10px; border-radius: 9999px;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #34D399; font-size: 11.5px; font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+    .radar-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: #10B981;
+      box-shadow: 0 0 0 rgba(16, 185, 129, 0.6);
+      animation: radarPulse 2s infinite;
+    }
+    @keyframes radarPulse {
+      0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.8); }
+      70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+    .user { color: #94A3B8; font-weight: 500; font-size: 13px; }
     .ghost {
-      background: transparent; border: 1px solid #334155; color: #CBD5E1;
-      border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 13px;
-      transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+      background: rgba(30, 41, 59, 0.6); border: 1px solid rgba(255, 255, 255, 0.09);
+      color: #CBD5E1; border-radius: 9999px; padding: 5px 13px; cursor: pointer;
+      font-size: 12.5px; font-weight: 500; font-family: inherit;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
     .ghost:hover {
-      border-color: #6366F1; color: #FFFFFF; background: rgba(99, 102, 241, 0.15);
+      border-color: rgba(99, 102, 241, 0.5); color: #FFFFFF;
+      background: rgba(99, 102, 241, 0.18);
+      box-shadow: 0 0 12px rgba(99, 102, 241, 0.25);
       transform: translateY(-1px);
     }
-    .badge { padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
-    .badge.warn { background: #422006; color: #FBBF24; }
-    .badge.off { background: #450A0A; color: #F87171; }
-    .shell { display: flex; min-height: calc(100vh - 56px); }
+    .badge { padding: 4px 10px; border-radius: 9999px; font-size: 12px; font-weight: 600; }
+    .badge.warn { background: rgba(245, 158, 11, 0.15); color: #FBBF24; border: 1px solid rgba(245, 158, 11, 0.3); }
+    .badge.off { background: rgba(239, 68, 68, 0.15); color: #F87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+    .shell { display: flex; min-height: calc(100vh - 58px); }
     .sidenav {
-      width: 216px; background: #0F172A; padding: 18px 12px; display: flex;
+      width: 220px; background: #0C0F17; padding: 20px 14px; display: flex;
       flex-direction: column; justify-content: space-between; position: sticky;
-      top: 56px; height: calc(100vh - 56px); flex-shrink: 0; box-sizing: border-box;
+      top: 58px; height: calc(100vh - 58px); flex-shrink: 0; box-sizing: border-box;
       border-right: 1px solid rgba(255, 255, 255, 0.07);
     }
-    .sidenav-links { display: flex; flex-direction: column; gap: 6px; }
+    .sidenav-links { display: flex; flex-direction: column; gap: 7px; }
     .sidenav a {
-      display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 10px;
-      color: #94A3B8; text-decoration: none; font-size: 14px; font-weight: 500;
-      transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1); border-left: 3px solid transparent;
+      display: flex; align-items: center; gap: 11px; padding: 10px 14px; border-radius: 12px;
+      color: #94A3B8; text-decoration: none; font-size: 13.5px; font-weight: 500;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1); border-left: 3px solid transparent;
     }
     .sidenav a:hover {
-      background: rgba(255, 255, 255, 0.06); color: #F1F5F9; transform: translateX(3px);
+      background: rgba(255, 255, 255, 0.05); color: #F1F5F9; transform: translateX(3px);
     }
     .sidenav a.active {
-      background: linear-gradient(90deg, rgba(99, 102, 241, 0.22) 0%, rgba(99, 102, 241, 0.05) 100%);
-      color: #C7D2FE; font-weight: 600; border-left-color: #6366F1;
-      border-radius: 4px 10px 10px 4px; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      background: linear-gradient(90deg, rgba(99, 102, 241, 0.25) 0%, rgba(139, 92, 246, 0.06) 100%);
+      color: #FFFFFF; font-weight: 600; border-left-color: #6366F1;
+      border-radius: 4px 12px 12px 4px; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 4px 14px rgba(0, 0, 0, 0.2);
     }
     .nav-ico { font-size: 16px; display: inline-block; }
     .nav-lbl { display: inline-block; }
