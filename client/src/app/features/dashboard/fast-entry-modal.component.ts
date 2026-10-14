@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, EventEmitter, Input, OnDestroy, OnInit, Output, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SmartEntryService, ParsedTransaction } from '../../core/smart-entry.service';
@@ -55,7 +55,6 @@ import { Category, PaymentSource, TransactionKind, TransactionTag, money } from 
               class="sms-textarea"
               [class.listening]="isRecording"
               placeholder="e.g. 'Paid Rs 450 to Swiggy via GPay for Travel' or tap 🎙️ Voice Mode to speak"
-              autofocus
             ></textarea>
 
             <!-- Dynamic Voice Wave / Status Indicator -->
@@ -343,6 +342,7 @@ export class FastEntryModalComponent implements OnInit, OnDestroy {
   }>();
 
   private readonly smartEntry = inject(SmartEntryService);
+  private readonly cdr = inject(ChangeDetectorRef);
   readonly money = money;
 
   rawText = '';
@@ -394,6 +394,7 @@ export class FastEntryModalComponent implements OnInit, OnDestroy {
     if (!SpeechRec) {
       this.hasSpeechSupport = false;
       this.speechError = 'Voice input is not supported in this browser. Please use Chrome, Edge, or Safari.';
+      this.cdr.detectChanges();
       return;
     }
 
@@ -406,6 +407,7 @@ export class FastEntryModalComponent implements OnInit, OnDestroy {
       this.recognition.onstart = () => {
         this.isRecording = true;
         this.speechError = null;
+        this.cdr.detectChanges();
       };
 
       this.recognition.onresult = (event: any) => {
@@ -416,26 +418,33 @@ export class FastEntryModalComponent implements OnInit, OnDestroy {
         if (transcript.trim()) {
           this.rawText = transcript.trim();
           this.onTextChange(this.rawText);
+          this.cdr.detectChanges();
         }
       };
 
       this.recognition.onerror = (event: any) => {
         this.isRecording = false;
-        if (event.error === 'not-allowed') {
+        if (event.error === 'aborted') {
+          // Normal stop/switch; do not display error banner
+          this.speechError = null;
+        } else if (event.error === 'not-allowed') {
           this.speechError = 'Microphone permission denied. Please allow microphone access in browser settings.';
         } else if (event.error === 'no-speech') {
           this.speechError = 'No speech detected. Tap 🎙️ to try speaking again.';
         } else {
           this.speechError = `Voice error: ${event.error}`;
         }
+        this.cdr.detectChanges();
       };
 
       this.recognition.onend = () => {
         this.isRecording = false;
+        this.cdr.detectChanges();
       };
     } catch (err: any) {
       this.hasSpeechSupport = false;
       this.speechError = 'Could not initialize speech recognition: ' + (err?.message || '');
+      this.cdr.detectChanges();
     }
   }
 
@@ -450,8 +459,11 @@ export class FastEntryModalComponent implements OnInit, OnDestroy {
         this.recognition.stop();
       } catch {}
       this.isRecording = false;
+      this.cdr.detectChanges();
     } else {
       this.speechError = null;
+      this.isRecording = true;
+      this.cdr.detectChanges();
       try {
         this.recognition.start();
       } catch {
@@ -459,10 +471,20 @@ export class FastEntryModalComponent implements OnInit, OnDestroy {
         try {
           this.recognition.abort();
           setTimeout(() => {
-            try { this.recognition.start(); } catch {}
+            try {
+              this.recognition.start();
+              this.isRecording = true;
+              this.cdr.detectChanges();
+            } catch {
+              this.isRecording = false;
+              this.speechError = 'Microphone busy. Please click again.';
+              this.cdr.detectChanges();
+            }
           }, 100);
         } catch {
+          this.isRecording = false;
           this.speechError = 'Microphone busy. Please click again.';
+          this.cdr.detectChanges();
         }
       }
     }
@@ -476,6 +498,7 @@ export class FastEntryModalComponent implements OnInit, OnDestroy {
       this.recognition = null;
     }
     this.isRecording = false;
+    this.cdr.detectChanges();
   }
 
   setSample(text: string): void {
