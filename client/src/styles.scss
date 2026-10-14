@@ -15,7 +15,7 @@ html, body {
   -moz-osx-font-smoothing: grayscale;
 }
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   background: #F1F5F9; color: #0F172A; font-size: 14px;
   position: relative;
   overflow-x: hidden !important;
@@ -43,14 +43,57 @@ body {
 
 /* Cards */
 .card {
-  background: #fff; border: 1px solid rgba(226, 232, 240, 0.9); border-radius: 12px;
-  padding: 18px 20px; box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05), 0 4px 12px rgba(15, 23, 42, 0.025);
+  background: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.85);
+  border-radius: 14px;
+  padding: 18px 20px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 6px 18px -2px rgba(15, 23, 42, 0.035);
   max-width: 100%;
   box-sizing: border-box;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease;
 }
-.card h3 { margin: 0 0 12px; font-size: 13px; text-transform: uppercase;
-  letter-spacing: .6px; color: #64748B; font-weight: 600; }
+.card:hover {
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.05), 0 10px 24px -3px rgba(15, 23, 42, 0.06);
+}
+.card h3 {
+  margin: 0 0 12px; font-size: 13px; text-transform: uppercase;
+  letter-spacing: .6px; color: #64748B; font-weight: 700;
+}
+
+/* Global notification banners / flash alerts */
+.flash {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+  animation: flashIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+  user-select: none;
+}
+@keyframes flashIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.flash.ok {
+  background: #ECFDF5;
+  border: 1px solid #A7F3D0;
+  color: #065F46;
+}
+.flash.err {
+  background: #FEF2F2;
+  border: 1px solid #FECACA;
+  color: #991B1B;
+}
+.flash.warn {
+  background: #FFFBEB;
+  border: 1px solid #FDE68A;
+  color: #92400E;
+}
 
 /* Table wrapper strictly contained inside cards */
 .tbl-wrap {
@@ -70,9 +113,19 @@ button, .btn {
   user-select: none;
   -webkit-user-select: none;
 }
-button:active, .btn:active { transform: scale(0.985); }
-.btn-primary { background: #6366F1; color: #fff; }
-.btn-primary:hover { background: #4F46E5; }
+button:active, .btn:active { transform: scale(0.975); }
+.btn-primary {
+  background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%);
+  color: #fff;
+  box-shadow: 0 2px 10px rgba(99, 102, 241, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  font-weight: 600;
+}
+.btn-primary:hover {
+  background: linear-gradient(135deg, #4F46E5 0%, #4338CA 100%);
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.5);
+  transform: translateY(-1px);
+}
 .btn-ghost { background: #fff; border-color: #CBD5E1; color: #334155; }
 .btn-ghost:hover { border-color: #6366F1; color: #4F46E5; }
 .btn-danger { background: #FEF2F2; color: #DC2626; border-color: #FECACA; }
@@ -559,7 +612,7 @@ tr.deleting td {
 html[data-theme='dark'] body,
 html[data-theme='dark'] .shell,
 html[data-theme='dark'] .content {
-  background: #0B1220 !important;
+  background: radial-gradient(circle at 50% 0%, #151D30 0%, #0B101E 100%) fixed !important;
   color: #F8FAFC !important;
 }
 
@@ -726,6 +779,22 @@ html[data-theme='dark'] button.ghost:hover {
   background: #334155 !important;
   border-color: #6366F1 !important;
   color: #FFFFFF !important;
+}
+
+html[data-theme='dark'] .flash.ok {
+  background: rgba(16, 185, 129, 0.16) !important;
+  border-color: rgba(16, 185, 129, 0.35) !important;
+  color: #6EE7B7 !important;
+}
+html[data-theme='dark'] .flash.err {
+  background: rgba(239, 68, 68, 0.16) !important;
+  border-color: rgba(239, 68, 68, 0.35) !important;
+  color: #FCA5A5 !important;
+}
+html[data-theme='dark'] .flash.warn {
+  background: rgba(245, 158, 11, 0.16) !important;
+  border-color: rgba(245, 158, 11, 0.35) !important;
+  color: #FDE047 !important;
 }
 
 html[data-theme='dark'] table th {

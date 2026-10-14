@@ -128,14 +128,18 @@ import { BudgetStatus } from '../../core/budget-status';
 
     .gauge {
       margin-bottom: 14px;
-      padding: 10px 12px;
-      border-radius: 8px;
-      border: 1px solid transparent;
-      transition: background-color 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid #E2E8F0;
+      background: #FFFFFF;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
+      transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
     }
     .gauge:hover {
-      background: #F8FAFC;
-      border-color: #E2E8F0;
+      background: #FFFFFF;
+      border-color: #CBD5E1;
+      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+      transform: translateY(-1px);
     }
     .gauge.editing {
       background: rgba(99, 102, 241, 0.05);
@@ -210,15 +214,16 @@ import { BudgetStatus } from '../../core/budget-status';
       align-items: center;
       gap: 5px;
     }
-    .gauge .track { height: 10px; background: #E2E8F0; border-radius: 999px; overflow: hidden; }
-    .gauge .fill { height: 100%; border-radius: 999px; transition: width .4s ease; }
+    .gauge .track { height: 10px; background: #E2E8F0; border-radius: 999px; overflow: hidden; position: relative; }
+    :host-context([data-theme='dark']) .gauge .track { background: #1E293B; }
+    .gauge .fill { height: 100%; border-radius: 999px; transition: width .4s cubic-bezier(0.16,1,0.3,1); box-shadow: 0 0 10px rgba(0, 0, 0, 0.2); }
     .gauge-footer {
       display: flex;
       justify-content: space-between;
       align-items: center;
       margin-top: 5px;
     }
-    .gauge .warn-msg { font-size: 12px; font-weight: 600; }
+    .gauge .warn-msg { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
     .editing-tag {
       font-size: 11px;
       font-weight: 600;
@@ -257,9 +262,15 @@ import { BudgetStatus } from '../../core/budget-status';
     :host-context([data-theme='dark']) .lede {
       color: #CBD5E1 !important;
     }
+    :host-context([data-theme='dark']) .gauge {
+      background: rgba(30, 41, 59, 0.45);
+      border-color: rgba(255, 255, 255, 0.08);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    }
     :host-context([data-theme='dark']) .gauge:hover {
-      background: #1E293B;
-      border-color: #334151;
+      background: rgba(30, 41, 59, 0.7);
+      border-color: rgba(255, 255, 255, 0.15);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
     }
     :host-context([data-theme='dark']) .gauge.editing {
       background: rgba(99, 102, 241, 0.12);

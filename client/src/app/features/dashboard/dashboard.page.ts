@@ -154,11 +154,11 @@ export interface BreakdownRow {
       .action-chip{flex-shrink:0}
     }
     .chart svg{width:100%;height:auto;display:block}
-    .catbar{display:flex;align-items:center;gap:10px;margin-bottom:9px;font-size:12px}
-    .catbar .name{flex:0 1 130px;min-width:85px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#475569}
-    .catbar .bar{flex:1;height:12px;background:#E2E8F0;border-radius:4px;overflow:hidden}
-    .catbar .bar>div{height:100%;border-radius:4px}
-    .catbar .val{flex-shrink:0;min-width:65px;text-align:right;font-variant-numeric:tabular-nums;color:#334155}
+    .catbar{display:flex;align-items:center;gap:10px;margin-bottom:10px;font-size:12.5px}
+    .catbar .name{flex:0 1 130px;min-width:85px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#475569;font-weight:500}
+    .catbar .bar{flex:1;height:10px;background:#E2E8F0;border-radius:999px;overflow:hidden}
+    .catbar .bar>div{height:100%;border-radius:999px;transition:width 0.5s cubic-bezier(0.16,1,0.3,1);box-shadow:0 0 8px rgba(0,0,0,0.15)}
+    .catbar .val{flex-shrink:0;min-width:65px;text-align:right;font-variant-numeric:tabular-nums;color:#334155;font-weight:600}
     .positive{color:#047857}
     .negative{color:#DC2626}
     .mini{font-size:12px;color:#64748B}
@@ -225,6 +225,9 @@ export interface BreakdownRow {
     .sort-icon{font-size:10px;margin-left:3px;color:#6366F1}
 
     /* Dark Mode */
+    :host-context([data-theme='dark']) .catbar .name{color:#CBD5E1}
+    :host-context([data-theme='dark']) .catbar .bar{background:#1E293B}
+    :host-context([data-theme='dark']) .catbar .val{color:#F8FAFC}
     :host-context([data-theme='dark']) .mode-toggle{background:#0F172A;border-color:#334155}
     :host-context([data-theme='dark']) .mode-btn{color:#94A3B8}
     :host-context([data-theme='dark']) .mode-btn:hover{color:#F1F5F9}

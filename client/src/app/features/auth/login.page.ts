@@ -72,26 +72,86 @@ import { AuthService } from '../../core/auth.service';
     </div>
   `,
   styles: [`
-    .auth-wrap { min-height:100vh; display:flex; align-items:center; justify-content:center;
-      background:linear-gradient(135deg,#0F172A 0%,#1E1B4B 60%,#312E81 100%); padding:20px; }
-    .auth-card { max-width:400px; width:100%; }
-    .brand { font-weight:700; font-size:18px; color:#0F172A; margin-bottom:14px; }
-    .brand .logo { color:#6366F1; }
-    .brand span:last-child { color:#6366F1; }
-    h2 { margin:0 0 4px; }
-    .hint { color:#64748B; font-size:13px; margin:0 0 10px; }
-    .opt-label { font-size:11px; color:#94A3B8; font-weight:normal; margin-left:4px; }
-    .field-hint { font-size:11px; color:#64748B; margin:3px 0 10px; line-height:1.35; }
-    .session-opts-row { display:flex; justify-content:space-between; align-items:center; margin:-2px 0 10px; font-size:12px; }
-    .remember-label { display:flex; align-items:center; gap:6px; color:#475569; cursor:pointer; user-select:none; font-weight:500; }
-    .remember-label input { width:auto; margin:0; cursor:pointer; accent-color:#6366F1; }
-    .remember-label:hover { color:#1E1B4B; }
-    .session-badge-pill { font-size:11.5px; padding:6px 10px; border-radius:6px; background:#F8FAFC; border:1px solid #E2E8F0; color:#64748B; margin-bottom:14px; line-height:1.4; }
-    .session-badge-pill strong { color:#334155; }
-    .forgot-link { font-size:12px; color:#6366F1; cursor:pointer; }
-    .forgot-link:hover { text-decoration:underline; }
-    .demo { margin-top:14px; font-size:12px; color:#6366F1; cursor:pointer; text-align:center; }
-    .demo:hover { text-decoration:underline; }
+    .auth-wrap {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at 50% 15%, #312E81 0%, #0F172A 60%, #020617 100%);
+      padding: 24px 16px;
+      position: relative;
+      overflow: hidden;
+    }
+    .auth-wrap::before {
+      content: '';
+      position: absolute;
+      width: 480px;
+      height: 480px;
+      background: radial-gradient(circle, rgba(99, 102, 241, 0.25) 0%, transparent 70%);
+      top: -120px;
+      left: 50%;
+      transform: translateX(-50%);
+      pointer-events: none;
+      filter: blur(50px);
+    }
+    .auth-card {
+      max-width: 430px;
+      width: 100%;
+      border-radius: 20px;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.65), 0 0 45px rgba(99, 102, 241, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      background: #FFFFFF;
+      padding: 30px 28px;
+      position: relative;
+      z-index: 2;
+      animation: authPopIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes authPopIn {
+      from { opacity: 0; transform: translateY(12px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .brand { font-weight: 800; font-size: 21px; color: #0F172A; margin-bottom: 14px; letter-spacing: -0.3px; }
+    .brand .logo {
+      color: #6366F1;
+      filter: drop-shadow(0 0 10px rgba(99, 102, 241, 0.8));
+      display: inline-block;
+      margin-right: 5px;
+    }
+    .brand span:last-child { color: #6366F1; }
+    h2 { margin: 0 0 4px; font-weight: 700; font-size: 19px; letter-spacing: -0.3px; color: #0F172A; }
+    .hint { color: #64748B; font-size: 13px; margin: 0 0 14px; line-height: 1.45; }
+    .opt-label { font-size: 11px; color: #94A3B8; font-weight: normal; margin-left: 4px; }
+    .field-hint { font-size: 11.5px; color: #64748B; margin: 3px 0 10px; line-height: 1.4; }
+    .session-opts-row { display: flex; justify-content: space-between; align-items: center; margin: 2px 0 12px; font-size: 12.5px; }
+    .remember-label { display: flex; align-items: center; gap: 7px; color: #475569; cursor: pointer; user-select: none; font-weight: 500; }
+    .remember-label input { width: auto; margin: 0; cursor: pointer; accent-color: #6366F1; }
+    .remember-label:hover { color: #1E1B4B; }
+    .session-badge-pill {
+      font-size: 11.5px; padding: 8px 12px; border-radius: 8px;
+      background: #F8FAFC; border: 1px solid #E2E8F0; color: #64748B; margin-bottom: 16px; line-height: 1.45;
+    }
+    .session-badge-pill strong { color: #334155; }
+    .forgot-link { font-size: 12px; color: #6366F1; cursor: pointer; font-weight: 500; }
+    .forgot-link:hover { text-decoration: underline; color: #4F46E5; }
+    .demo {
+      margin-top: 16px;
+      font-size: 12px;
+      color: #4F46E5;
+      cursor: pointer;
+      text-align: center;
+      padding: 8px 12px;
+      background: #EEF2FF;
+      border: 1px dashed #C7D2FE;
+      border-radius: 9px;
+      font-weight: 500;
+      transition: all 0.15s ease;
+    }
+    .demo:hover {
+      background: #E0E7FF;
+      border-color: #818CF8;
+      color: #3730A3;
+      transform: translateY(-1px);
+    }
   `],
 })
 export class LoginPage {

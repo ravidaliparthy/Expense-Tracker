@@ -199,10 +199,12 @@ import { Category } from '../../core/models';
   :host-context([data-theme='dark']) .lede { color: #CBD5E1 !important; }
   :host-context([data-theme='dark']) th { color: #94A3B8 !important; border-bottom-color: #1F2937 !important; }
   :host-context([data-theme='dark']) tbody tr { border-bottom-color: #1F2937 !important; }
-  :host-context([data-theme='dark']) tbody tr:hover { background: #1E293B !important; }
+  :host-context([data-theme='dark']) tbody tr:hover { background: rgba(99, 102, 241, 0.08) !important; }
   :host-context([data-theme='dark']) .name-edit { background: #0F172A !important; border-color: #334155 !important; color: #F8FAFC !important; }
   :host-context([data-theme='dark']) .emoji { background: #0F172A !important; border-color: #334155 !important; color: #F8FAFC !important; }
-  :host-context([data-theme='dark']) .cat-card-item { background: #111827 !important; border-color: #1F2937 !important; box-shadow: none !important; }
+  .cat-card-item { transition: transform 0.15s ease, box-shadow 0.15s ease; border-radius: 12px; }
+  .cat-card-item:hover { transform: translateY(-1px); }
+  :host-context([data-theme='dark']) .cat-card-item { background: #111827 !important; border-color: rgba(255, 255, 255, 0.08) !important; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25) !important; }
   :host-context([data-theme='dark']) .cat-card-actions { border-top-color: #1F2937 !important; }
   :host-context([data-theme='dark']) .tag-pill { background: #1E293B !important; color: #94A3B8 !important; }
   :host-context([data-theme='dark']) .tag-pill.system { background: #1E1B4B !important; color: #A5B4FC !important; }
@@ -210,6 +212,8 @@ import { Category } from '../../core/models';
   :host-context([data-theme='dark']) .tag-pill.archived { background: #1F2937 !important; color: #94A3B8 !important; }
   :host-context([data-theme='dark']) .ghost { background: #1E293B !important; border-color: #334155 !important; color: #E2E8F0 !important; }
   :host-context([data-theme='dark']) .ghost:hover { background: #334155 !important; border-color: #6366F1 !important; color: #FFFFFF !important; }
+  .swatch-picker { transition: transform 0.15s ease; cursor: pointer; }
+  .swatch-picker:hover { transform: scale(1.1); }
 `] })
 export class CategoriesPage implements OnInit {
   private api = inject(ApiService);

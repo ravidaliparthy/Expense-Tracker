@@ -22,10 +22,10 @@ import { safeUuid } from '../../core/uuid';
         <div class="sub">{{ filter.activePresetLabel() }} · {{ total() }} total records · {{ currency() }}</div>
       </div>
       <div class="actions">
-        <button class="btn-ghost" (click)="openImport()" title="Import CSV or bank statement">📂 Import Statement</button>
-        <button class="btn-ghost" [disabled]="exportBusy()" (click)="exportCsv()">⤓ CSV</button>
-        <button class="btn-ghost" [disabled]="exportBusy()" (click)="exportPdf()">⤓ PDF</button>
-        <button class="btn-primary" (click)="openCreate()">+ Add transaction</button>
+        <button class="btn-primary main-action-btn" (click)="openCreate()">＋ Add transaction</button>
+        <button class="btn-ghost action-chip" (click)="openImport()" title="Import CSV or bank statement">📂 Import Statement</button>
+        <button class="btn-ghost action-chip export-btn" [disabled]="exportBusy()" (click)="exportCsv()">⤓ CSV</button>
+        <button class="btn-ghost action-chip export-btn" [disabled]="exportBusy()" (click)="exportPdf()">⤓ PDF</button>
       </div>
     </div>
 
@@ -241,9 +241,36 @@ import { safeUuid } from '../../core/uuid';
       gap: 12px;
       flex-wrap: wrap;
     }
-    .toolbar h1 { margin: 0; font-size: 22px; }
+    .toolbar h1 { margin: 0; font-size: 22px; letter-spacing: -0.2px; }
     .toolbar .sub { color: #64748B; font-size: 12px; margin-top: 2px; }
-    .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .main-action-btn {
+      background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%) !important;
+      color: #fff !important;
+      font-weight: 600;
+      padding: 8px 15px;
+      box-shadow: 0 2px 10px rgba(99, 102, 241, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.15) !important;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+    .main-action-btn:hover {
+      background: linear-gradient(135deg, #4F46E5 0%, #4338CA 100%) !important;
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.5);
+      transform: translateY(-1px);
+    }
+    .action-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12.5px;
+      padding: 7px 11px;
+      border-radius: 8px;
+      white-space: nowrap;
+    }
+    .action-chip:hover { transform: translateY(-1px); }
 
     .summary-bar {
       display: flex;
@@ -253,14 +280,20 @@ import { safeUuid } from '../../core/uuid';
       gap: 12px;
       flex-wrap: wrap;
       padding: 12px 16px;
+      border-radius: 12px;
     }
     .search-box { flex: 1; min-width: 220px; }
     .search-box input {
       width: 100%;
-      padding: 7px 12px;
+      padding: 8px 12px;
       border-radius: 8px;
       border: 1px solid #CBD5E1;
       font-size: 13px;
+      transition: all 0.2s ease;
+    }
+    .search-box input:focus {
+      border-color: #6366F1;
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
     }
 
     .sort-controls { display: flex; align-items: center; gap: 6px; font-size: 12px; }
@@ -270,28 +303,35 @@ import { safeUuid } from '../../core/uuid';
       border: 1px solid #CBD5E1;
       color: #334155;
       border-radius: 6px;
-      padding: 4px 9px;
+      padding: 5px 10px;
       font-size: 11px;
       cursor: pointer;
       font-weight: 500;
-      transition: all 0.05s ease;
+      transition: all 0.15s ease;
     }
     .sort-btn:hover { border-color: #94A3B8; background: #E2E8F0; }
     .sort-btn.active { background: #EEF2FF; border-color: #6366F1; color: #4F46E5; font-weight: 600; }
-    .sortable { cursor: pointer; user-select: none; transition: color 0.05s ease; }
+    .sortable { cursor: pointer; user-select: none; transition: color 0.15s ease; }
     .sortable:hover { color: #4F46E5; }
     .sort-icon { font-size: 10px; margin-left: 3px; color: #6366F1; }
 
     .stats-pills { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
     .pill {
-      background: #F8FAFC;
+      background: #FFFFFF;
       border: 1px solid #E2E8F0;
-      padding: 6px 12px;
-      border-radius: 8px;
-      font-size: 12px;
+      padding: 7px 13px;
+      border-radius: 10px;
+      font-size: 12.5px;
       display: inline-flex;
-      gap: 6px;
+      gap: 7px;
       align-items: center;
+      transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+    }
+    .pill:hover {
+      transform: translateY(-1.5px);
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+      border-color: #CBD5E1;
     }
     .pill .plbl { color: #64748B; font-weight: 500; }
     .pill .pval { font-weight: 700; font-variant-numeric: tabular-nums; }
@@ -344,7 +384,16 @@ import { safeUuid } from '../../core/uuid';
     tr.income { background: #F0FDF4; }
 
     /* Dark mode */
-    :host-context([data-theme='dark']) .pill { background: #1E293B; border-color: #334155; }
+    :host-context([data-theme='dark']) .pill {
+      background: rgba(30, 41, 59, 0.6);
+      border-color: rgba(255, 255, 255, 0.08);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+    }
+    :host-context([data-theme='dark']) .pill:hover {
+      background: rgba(30, 41, 59, 0.85);
+      border-color: rgba(255, 255, 255, 0.16);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+    }
     :host-context([data-theme='dark']) .mono { color: #94A3B8; }
     :host-context([data-theme='dark']) .notes-cell { color: #94A3B8; }
     :host-context([data-theme='dark']) tr.income { background: rgba(34, 197, 94, 0.08); }
