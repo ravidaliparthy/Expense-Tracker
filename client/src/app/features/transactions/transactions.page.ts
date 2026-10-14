@@ -279,21 +279,30 @@ import { safeUuid } from '../../core/uuid';
       margin-bottom: 16px;
       gap: 12px;
       flex-wrap: wrap;
-      padding: 12px 16px;
-      border-radius: 12px;
+      padding: 14px 18px;
+      border-radius: 16px;
+      background: #FFFFFF;
+      border: 1px solid rgba(226, 232, 240, 0.9);
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03), 0 8px 24px -4px rgba(15, 23, 42, 0.04);
+    }
+    :host-context([data-theme='dark']) .summary-bar {
+      background: rgba(15, 23, 42, 0.8) !important;
+      border: 1px solid rgba(255, 255, 255, 0.08) !important;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 8px 24px rgba(0, 0, 0, 0.4) !important;
     }
     .search-box { flex: 1; min-width: 220px; }
     .search-box input {
       width: 100%;
-      padding: 8px 12px;
-      border-radius: 8px;
+      padding: 9px 14px;
+      border-radius: 10px;
       border: 1px solid #CBD5E1;
       font-size: 13px;
-      transition: all 0.2s ease;
+      font-family: inherit;
+      transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
     }
     .search-box input:focus {
       border-color: #6366F1;
-      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.22);
     }
 
     .sort-controls { display: flex; align-items: center; gap: 6px; font-size: 12px; }
@@ -302,15 +311,18 @@ import { safeUuid } from '../../core/uuid';
       background: #F1F5F9;
       border: 1px solid #CBD5E1;
       color: #334155;
-      border-radius: 6px;
-      padding: 5px 10px;
-      font-size: 11px;
+      border-radius: 8px;
+      padding: 6px 11px;
+      font-size: 11.5px;
       cursor: pointer;
-      font-weight: 500;
+      font-weight: 600;
       transition: all 0.15s ease;
     }
-    .sort-btn:hover { border-color: #94A3B8; background: #E2E8F0; }
-    .sort-btn.active { background: #EEF2FF; border-color: #6366F1; color: #4F46E5; font-weight: 600; }
+    .sort-btn:hover { border-color: #94A3B8; background: #E2E8F0; transform: translateY(-1px); }
+    .sort-btn.active {
+      background: #EEF2FF; border-color: #6366F1; color: #4F46E5; font-weight: 700;
+      box-shadow: 0 2px 6px rgba(99, 102, 241, 0.2);
+    }
     .sortable { cursor: pointer; user-select: none; transition: color 0.15s ease; }
     .sortable:hover { color: #4F46E5; }
     .sort-icon { font-size: 10px; margin-left: 3px; color: #6366F1; }
@@ -413,19 +425,20 @@ import { safeUuid } from '../../core/uuid';
       display: flex;
       align-items: center;
       justify-content: space-between;
-      background: #1E293B;
+      background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
+      border: 1px solid rgba(255, 255, 255, 0.12);
       color: #F8FAFC;
-      padding: 10px 16px;
-      border-radius: 10px;
-      margin-bottom: 14px;
-      box-shadow: 0 4px 14px rgba(0,0,0,0.15);
+      padding: 12px 18px;
+      border-radius: 14px;
+      margin-bottom: 16px;
+      box-shadow: 0 14px 34px -4px rgba(0, 0, 0, 0.4), 0 0 20px rgba(99, 102, 241, 0.2);
       flex-wrap: wrap;
-      gap: 10px;
-      animation: slideDown .15s ease-out;
+      gap: 12px;
+      animation: slideDown .18s cubic-bezier(0.16, 1, 0.3, 1);
     }
     @keyframes slideDown { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
     .bulk-count { font-size: 13px; color: #94A3B8; }
-    .bulk-count strong { color: #60A5FA; }
+    .bulk-count strong { color: #818CF8; }
     .bulk-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
     .bulk-group { display: flex; align-items: center; gap: 6px; }
     .bulk-lbl { font-size: 11px; text-transform: uppercase; color: #94A3B8; font-weight: 600; }
@@ -433,16 +446,24 @@ import { safeUuid } from '../../core/uuid';
       background: #334155;
       border: 1px solid #475569;
       color: #F1F5F9;
-      border-radius: 6px;
-      padding: 4px 10px;
-      font-size: 11px;
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 11.5px;
       font-weight: 600;
       cursor: pointer;
-      transition: all .1s ease;
+      transition: all .15s ease;
     }
-    .btn-bulk:hover:not(:disabled) { background: #475569; border-color: #64748B; }
-    .btn-bulk.danger { background: #7F1D1D; border-color: #991B1B; color: #FCA5A5; }
-    .btn-bulk.danger:hover:not(:disabled) { background: #991B1B; }
+    .btn-bulk:hover:not(:disabled) {
+      background: #475569; border-color: #64748B; transform: translateY(-1px);
+    }
+    .btn-bulk.danger {
+      background: linear-gradient(135deg, #7F1D1D 0%, #991B1B 100%);
+      border-color: #B91C1C; color: #FCA5A5;
+    }
+    .btn-bulk.danger:hover:not(:disabled) {
+      background: #DC2626; color: #FFFFFF;
+      box-shadow: 0 4px 12px rgba(220, 38, 38, 0.35);
+    }
     .btn-bulk.ghost { background: transparent; border-color: transparent; color: #94A3B8; }
     .btn-bulk.ghost:hover { color: #F1F5F9; }
     .bulk-select {

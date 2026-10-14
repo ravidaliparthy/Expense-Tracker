@@ -168,15 +168,17 @@ export interface SplitRecordPayload {
       display: flex; align-items: center; justify-content: center; padding: 16px;
     }
     .modal {
-      background: #FFFFFF; border-radius: 16px; width: 100%; max-width: 520px;
-      max-height: 92vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.25);
-      border: 1px solid #E2E8F0; display: flex; flex-direction: column;
+      background: #FFFFFF; border-radius: 20px; width: 100%; max-width: 520px;
+      max-height: 92vh; overflow-y: auto; box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(226, 232, 240, 0.9); display: flex; flex-direction: column;
+      animation: modalPopIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
     :host-context([data-theme='dark']) .modal {
-      background: #0F172A; border-color: #334155; color: #F8FAFC;
+      background: #0F172A; border-color: rgba(255, 255, 255, 0.1); color: #F8FAFC;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7);
     }
     .modal-header {
-      padding: 18px 20px 14px; border-bottom: 1px solid #E2E8F0;
+      padding: 20px 22px 16px; border-bottom: 1px solid #E2E8F0;
       display: flex; justify-content: space-between; align-items: flex-start;
     }
     :host-context([data-theme='dark']) .modal-header { border-bottom-color: #334155; }
@@ -190,44 +192,54 @@ export interface SplitRecordPayload {
       background: transparent; border: none; font-size: 18px; color: #64748B;
       cursor: pointer; padding: 4px; border-radius: 6px;
     }
-    .modal-body { padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; }
+    .modal-body { padding: 20px 22px; display: flex; flex-direction: column; gap: 14px; }
     .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     @media (max-width: 480px) { .input-grid { grid-template-columns: 1fr; } }
     .form-group { display: flex; flex-direction: column; gap: 6px; }
     .form-group label { font-size: 12px; font-weight: 600; color: #475569; }
     :host-context([data-theme='dark']) .form-group label { color: #CBD5E1; }
     .form-control {
-      border: 1px solid #CBD5E1; border-radius: 8px; padding: 10px 12px;
+      border: 1px solid #CBD5E1; border-radius: 9px; padding: 10px 12px;
       font-size: 15px; outline: none; background: #FFFFFF; color: #0F172A; width: 100%;
-      box-sizing: border-box;
+      box-sizing: border-box; transition: all 0.15s ease;
+    }
+    .form-control:focus {
+      border-color: #6366F1; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
     }
     :host-context([data-theme='dark']) .form-control {
       background: #1E293B; border-color: #475569; color: #F8FAFC;
     }
     .stepper-wrap { display: flex; align-items: center; gap: 6px; }
     .btn-step {
-      width: 38px; height: 38px; border-radius: 8px; border: 1px solid #CBD5E1;
+      width: 40px; height: 40px; border-radius: 9px; border: 1px solid #CBD5E1;
       background: #F8FAFC; font-size: 18px; font-weight: 700; color: #334155;
       cursor: pointer; display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
+      flex-shrink: 0; transition: all 0.14s ease;
     }
+    .btn-step:hover { background: #EEF2FF; border-color: #818CF8; color: #4F46E5; }
     :host-context([data-theme='dark']) .btn-step {
       background: #1E293B; border-color: #475569; color: #CBD5E1;
     }
+    :host-context([data-theme='dark']) .btn-step:hover { background: #334155; color: #F8FAFC; }
     .text-center { text-align: center; }
     .tip-pills { display: flex; gap: 6px; flex-wrap: wrap; }
     .pill-btn {
       background: #F1F5F9; border: 1px solid #CBD5E1; border-radius: 999px;
-      padding: 5px 12px; font-size: 12px; font-weight: 600; color: #475569; cursor: pointer;
+      padding: 6px 12px; font-size: 12px; font-weight: 600; color: #475569; cursor: pointer;
+      transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
     }
+    .pill-btn:hover { background: #EEF2FF; border-color: #818CF8; color: #4F46E5; transform: translateY(-1px); }
     .pill-btn.active {
-      background: #4F46E5; border-color: #4F46E5; color: #FFFFFF; font-weight: 700;
+      background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%);
+      border-color: #4F46E5; color: #FFFFFF; font-weight: 700;
+      box-shadow: 0 2px 8px rgba(99, 102, 241, 0.35);
     }
     :host-context([data-theme='dark']) .pill-btn {
       background: #1E293B; border-color: #475569; color: #94A3B8;
     }
     :host-context([data-theme='dark']) .pill-btn.active {
-      background: #6366F1; border-color: #6366F1; color: #FFFFFF;
+      background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%);
+      border-color: #6366F1; color: #FFFFFF;
     }
     .custom-tip-wrap { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
     .custom-tip-wrap input { width: 90px; }
@@ -236,17 +248,19 @@ export interface SplitRecordPayload {
     /* Result Card */
     .result-card {
       background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%);
-      border: 1px solid #C7D2FE; border-radius: 12px; padding: 14px 16px;
+      border: 1px solid #C7D2FE; border-radius: 14px; padding: 16px 18px;
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.12);
     }
     :host-context([data-theme='dark']) .result-card {
       background: linear-gradient(135deg, #1E1B4B 0%, #0F172A 100%);
       border-color: #312E81;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
     }
     .main-result { display: flex; justify-content: space-between; align-items: baseline; }
     .main-result .lbl { font-size: 13px; font-weight: 700; color: #4338CA; text-transform: uppercase; letter-spacing: 0.5px; }
     :host-context([data-theme='dark']) .main-result .lbl { color: #A5B4FC; }
     .main-result .val.highlighted {
-      font-size: 26px; font-weight: 800; color: #1E1B4B; letter-spacing: -0.5px;
+      font-size: 28px; font-weight: 800; color: #1E1B4B; letter-spacing: -0.5px; font-variant-numeric: tabular-nums;
     }
     :host-context([data-theme='dark']) .main-result .val.highlighted { color: #F8FAFC; }
     .divider { height: 1px; background: rgba(99, 102, 241, 0.2); margin: 10px 0; }

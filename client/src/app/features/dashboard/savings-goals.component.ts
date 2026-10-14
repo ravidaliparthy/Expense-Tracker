@@ -385,17 +385,22 @@ export interface SavingsRecordPayload {
       color: #A5B4FC;
     }
     .btn-new-goal {
-      background: #4F46E5;
+      background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%);
       color: #FFFFFF;
-      border: none;
-      padding: 6px 12px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      padding: 6px 14px;
       border-radius: 8px;
       font-size: 12px;
       font-weight: 600;
       cursor: pointer;
-      transition: background 0.15s ease;
+      box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+      transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
     }
-    .btn-new-goal:hover { background: #4338CA; }
+    .btn-new-goal:hover {
+      background: linear-gradient(135deg, #4F46E5 0%, #4338CA 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.45);
+    }
 
     .goals-grid {
       display: grid;
@@ -408,22 +413,29 @@ export interface SavingsRecordPayload {
       .goal-item { padding: 12px; }
     }
     .goal-item {
-      background: #F8FAFC;
-      border: 1px solid #E2E8F0;
-      border-radius: 12px;
-      padding: 14px 16px;
+      background: #FFFFFF;
+      border: 1px solid rgba(226, 232, 240, 0.9);
+      border-radius: 14px;
+      padding: 16px 18px;
       display: flex;
       flex-direction: column;
-      gap: 10px;
-      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      gap: 12px;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03), 0 4px 12px rgba(15, 23, 42, 0.025);
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease;
     }
     .goal-item:hover {
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
-      transform: translateY(-1px);
+      box-shadow: 0 8px 24px -4px rgba(15, 23, 42, 0.08);
+      transform: translateY(-2px);
+      border-color: rgba(99, 102, 241, 0.3);
     }
     :host-context([data-theme='dark']) .goal-item {
-      background: #1E293B;
-      border-color: #334155;
+      background: rgba(30, 41, 59, 0.55);
+      border-color: rgba(255, 255, 255, 0.08);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 6px 18px rgba(0, 0, 0, 0.3);
+    }
+    :host-context([data-theme='dark']) .goal-item:hover {
+      border-color: rgba(255, 255, 255, 0.16);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 12px 28px rgba(0, 0, 0, 0.45);
     }
     .goal-top {
       display: flex;

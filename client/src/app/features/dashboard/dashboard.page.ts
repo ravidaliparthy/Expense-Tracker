@@ -94,13 +94,14 @@ export interface BreakdownRow {
     .analysis-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px}
     @media(max-width:980px){.grid-2,.analysis-grid{grid-template-columns:1fr}}
 
-    /* Luminous KPI Card Architecture */
-    .kpi-header { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+    /* Luminous KPI Card Architecture (Juspay / Stripe style) */
+    .kpi-header { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
     .kpi-header h3 { margin:0; font-size:12px; text-transform:uppercase; letter-spacing:0.6px; font-weight:700; color:#64748B; }
     .kpi-icon {
-      font-size:13px; width:26px; height:26px; border-radius:7px;
+      font-size:13px; width:28px; height:28px; border-radius:8px;
       display:inline-flex; align-items:center; justify-content:center;
       background:rgba(148,163,184,0.12); flex-shrink:0;
+      transition:transform 0.2s ease;
     }
     .kpi-expense .kpi-icon { background:rgba(239,68,68,0.12); color:#EF4444; }
     .kpi-income .kpi-icon { background:rgba(16,185,129,0.12); color:#10B981; }
@@ -108,42 +109,81 @@ export interface BreakdownRow {
     .kpi-rate .kpi-icon { background:rgba(168,85,247,0.12); color:#A855F7; }
 
     .kpi {
-      position:relative; overflow:hidden; border-radius:14px;
-      transition:transform 0.2s cubic-bezier(0.16,1,0.3,1), box-shadow 0.2s ease, border-color 0.2s ease;
+      position:relative; overflow:hidden; border-radius:16px; padding:20px 22px;
+      transition:transform 0.22s cubic-bezier(0.16,1,0.3,1), box-shadow 0.22s ease, border-color 0.22s ease;
+      background:#FFFFFF;
+      border:1px solid rgba(226, 232, 240, 0.9);
+      box-shadow:0 1px 3px rgba(15, 23, 42, 0.03), 0 8px 24px -4px rgba(15, 23, 42, 0.04);
     }
     .kpi::before {
-      content:''; position:absolute; top:0; left:0; right:0; height:3px;
-      opacity:0.85; transition:opacity 0.2s ease;
+      content:''; position:absolute; top:0; left:0; right:0; height:3.5px;
+      opacity:0.9; transition:height 0.2s ease, opacity 0.2s ease;
     }
-    .kpi-expense::before { background:linear-gradient(90deg, #F43F5E, #FB7185); }
-    .kpi-income::before { background:linear-gradient(90deg, #10B981, #34D399); }
-    .kpi-savings::before { background:linear-gradient(90deg, #6366F1, #818CF8); }
-    .kpi-rate::before { background:linear-gradient(90deg, #8B5CF6, #C084FC); }
+    .kpi-expense::before { background:linear-gradient(90deg, #F43F5E 0%, #FB7185 100%); }
+    .kpi-income::before { background:linear-gradient(90deg, #10B981 0%, #34D399 100%); }
+    .kpi-savings::before { background:linear-gradient(90deg, #6366F1 0%, #818CF8 100%); }
+    .kpi-rate::before { background:linear-gradient(90deg, #8B5CF6 0%, #C084FC 100%); }
+
+    /* Luminous background orb reflection */
+    .kpi::after {
+      content:''; position:absolute; top:-30px; right:-30px; width:110px; height:110px;
+      border-radius:50%; opacity:0.1; pointer-events:none; filter:blur(24px);
+      transition:transform 0.3s ease, opacity 0.3s ease;
+    }
+    .kpi-expense::after { background:#F43F5E; }
+    .kpi-income::after { background:#10B981; }
+    .kpi-savings::after { background:#6366F1; }
+    .kpi-rate::after { background:#8B5CF6; }
 
     .kpi:hover {
-      transform:translateY(-2px);
-      box-shadow:0 10px 24px -4px rgba(15,23,42,0.12);
+      transform:translateY(-3px) scale(1.008);
+      box-shadow:0 16px 36px -6px rgba(15,23,42,0.12);
     }
+    .kpi:hover::before { height:4.5px; }
+    .kpi:hover::after { transform:scale(1.3); opacity:0.22; }
+    .kpi:hover .kpi-icon { transform:scale(1.1); }
+    .kpi .value { font-size:28px; font-weight:800; margin-top:8px; font-variant-numeric:tabular-nums; letter-spacing:-0.5px; }
+    .kpi .sub { font-size:12px; color:#64748B; margin-top:5px; font-weight:500; }
+
     :host-context([data-theme='dark']) .kpi {
       background:linear-gradient(180deg, rgba(30,41,59,0.55) 0%, rgba(15,23,42,0.85) 100%) !important;
       border:1px solid rgba(255,255,255,0.08) !important;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,0.08), 0 10px 30px rgba(0,0,0,0.4) !important;
     }
     :host-context([data-theme='dark']) .kpi:hover {
-      border-color:rgba(255,255,255,0.15) !important;
-      box-shadow:0 12px 28px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1) !important;
+      border-color:rgba(255,255,255,0.18) !important;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,0.15), 0 20px 45px rgba(0,0,0,0.6) !important;
     }
+    :host-context([data-theme='dark']) .kpi-expense::after { opacity:0.22; }
+    :host-context([data-theme='dark']) .kpi-income::after { opacity:0.22; }
+    :host-context([data-theme='dark']) .kpi-savings::after { opacity:0.22; }
+    :host-context([data-theme='dark']) .kpi-rate::after { opacity:0.22; }
+    :host-context([data-theme='dark']) .kpi:hover::after { opacity:0.38; }
     :host-context([data-theme='dark']) .kpi-header h3 { color:#CBD5E1; }
 
     /* Secondary analysis cards */
-    .card-head-mini { display:flex; align-items:center; gap:6px; margin-bottom:6px; }
+    .card-head-mini { display:flex; align-items:center; gap:6px; margin-bottom:8px; }
     .card-head-mini h3 { margin:0; font-size:11.5px; text-transform:uppercase; letter-spacing:0.5px; color:#64748B; font-weight:600; }
-    .mini-ico { font-size:13px; }
+    .mini-ico { font-size:14px; }
     .analysis-card {
-      transition:transform 0.2s cubic-bezier(0.16,1,0.3,1), box-shadow 0.2s ease;
-      border-radius:12px;
+      transition:transform 0.2s cubic-bezier(0.16,1,0.3,1), box-shadow 0.2s ease, border-color 0.2s ease;
+      border-radius:14px; padding:16px 18px; position:relative; overflow:hidden;
+      background:#FFFFFF; border:1px solid rgba(226, 232, 240, 0.85);
+      box-shadow:0 1px 3px rgba(15, 23, 42, 0.03), 0 4px 14px rgba(15, 23, 42, 0.025);
     }
     .analysis-card:hover {
-      transform:translateY(-1.5px);
+      transform:translateY(-2px);
+      box-shadow:0 8px 24px -4px rgba(15,23,42,0.08);
+      border-color:rgba(99,102,241,0.3);
+    }
+    :host-context([data-theme='dark']) .analysis-card {
+      background:rgba(17, 24, 39, 0.85) !important;
+      border:1px solid rgba(255, 255, 255, 0.07) !important;
+      box-shadow:inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 6px 20px rgba(0, 0, 0, 0.3) !important;
+    }
+    :host-context([data-theme='dark']) .analysis-card:hover {
+      border-color:rgba(255, 255, 255, 0.15) !important;
+      box-shadow:inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 12px 30px rgba(0, 0, 0, 0.45) !important;
     }
     :host-context([data-theme='dark']) .card-head-mini h3 { color:#94A3B8; }
     @media(max-width:768px){

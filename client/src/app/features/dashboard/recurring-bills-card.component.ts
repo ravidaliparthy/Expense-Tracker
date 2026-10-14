@@ -121,20 +121,40 @@ import { Category, RecurringBill, money } from '../../core/models';
     .sub-text { font-size: 11px; color: #64748B; }
     :host-context([data-theme='dark']) .sub-text { color: #94A3B8; }
     .btn-add-bill {
-      background: #EEF2FF; color: #4F46E5; border: 1px solid #C7D2FE;
-      padding: 5px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer;
+      background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%);
+      color: #4338CA; border: 1px solid #C7D2FE;
+      padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer;
+      transition: all 0.16s ease;
+    }
+    .btn-add-bill:hover {
+      background: #4F46E5; color: #FFFFFF; border-color: #4F46E5;
+      box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+      transform: translateY(-1px);
     }
     :host-context([data-theme='dark']) .btn-add-bill {
-      background: #312E81; color: #A5B4FC; border-color: #4338CA;
+      background: #312E81; color: #C7D2FE; border-color: #4338CA;
+    }
+    :host-context([data-theme='dark']) .btn-add-bill:hover {
+      background: #4338CA; color: #FFFFFF;
     }
     .bills-list { display: flex; flex-direction: column; gap: 8px; }
     .bill-row {
       display: flex; justify-content: space-between; align-items: center;
-      padding: 10px 14px; background: #F8FAFC; border: 1px solid #E2E8F0;
-      border-radius: 10px; transition: all 0.15s ease;
+      padding: 12px 16px; background: #FFFFFF; border: 1px solid rgba(226, 232, 240, 0.9);
+      border-radius: 12px; transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.02);
+    }
+    .bill-row:hover {
+      transform: translateY(-1.5px);
+      box-shadow: 0 6px 16px -2px rgba(15, 23, 42, 0.06);
+      border-color: rgba(99, 102, 241, 0.25);
     }
     :host-context([data-theme='dark']) .bill-row {
-      background: #1E293B; border-color: #334155;
+      background: rgba(30, 41, 59, 0.55); border-color: rgba(255, 255, 255, 0.08);
+    }
+    :host-context([data-theme='dark']) .bill-row:hover {
+      border-color: rgba(255, 255, 255, 0.16);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
     }
     .bill-row.paid { opacity: 0.75; }
     .bill-left { display: flex; align-items: center; gap: 10px; }
@@ -144,7 +164,7 @@ import { Category, RecurringBill, money } from '../../core/models';
     :host-context([data-theme='dark']) .bill-title { color: #F8FAFC; }
     .bill-due { font-size: 11px; color: #64748B; display: flex; align-items: center; gap: 6px; }
     :host-context([data-theme='dark']) .bill-due { color: #94A3B8; }
-    .status-tag { font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px; }
+    .status-tag { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 6px; }
     .status-tag.urgent { background: #FEE2E2; color: #EF4444; }
     .status-tag.soon { background: #FEF3C7; color: #D97706; }
     .status-tag.normal { background: #EEF2FF; color: #4F46E5; }
@@ -153,10 +173,17 @@ import { Category, RecurringBill, money } from '../../core/models';
     .bill-amount { font-size: 14px; font-weight: 700; color: #0F172A; }
     :host-context([data-theme='dark']) .bill-amount { color: #F8FAFC; }
     .btn-pay {
-      background: #10B981; color: #FFFFFF; border: none; padding: 4px 10px;
-      border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer;
+      background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+      color: #FFFFFF; border: none; padding: 5px 12px;
+      border-radius: 7px; font-size: 11.5px; font-weight: 700; cursor: pointer;
+      box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3);
+      transition: all 0.15s ease;
     }
-    .btn-pay:hover { background: #059669; }
+    .btn-pay:hover {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.45);
+    }
     .paid-badge { font-size: 11px; font-weight: 700; color: #10B981; }
     .btn-del { background: none; border: none; font-size: 13px; color: #94A3B8; cursor: pointer; padding: 4px; }
     .btn-del:hover { color: #EF4444; }

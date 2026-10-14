@@ -44,20 +44,31 @@ import { DayStreakItem, StreakInfo } from '../../core/streak.service';
   styles: [`
     .streak-card {
       margin-bottom: 16px;
-      padding: 14px 18px;
+      padding: 16px 20px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       gap: 16px;
       flex-wrap: wrap;
       background: linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%);
-      border: 1px solid #E2E8F0;
-      border-radius: 14px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+      border: 1px solid rgba(226, 232, 240, 0.9);
+      border-radius: 16px;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03), 0 6px 18px -2px rgba(15, 23, 42, 0.035);
+      transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s ease, border-color 0.22s ease;
+    }
+    .streak-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 24px -4px rgba(15, 23, 42, 0.08);
+      border-color: rgba(99, 102, 241, 0.25);
     }
     :host-context([data-theme='dark']) .streak-card {
-      background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
-      border-color: #334155;
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.65) 0%, rgba(15, 23, 42, 0.85) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 8px 24px rgba(0, 0, 0, 0.4);
+    }
+    :host-context([data-theme='dark']) .streak-card:hover {
+      border-color: rgba(255, 255, 255, 0.16);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 16px 36px rgba(0, 0, 0, 0.55);
     }
     .streak-left {
       display: flex;
