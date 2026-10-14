@@ -61,10 +61,10 @@ export interface BreakdownRow {
     @media(max-width:980px){.grid-2,.analysis-grid{grid-template-columns:1fr}}
     .chart svg{width:100%;height:auto;display:block}
     .catbar{display:flex;align-items:center;gap:10px;margin-bottom:9px;font-size:12px}
-    .catbar .name{width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#475569}
-    .catbar .bar{flex:1;height:14px;background:#F1F5F9;border-radius:4px;overflow:hidden}
+    .catbar .name{flex:0 1 130px;min-width:85px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#475569}
+    .catbar .bar{flex:1;height:12px;background:#E2E8F0;border-radius:4px;overflow:hidden}
     .catbar .bar>div{height:100%;border-radius:4px}
-    .catbar .val{width:84px;text-align:right;font-variant-numeric:tabular-nums;color:#334155}
+    .catbar .val{flex-shrink:0;min-width:65px;text-align:right;font-variant-numeric:tabular-nums;color:#334155}
     .positive{color:#047857}
     .negative{color:#DC2626}
     .mini{font-size:12px;color:#64748B}
@@ -153,6 +153,9 @@ export interface BreakdownRow {
     :host-context([data-theme='dark']) .sortable:hover{color:#A5B4FC}
     :host-context([data-theme='dark']) .positive{color:#34D399 !important}
     :host-context([data-theme='dark']) .negative{color:#F87171 !important}
+    :host-context([data-theme='dark']) .catbar .bar{background:#1E293B !important}
+    :host-context([data-theme='dark']) .catbar .name{color:#94A3B8}
+    :host-context([data-theme='dark']) .catbar .val{color:#E2E8F0}
 
     /* Empty state card */
     .empty-state-card { text-align:center; padding:32px 16px; background:#F8FAFC; border:1px dashed #CBD5E1; border-radius:12px; margin-top:8px; }
@@ -346,36 +349,64 @@ export interface BreakdownRow {
 
     @media (max-width: 640px) {
       .card-tx-table, .card-spending-breakdown {
-        padding: 14px 12px;
+        padding: 14px 10px;
       }
       .dashboard-tbl-scroll {
-        max-height: 320px;
+        max-height: 310px;
       }
       .dashboard-tbl-scroll .col-source,
       .dashboard-tbl-scroll .col-type,
-      .dashboard-tbl-scroll .col-notes {
+      .dashboard-tbl-scroll .col-notes,
+      .dashboard-tbl-scroll .col-actions {
         display: none !important;
       }
       .dashboard-tbl-scroll table {
         min-width: 0 !important;
         font-size: 12px;
+        width: 100%;
+        table-layout: auto;
       }
       .dashboard-tbl-scroll th,
       .dashboard-tbl-scroll td {
-        padding: 8px 4px;
+        padding: 9px 5px;
       }
+      .dashboard-tbl-scroll tbody tr {
+        cursor: pointer;
+        -webkit-tap-highlight-color: rgba(99, 102, 241, 0.1);
+        transition: background-color 0.1s ease;
+      }
+      .dashboard-tbl-scroll tbody tr:active {
+        background: rgba(99, 102, 241, 0.12) !important;
+      }
+      .desktop-only-date { display: none !important; }
+      .mobile-only-date { display: inline !important; font-size: 11.5px; }
       .dashboard-tbl-scroll .col-merchant {
-        max-width: 85px;
+        max-width: 130px;
+        min-width: 75px;
+        font-size: 11.5px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
       .dashboard-tbl-scroll .col-category {
-        max-width: 95px;
+        max-width: 125px;
+        min-width: 80px;
       }
-      .dashboard-tbl-scroll .tbl-icon-btn {
-        width: 28px;
-        height: 28px;
-        min-width: 28px;
+      .dashboard-tbl-scroll .col-category .chip {
+        padding: 2px 7px;
+        font-size: 11px;
+        max-width: 100%;
+      }
+      .dashboard-tbl-scroll .col-amount {
+        white-space: nowrap !important;
+        text-align: right;
         font-size: 12px;
-        margin-left: 2px;
+        font-weight: 600;
+        padding-right: 2px;
+      }
+      .dashboard-tbl-scroll th.col-amount {
+        white-space: nowrap !important;
+        text-align: right;
       }
       .sort-controls {
         width: 100%;
@@ -393,12 +424,16 @@ export interface BreakdownRow {
         justify-content: center;
       }
       .catbar .name {
-        flex: 0 1 100px;
-        min-width: 65px;
+        flex: 0 1 125px;
+        min-width: 80px;
       }
       .catbar .val {
         min-width: 60px;
       }
+    }
+    @media (min-width: 641px) {
+      .desktop-only-date { display: inline !important; }
+      .mobile-only-date { display: none !important; }
     }
   `]
 })
@@ -1031,6 +1066,20 @@ export class DashboardPage {
       const e = err as { error?: { error?: string } };
       this.flash.set({ type: 'err', text: e.error?.error || 'Failed to record savings transaction' });
       this.cdr.detectChanges();
+    }
+  }
+
+  shortDate(d: string): string {
+    if (!d || d.length < 10) return d;
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const m = parseInt(d.slice(5, 7), 10) - 1;
+    const day = parseInt(d.slice(8, 10), 10);
+    return `${day} ${monthNames[m] || ''}`;
+  }
+
+  onRowTap(e: Expense): void {
+    if (this.isMobileDevice() || (typeof window !== 'undefined' && window.innerWidth <= 640)) {
+      this.openEdit(e);
     }
   }
 

@@ -211,8 +211,11 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let e of sortedExpenses(); trackBy: trackById" [class.income]="e.kind === 'income'" [class.deleting]="deletingIds().has(e.id)">
-            <td class="col-date mono">{{ e.localDate }}</td>
+          <tr *ngFor="let e of sortedExpenses(); trackBy: trackById" [class.income]="e.kind === 'income'" [class.deleting]="deletingIds().has(e.id)" (click)="onRowTap(e)">
+            <td class="col-date mono">
+              <span class="desktop-only-date">{{ e.localDate }}</span>
+              <span class="mobile-only-date">{{ shortDate(e.localDate) }}</span>
+            </td>
             <td class="col-type"><span class="kind" [class.income]="e.kind === 'income'">{{ e.kind === 'income' ? 'Credit' : 'Expense' }}</span></td>
             <td class="col-category"><span class="chip" [style.background]="hex(e.categoryColor, .14)" [style.color]="e.categoryColor">{{ e.categoryIcon || '🏷️' }} {{ e.categorySnapshot }}</span></td>
             <td class="col-merchant" [title]="e.notes ? (e.merchant || '—') + ' (' + e.notes + ')' : (e.merchant || '—')">{{ e.merchant || '—' }}</td>
@@ -220,9 +223,9 @@
             <td class="col-notes notes-cell" [title]="e.notes || ''">{{ e.notes || '—' }}</td>
             <td class="col-amount amount" [class.plus]="e.kind === 'income'" [class.minus]="e.kind !== 'income'">{{ e.kind === 'income' ? '+' : '-' }}{{ money(e.amountCents, e.currency) }}</td>
             <td class="col-actions" style="white-space:nowrap;text-align:right">
-              <button type="button" class="tbl-icon-btn" title="Split this expense with friends" (click)="openSplitBill(e.amountCents / 100, e.merchant || e.categorySnapshot)">👥</button>
-              <button type="button" class="tbl-icon-btn" title="Edit transaction" [id]="'edit-tx-' + e.id" (click)="openEdit(e)">✎</button>
-              <button type="button" class="tbl-icon-btn danger" [disabled]="deletingIds().has(e.id)" title="Delete transaction" [id]="'delete-tx-' + e.id" (click)="onRemove(e)">🗑</button>
+              <button type="button" class="tbl-icon-btn" title="Split this expense with friends" (click)="openSplitBill(e.amountCents / 100, e.merchant || e.categorySnapshot); $event.stopPropagation()">👥</button>
+              <button type="button" class="tbl-icon-btn" title="Edit transaction" [id]="'edit-tx-' + e.id" (click)="openEdit(e); $event.stopPropagation()">✎</button>
+              <button type="button" class="tbl-icon-btn danger" [disabled]="deletingIds().has(e.id)" title="Delete transaction" [id]="'delete-tx-' + e.id" (click)="onRemove(e); $event.stopPropagation()">🗑</button>
             </td>
           </tr>
         </tbody>
