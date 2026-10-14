@@ -207,7 +207,7 @@ import { PrivacyService } from './core/privacy.service';
       padding: 0 24px; background: rgba(14, 17, 24, 0.94);
       backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
       border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      color: #E2E8F0; position: sticky; top: 0; z-index: 30;
+      color: #E2E8F0; position: sticky; top: 0; z-index: 1000;
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
     }
     .brand {

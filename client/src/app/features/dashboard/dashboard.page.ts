@@ -236,17 +236,6 @@ export interface BreakdownRow {
       transition: height 0.24s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.24s ease;
       z-index: 1;
     }
-    /* Luxury diagonal shimmer light sweep across cards */
-    .analysis-card::after {
-      content: '';
-      position: absolute;
-      top: -60%; left: -80%; width: 60%; height: 220%;
-      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.28), transparent);
-      transform: rotate(25deg);
-      transition: left 0.65s cubic-bezier(0.16, 1, 0.3, 1);
-      pointer-events: none;
-      z-index: 2;
-    }
     .analysis-card:hover {
       transform: translate3d(0, -3.5px, 0) scale(1.01);
       box-shadow: 0 10px 28px -4px rgba(15, 23, 42, 0.09), 0 0 0 1px rgba(99, 102, 241, 0.2);
@@ -255,9 +244,6 @@ export interface BreakdownRow {
     .analysis-card:hover::before {
       height: 3.5px;
       opacity: 1;
-    }
-    .analysis-card:hover::after {
-      left: 160%;
     }
     .analysis-card:active {
       transform: scale(0.985) translate3d(0, 0, 0);
@@ -292,9 +278,6 @@ export interface BreakdownRow {
       background: linear-gradient(180deg, rgba(22, 30, 46, 0.85) 0%, rgba(15, 23, 42, 0.95) 100%) !important;
       border: 1px solid rgba(255, 255, 255, 0.07) !important;
       box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 6px 20px rgba(0, 0, 0, 0.3) !important;
-    }
-    :host-context([data-theme='dark']) .analysis-card::after {
-      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
     }
     :host-context([data-theme='dark']) .analysis-card:hover {
       border-color: rgba(129, 140, 248, 0.4) !important;
