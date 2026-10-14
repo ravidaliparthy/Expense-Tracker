@@ -449,40 +449,42 @@ export class FastEntryModalComponent implements OnInit, OnDestroy {
       this.hasSpeechSupport = false;
       this.isRecording = false;
       this.speechError = 'Voice input is not supported in this browser. Please use Chrome, Edge, or Safari.';
-      this.cdr.markForCheck();
+      this.cdr.detectChanges();
       return;
     }
 
     try {
       const rec = new SpeechRec();
-      const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
-      rec.continuous = !isIOS;
+      rec.continuous = false;
       rec.interimResults = true;
       rec.maxAlternatives = 1;
 
-      // Locale: detect user language with safe fallback to en-IN / en-US
-      const userLang = (typeof navigator !== 'undefined' && navigator.language) ? navigator.language : 'en-IN';
-      rec.lang = userLang.startsWith('en') ? userLang : 'en-IN';
+      // en-IN recognizes Indian English, UPI terms (Rs, Swiggy, GPay, Lakh) as well as standard English across all devices
+      rec.lang = 'en-IN';
 
       rec.onstart = () => {
         this.ngZone.run(() => {
           this.isRecording = true;
           this.speechError = null;
-          this.cdr.markForCheck();
+          this.cdr.detectChanges();
         });
       };
 
-      // Accumulate ALL speech chunks from i = 0 to event.results.length to prevent erasing prior words
       rec.onresult = (event: any) => {
         this.ngZone.run(() => {
-          let fullTranscript = '';
-          for (let i = 0; i < event.results.length; ++i) {
-            fullTranscript += event.results[i][0].transcript;
+          let text = '';
+          for (let i = event.resultIndex; i < event.results.length; ++i) {
+            text += event.results[i][0].transcript;
           }
-          if (fullTranscript.trim()) {
-            this.rawText = fullTranscript.trim();
+          if (!text.trim() && event.results && event.results.length > 0) {
+            for (let i = 0; i < event.results.length; ++i) {
+              text += event.results[i][0].transcript;
+            }
+          }
+          if (text.trim()) {
+            this.rawText = text.trim();
             this.onTextChange(this.rawText);
-            this.cdr.markForCheck();
+            this.cdr.detectChanges();
           }
         });
       };
@@ -504,7 +506,7 @@ export class FastEntryModalComponent implements OnInit, OnDestroy {
           } else {
             this.speechError = `Voice notice: ${event.error}`;
           }
-          this.cdr.markForCheck();
+          this.cdr.detectChanges();
         });
       };
 
@@ -515,7 +517,7 @@ export class FastEntryModalComponent implements OnInit, OnDestroy {
           if (this.rawText.trim()) {
             this.onTextChange(this.rawText);
           }
-          this.cdr.markForCheck();
+          this.cdr.detectChanges();
         });
       };
 
@@ -527,7 +529,7 @@ export class FastEntryModalComponent implements OnInit, OnDestroy {
         this.isRecording = false;
         this.recognition = null;
         this.speechError = 'Could not start voice input: ' + (err?.message || 'Please tap 🎙️ to try again.');
-        this.cdr.markForCheck();
+        this.cdr.detectChanges();
       });
     }
   }
@@ -536,7 +538,7 @@ export class FastEntryModalComponent implements OnInit, OnDestroy {
     this.cleanupVoiceSession();
     this.ngZone.run(() => {
       this.isRecording = false;
-      this.cdr.markForCheck();
+      this.cdr.detectChanges();
     });
   }
 
