@@ -386,12 +386,20 @@ export class FastEntryModalComponent implements OnInit, OnDestroy {
   hasSpeechSupport = true;
   private recognition: any = null;
 
+  isBrave = false;
+
   ngOnInit(): void {
     const defaults = this.smartEntry.getLastDefaults();
     this.onTextChange('');
     if (defaults.categoryId && this.categories.length) {
       const matched = this.categories.find((c) => c.id === defaults.categoryId);
       if (matched) this.selectedCategoryName = matched.name;
+    }
+
+    if (typeof navigator !== 'undefined' && (navigator as any).brave?.isBrave) {
+      (navigator as any).brave.isBrave().then((b: boolean) => {
+        this.isBrave = b;
+      }).catch(() => {});
     }
 
     this.hasSpeechSupport = this.checkSpeechSupport();
@@ -401,7 +409,7 @@ export class FastEntryModalComponent implements OnInit, OnDestroy {
         this.startListeningSession();
       } catch {
         this.isRecording = false;
-        this.cdr.markForCheck();
+        this.cdr.detectChanges();
       }
     }
   }
@@ -502,7 +510,11 @@ export class FastEntryModalComponent implements OnInit, OnDestroy {
           } else if (event.error === 'not-allowed') {
             this.speechError = 'Microphone permission denied. Please allow microphone access in device or browser settings.';
           } else if (event.error === 'network') {
-            this.speechError = 'Network error during speech recognition. Check your internet connection.';
+            if (this.isBrave) {
+              this.speechError = 'Brave Browser blocks Google speech recognition servers for privacy. Please open ExpenseTracker in Chrome or Edge (in your taskbar) for Voice Mode, or type/paste SMS text directly.';
+            } else {
+              this.speechError = 'Speech service unreachable (often blocked by privacy browsers/adblockers). Please use Chrome, Edge, or Safari, or type/paste SMS directly.';
+            }
           } else {
             this.speechError = `Voice notice: ${event.error}`;
           }
