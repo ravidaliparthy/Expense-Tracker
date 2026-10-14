@@ -53,12 +53,53 @@ export interface BreakdownRow {
   templateUrl: './dashboard.page.html',
   styles: [`
     .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:12px;flex-wrap:wrap}
-    .toolbar h1{margin:0;font-size:22px}
+    .toolbar h1{margin:0;font-size:22px;letter-spacing:-0.2px}
     .toolbar .sub{color:#64748B;font-size:12px;margin-top:2px}
-    .actions{display:flex;gap:8px;flex-wrap:wrap}
+    .actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .main-action-btn{
+      background:linear-gradient(135deg,#6366F1 0%,#4F46E5 100%) !important;
+      color:#fff !important;
+      font-weight:600;
+      padding:8px 15px;
+      box-shadow:0 2px 10px rgba(99,102,241,0.35);
+      border:1px solid rgba(255,255,255,0.15) !important;
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      white-space:nowrap;
+    }
+    .main-action-btn:hover{
+      background:linear-gradient(135deg,#4F46E5 0%,#4338CA 100%) !important;
+      box-shadow:0 4px 14px rgba(99,102,241,0.5);
+      transform:translateY(-1px);
+    }
+    .action-cluster{display:inline-flex;align-items:center;gap:6px;flex-wrap:nowrap}
+    .action-chip{
+      display:inline-flex;
+      align-items:center;
+      gap:5px;
+      font-size:12.5px;
+      padding:7px 11px;
+      border-radius:8px;
+      white-space:nowrap;
+    }
+    .action-chip:hover{
+      transform:translateY(-1px);
+    }
+    .export-btn{
+      font-weight:500;
+      opacity:0.95;
+    }
     .grid-2{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:16px}
     .analysis-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px}
     @media(max-width:980px){.grid-2,.analysis-grid{grid-template-columns:1fr}}
+    @media(max-width:768px){
+      .actions{width:100%;gap:6px}
+      .main-action-btn{width:100%;justify-content:center;padding:10px 14px}
+      .action-cluster{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:2px}
+      .action-cluster::-webkit-scrollbar{display:none}
+      .action-chip{flex-shrink:0}
+    }
     .chart svg{width:100%;height:auto;display:block}
     .catbar{display:flex;align-items:center;gap:10px;margin-bottom:9px;font-size:12px}
     .catbar .name{flex:0 1 130px;min-width:85px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#475569}

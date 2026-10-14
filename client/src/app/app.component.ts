@@ -102,21 +102,22 @@ import { PrivacyService } from './core/privacy.service';
             </a>
           </div>
 
-          <!-- PC Desktop Sidenav Footer: User badge & dedicated Sign Out option -->
+          <!-- PC Desktop Sidenav Footer: Integrated User badge & Sign Out action -->
           <div class="sidenav-pc-footer">
             <div class="sidenav-user-card" *ngIf="auth.user() as u" [title]="u.email">
-              <div class="user-avatar-badge">{{ u.displayName ? u.displayName[0].toUpperCase() : 'U' }}</div>
-              <div class="user-meta">
-                <span class="user-name">{{ u.displayName }}</span>
-                <span class="session-badge" [class.session-only]="!auth.isRemembered()">
-                  {{ auth.isRemembered() ? '● Remembered' : '⏱ Session only' }}
-                </span>
+              <div class="user-info-group">
+                <div class="user-avatar-badge">{{ u.displayName ? u.displayName[0].toUpperCase() : 'U' }}</div>
+                <div class="user-meta">
+                  <span class="user-name">{{ u.displayName }}</span>
+                  <span class="session-badge" [class.session-only]="!auth.isRemembered()">
+                    {{ auth.isRemembered() ? '● Remembered' : '⏱ Session only' }}
+                  </span>
+                </div>
               </div>
+              <button class="user-signout-btn" data-tour="session-controls" (click)="auth.logout()" title="Sign out of account and end session">
+                🚪
+              </button>
             </div>
-            <button class="pc-signout-btn" data-tour="session-controls" (click)="auth.logout()" title="Sign out of your account and end session">
-              <span class="nav-ico">🚪</span>
-              <span class="nav-lbl">Sign Out</span>
-            </button>
           </div>
         </nav>
         <main class="content">
@@ -224,15 +225,16 @@ import { PrivacyService } from './core/privacy.service';
     .sidenav a.active { background:#1E1B4B; color:#A5B4FC; font-weight:600; }
     .nav-ico { font-size:16px; display:inline-block; }
     .nav-lbl { display:inline-block; }
-    .sidenav-pc-footer { display:flex; flex-direction:column; gap:10px; padding-top:14px; border-top:1px solid rgba(255,255,255,0.08); }
-    .sidenav-user-card { display:flex; align-items:center; gap:10px; padding:8px 10px; background:rgba(30,41,59,0.5); border:1px solid rgba(255,255,255,0.06); border-radius:8px; }
-    .user-avatar-badge { width:32px; height:32px; border-radius:50%; background:linear-gradient(135deg,#6366F1,#4F46E5); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; flex-shrink:0; }
+    .sidenav-pc-footer { display:flex; flex-direction:column; gap:8px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.08); }
+    .sidenav-user-card { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:7px 10px; background:rgba(30,41,59,0.55); border:1px solid rgba(255,255,255,0.08); border-radius:10px; }
+    .user-info-group { display:flex; align-items:center; gap:9px; min-width:0; flex:1; }
+    .user-avatar-badge { width:30px; height:30px; border-radius:50%; background:linear-gradient(135deg,#6366F1,#4F46E5); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:12px; flex-shrink:0; }
     .user-meta { display:flex; flex-direction:column; min-width:0; overflow:hidden; }
-    .user-name { color:#E2E8F0; font-size:12.5px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .session-badge { font-size:10.5px; color:#10B981; font-weight:500; }
+    .user-name { color:#E2E8F0; font-size:12px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .session-badge { font-size:10px; color:#10B981; font-weight:500; }
     .session-badge.session-only { color:#F59E0B; }
-    .pc-signout-btn { display:flex; align-items:center; gap:10px; width:100%; padding:9px 12px; border-radius:8px; border:1px solid rgba(239,68,68,0.25); background:rgba(239,68,68,0.08); color:#F87171; font-size:13px; font-weight:600; cursor:pointer; transition:all 0.2s ease; text-align:left; box-sizing:border-box; }
-    .pc-signout-btn:hover { background:rgba(239,68,68,0.22); border-color:#EF4444; color:#fff; }
+    .user-signout-btn { width:28px; height:28px; border-radius:6px; border:1px solid rgba(239,68,68,0.3); background:rgba(239,68,68,0.08); color:#F87171; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:13px; transition:all 0.15s ease; flex-shrink:0; padding:0; }
+    .user-signout-btn:hover { background:rgba(239,68,68,0.25); border-color:#EF4444; color:#fff; transform:scale(1.05); }
     .btn-topbar-signout { border-color:rgba(239,68,68,0.35); color:#FCA5A5; display:inline-flex; align-items:center; gap:5px; }
     .content { flex:1; padding:24px; background:#F1F5F9; min-width:0; }
     :host-context([data-theme='dark']) .content { background:#0B1220 !important; color:#F8FAFC !important; }
