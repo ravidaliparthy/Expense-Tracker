@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, effect, inject, signal } from '@angular/core';
+import { ChangeDetectorRef, Component, EventEmitter, Input, Output, effect, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { GoalsService, SavingsGoal } from '../../core/goals.service';
@@ -118,7 +118,6 @@ export interface SavingsRecordPayload {
               name="title"
               placeholder="e.g. New Laptop, Japan Trip, Rainy Day"
               required
-              autofocus
             />
           </div>
 
@@ -624,6 +623,10 @@ export interface SavingsRecordPayload {
       border-radius: 16px;
       max-width: 480px;
       width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      box-sizing: border-box;
       padding: 24px;
       box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
     }
@@ -648,10 +651,11 @@ export interface SavingsRecordPayload {
       border: 1px solid #CBD5E1;
       border-radius: 8px;
       padding: 9px 12px;
-      font-size: 14px;
+      font-size: 16px;
       outline: none;
       background: #FFFFFF;
       color: #0F172A;
+      box-sizing: border-box;
     }
     :host-context([data-theme='dark']) .form-row input {
       background: #1E293B;
@@ -866,6 +870,7 @@ export class SavingsGoalsComponent {
   @Output() recordTransaction = new EventEmitter<SavingsRecordPayload>();
 
   private readonly goalsService = inject(GoalsService);
+  private readonly cdr = inject(ChangeDetectorRef);
   readonly goals = this.goalsService.goals;
   readonly money = money;
 
@@ -881,6 +886,7 @@ export class SavingsGoalsComponent {
       if (this.goalsService.createModalRequested()) {
         this.openCreateModal();
         this.goalsService.createModalRequested.set(false);
+        this.cdr.markForCheck();
       }
     }, { allowSignalWrites: true });
   }
@@ -933,10 +939,12 @@ export class SavingsGoalsComponent {
     this.formDeadline = '';
     this.formColor = '#10B981';
     this.modalOpen.set(true);
+    this.cdr.markForCheck();
   }
 
   closeModal(): void {
     this.modalOpen.set(false);
+    this.cdr.markForCheck();
   }
 
   saveGoal(): void {
@@ -950,6 +958,7 @@ export class SavingsGoalsComponent {
       color: this.formColor
     });
     this.closeModal();
+    this.cdr.markForCheck();
   }
 
   openDepositModal(g: SavingsGoal): void {
@@ -957,11 +966,13 @@ export class SavingsGoalsComponent {
     this.depositAmount = 50;
     this.alsoRecordDepositAsTx = true;
     this.depositModalOpen.set(true);
+    this.cdr.markForCheck();
   }
 
   closeDepositModal(): void {
     this.depositModalOpen.set(false);
     this.selectedGoal.set(null);
+    this.cdr.markForCheck();
   }
 
   confirmDeposit(): void {
@@ -981,6 +992,7 @@ export class SavingsGoalsComponent {
       });
     }
     this.closeDepositModal();
+    this.cdr.markForCheck();
   }
 
   openRecordModal(g: SavingsGoal): void {
@@ -991,11 +1003,13 @@ export class SavingsGoalsComponent {
     this.txNotes = `Recorded from Savings Goal "${g.title}" (${this.calcPct(g)}% reached)`;
     this.txDate = new Date().toISOString().slice(0, 10);
     this.recordModalOpen.set(true);
+    this.cdr.markForCheck();
   }
 
   closeRecordModal(): void {
     this.recordModalOpen.set(false);
     this.selectedGoal.set(null);
+    this.cdr.markForCheck();
   }
 
   confirmRecordTransaction(): void {
@@ -1011,11 +1025,13 @@ export class SavingsGoalsComponent {
       goalTitle: g.title
     });
     this.closeRecordModal();
+    this.cdr.markForCheck();
   }
 
   deleteGoal(id: string): void {
     if (confirm('Delete this savings goal?')) {
       this.goalsService.deleteGoal(id);
+      this.cdr.markForCheck();
     }
   }
 }

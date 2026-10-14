@@ -153,7 +153,6 @@
 
 <!-- Savings Goals with Progress Bars -->
 <app-savings-goals
-  *ngIf="showSavingsGoals()"
   [currency]="currency()"
   (recordTransaction)="onRecordSavingsTransaction($event)"
 ></app-savings-goals>
@@ -165,8 +164,8 @@
   (paymentLogged)="onPaymentLogged($event)">
 </app-recurring-bills-card>
 
-<div class="grid-2">
-  <div class="card" data-tour="transactions-table">
+<div class="grid-2 tx-breakdown-grid" [class.mobile-order]="isMobileDevice()">
+  <div class="card card-tx-table" data-tour="transactions-table">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
       <h3>Transactions ({{ total() }})</h3>
       <div class="sort-controls">
@@ -190,7 +189,7 @@
         </button>
       </div>
     </div>
-    <div class="tbl-wrap" *ngIf="sortedExpenses().length > 0">
+    <div class="tbl-wrap dashboard-tbl-scroll" *ngIf="sortedExpenses().length > 0">
       <table>
         <thead>
           <tr>
@@ -227,7 +226,7 @@
       </table>
     </div>
   </div>
-  <div class="card" data-tour="category-breakdown">
+  <div class="card card-spending-breakdown" data-tour="category-breakdown">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
       <h3 style="margin:0">🏷️ Category Spending Breakdown</h3>
       <a routerLink="/categories" class="btn-ghost" style="font-size:12px;padding:4px 10px;text-decoration:none;border-radius:6px;font-weight:600">Manage ▦</a>

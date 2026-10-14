@@ -16,6 +16,8 @@ export class PwaService {
   readonly isStandalone = signal(false);
   readonly isIos = signal(false);
   readonly isIosChrome = signal(false);
+  readonly isAndroid = signal(false);
+  readonly isMobileDevice = signal(false);
   readonly showIosInstructions = signal(false);
   readonly copiedLink = signal(false);
 
@@ -31,8 +33,11 @@ export class PwaService {
     const ua = window.navigator.userAgent.toLowerCase();
     const isIos = /iphone|ipad|ipod/.test(ua) && !(window as any).MSStream;
     const isIosChrome = isIos && (/crios/.test(ua) || /fxios/.test(ua));
+    const isAndroid = /android/.test(ua);
     this.isIos.set(isIos);
     this.isIosChrome.set(isIosChrome);
+    this.isAndroid.set(isAndroid);
+    this.isMobileDevice.set(isIos || isAndroid);
 
     // On iOS running in normal browser (not added to home screen yet), enable install button
     if (isIos && !this.isStandalone()) {

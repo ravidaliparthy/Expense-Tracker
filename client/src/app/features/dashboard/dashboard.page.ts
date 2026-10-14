@@ -166,6 +166,77 @@ export interface BreakdownRow {
     /* Contained table scroll & mobile responsiveness */
     .tbl-wrap { width:100%; max-width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; border-radius:8px; box-sizing:border-box; }
     table { width:100%; min-width:480px; border-collapse:collapse; }
+
+    /* Dashboard transactions scroll container: compact with scrollbar & sticky header */
+    .dashboard-tbl-scroll {
+      width: 100%;
+      max-width: 100%;
+      max-height: 380px;
+      overflow-y: auto;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      border-radius: 8px;
+      box-sizing: border-box;
+    }
+    .dashboard-tbl-scroll table thead th {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: #F8FAFC;
+    }
+    :host-context([data-theme='dark']) .dashboard-tbl-scroll table thead th {
+      background: #1E293B;
+    }
+    .dashboard-tbl-scroll::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .dashboard-tbl-scroll::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.04);
+      border-radius: 4px;
+    }
+    .dashboard-tbl-scroll::-webkit-scrollbar-thumb {
+      background: #CBD5E1;
+      border-radius: 4px;
+    }
+    :host-context([data-theme='dark']) .dashboard-tbl-scroll::-webkit-scrollbar-thumb {
+      background: #475569;
+    }
+
+    /* Transactions & Spending Breakdown Layout */
+    .tx-breakdown-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .tx-breakdown-grid .card-tx-table { order: 1; }
+    .tx-breakdown-grid .card-spending-breakdown { order: 2; }
+
+    /* On iOS and Android devices, move spending filter/breakdown ABOVE transactions */
+    .tx-breakdown-grid.mobile-order {
+      display: flex;
+      flex-direction: column;
+    }
+    .tx-breakdown-grid.mobile-order .card-spending-breakdown {
+      order: 1 !important;
+    }
+    .tx-breakdown-grid.mobile-order .card-tx-table {
+      order: 2 !important;
+    }
+
+    @media (max-width: 980px) {
+      .tx-breakdown-grid {
+        display: flex;
+        flex-direction: column;
+      }
+      .tx-breakdown-grid .card-spending-breakdown {
+        order: 1;
+      }
+      .tx-breakdown-grid .card-tx-table {
+        order: 2;
+      }
+    }
     @media (max-width: 640px) {
       .notes, .notes-cell { display:none !important; }
       table { min-width:380px !important; }
@@ -179,7 +250,12 @@ export class DashboardPage {
   private readonly streakService = inject(StreakService);
   readonly goalsService = inject(GoalsService);
   readonly isDemoUser = computed(() => this.auth.user()?.email === 'demo@expense.test');
-  readonly showSavingsGoals = computed(() => this.isDemoUser() || this.goalsService.goals().length > 0);
+  readonly showSavingsGoals = computed(() => true);
+  readonly isMobileDevice = computed(() => {
+    if (typeof window === 'undefined') return false;
+    const ua = window.navigator.userAgent.toLowerCase();
+    return /iphone|ipad|ipod|android/.test(ua);
+  });
   readonly TIER_COLORS=TIER_COLORS; readonly money=money; readonly signedMoney=signedMoney; readonly paymentSourceLabel=paymentSourceLabel;
   readonly trackById = (_: number, e: Expense): number => e.id;
   readonly expenses=signal<Expense[]>([]); readonly total=signal(0); readonly categories=signal<Category[]>([]); readonly budgets=signal<Budget[]>([]); readonly summary=signal<SummaryDto|null>(null); readonly insights=signal<Insights|null>(null); readonly loading=signal(false); readonly flash=signal<{type:'ok'|'warn'|'err';text:string}|null>(null); readonly exportBusy=signal(false); readonly formOpen=signal(false); readonly editing=signal<Expense|null>(null); readonly hadData=signal(false);
