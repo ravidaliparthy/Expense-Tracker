@@ -408,15 +408,16 @@ import { safeUuid } from '../../core/uuid';
     tbody tr:active {
       transform: scale(0.995) translateX(2px);
     }
-    .mono { font-family: 'Outfit', 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; color: #475569; white-space: nowrap; font-size: 12.5px; }
-    .notes-cell { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #64748B; font-family: 'Outfit', sans-serif; }
-    .kind { font-size: 11px; border-radius: 999px; padding: 3px 8px; background: #FEE2E2; color: #B91C1C; font-family: 'Outfit', sans-serif; font-weight: 600; }
+    .mono { font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; color: #475569; white-space: nowrap; font-size: 12px; }
+    .notes-cell { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #64748B; font-family: 'Inter', sans-serif; }
+    .kind { font-size: 11px; border-radius: 999px; padding: 3px 8px; background: #FEE2E2; color: #B91C1C; font-family: 'Inter', sans-serif; font-weight: 600; }
     .kind.income { background: #DCFCE7; color: #047857; }
     .amount {
-      font-family: 'Outfit', sans-serif;
+      font-family: 'JetBrains Mono', monospace;
       font-variant-numeric: tabular-nums;
       font-weight: 700;
-      font-size: 14px;
+      font-size: 13.5px;
+      letter-spacing: -0.02em;
       transition: transform 0.18s ease, text-shadow 0.18s ease;
     }
     .amount.plus { color: #047857; }

@@ -52,9 +52,9 @@ import { Expense, money, paymentSourceLabel } from '../../core/models';
   `,
   styles: [`
     .head { display:flex; justify-content:space-between; align-items:baseline; }
-    .head h3 { margin-bottom:8px; font-family:'Outfit', sans-serif; font-size:13.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:#475569; }
+    .head h3 { margin-bottom:8px; font-family:'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size:13.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.04em; color:#475569; }
     :host-context([data-theme='dark']) .head h3 { color:#94A3B8; }
-    .legend { font-size:11px; color:#94A3B8; font-family:'Outfit', sans-serif; }
+    .legend { font-size:11px; color:#94A3B8; font-family:'Inter', sans-serif; }
     .tbl-wrap { overflow-x:auto; border-radius:10px; }
     table { width:100%; border-collapse:separate; border-spacing:0; }
     tbody tr {
@@ -65,7 +65,7 @@ import { Expense, money, paymentSourceLabel } from '../../core/models';
       padding: 10px 8px;
       border-bottom: 1px solid #F1F5F9;
       vertical-align: middle;
-      font-family: 'Outfit', sans-serif;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       transition: color 0.15s ease;
     }
     tbody tr:hover {
@@ -82,9 +82,9 @@ import { Expense, money, paymentSourceLabel } from '../../core/models';
       transform: translateX(4px);
       box-shadow: inset 3.5px 0 0 #6366F1, 0 6px 16px rgba(0, 0, 0, 0.35);
     }
-    .mono { font-family: 'Outfit', 'JetBrains Mono', monospace; font-variant-numeric:tabular-nums; color:#64748B; white-space:nowrap; font-size:12.5px; }
+    .mono { font-family: 'JetBrains Mono', monospace; font-variant-numeric:tabular-nums; color:#64748B; white-space:nowrap; font-size:12px; }
     :host-context([data-theme='dark']) .mono { color:#94A3B8; }
-    .notes { max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#64748B; font-family:'Outfit', sans-serif; }
+    .notes { max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#64748B; font-family:'Inter', sans-serif; }
     :host-context([data-theme='dark']) .notes { color:#94A3B8; }
     .actions-head { text-align:right; width:80px; }
     .actions { white-space:nowrap; text-align:right; }
@@ -117,13 +117,14 @@ import { Expense, money, paymentSourceLabel } from '../../core/models';
       color: #FDA4AF;
     }
     .empty { color:#94A3B8; text-align:center; padding:24px 0; }
-    .kind { font-size:11px; border-radius:999px; padding:3px 8px; background:#FEE2E2; color:#B91C1C; font-family:'Outfit', sans-serif; font-weight:600; }
+    .kind { font-size:11px; border-radius:999px; padding:3px 8px; background:#FEE2E2; color:#B91C1C; font-family:'Inter', sans-serif; font-weight:600; }
     .kind.income { background:#DCFCE7; color:#047857; }
     .amount {
-      font-family: 'Outfit', sans-serif;
+      font-family: 'JetBrains Mono', monospace;
       font-variant-numeric: tabular-nums;
       font-weight: 700;
-      font-size: 14px;
+      font-size: 13.5px;
+      letter-spacing: -0.02em;
       transition: transform 0.18s ease;
     }
     tbody tr:hover .amount { transform: scale(1.03); }
