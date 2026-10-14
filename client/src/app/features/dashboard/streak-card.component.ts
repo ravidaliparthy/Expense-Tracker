@@ -78,6 +78,8 @@ import { DayStreakItem, StreakInfo } from '../../core/streak.service';
       background: linear-gradient(135deg, #FFEDD5 0%, #FEE2E2 100%);
       border-color: #FDBA74;
       color: #EA580C;
+      box-shadow: 0 2px 10px rgba(234, 88, 12, 0.25);
+      animation: flameGlow 3s infinite ease-in-out;
     }
     :host-context([data-theme='dark']) .flame-badge {
       background: #451A03;
@@ -88,6 +90,12 @@ import { DayStreakItem, StreakInfo } from '../../core/streak.service';
       background: linear-gradient(135deg, #431407 0%, #450A0A 100%);
       border-color: #9A3412;
       color: #FB923C;
+      box-shadow: 0 0 14px rgba(249, 115, 22, 0.35);
+      animation: flameGlow 3s infinite ease-in-out;
+    }
+    @keyframes flameGlow {
+      0%, 100% { transform: scale(1); filter: drop-shadow(0 0 2px rgba(249, 115, 22, 0.3)); }
+      50% { transform: scale(1.03); filter: drop-shadow(0 0 8px rgba(249, 115, 22, 0.65)); }
     }
     .flame-ico { font-size: 22px; line-height: 1; }
     .streak-num { font-size: 20px; font-weight: 800; font-variant-numeric: tabular-nums; }
@@ -159,10 +167,11 @@ import { DayStreakItem, StreakInfo } from '../../core/streak.service';
       color: #64748B;
     }
     .day-col.logged .day-dot {
-      background: #10B981;
+      background: linear-gradient(135deg, #10B981 0%, #059669 100%);
       border-color: #059669;
       color: #FFFFFF;
       font-weight: 800;
+      box-shadow: 0 2px 6px rgba(16, 185, 129, 0.35);
     }
     .day-col.today .day-dot {
       outline: 2px solid #6366F1;

@@ -82,19 +82,9 @@ import { Category, PaymentSource, TransactionKind, TransactionTag, money } from 
               <button type="button" class="btn-voice-done" (click)="toggleVoice()">Done ✓</button>
             </div>
 
-            <!-- Voice Notice / Error Banner -->
-            <div *ngIf="speechError" class="voice-error-banner">
-              <div class="error-msg-wrap">
-                <span>⚠️ {{ speechError }}</span>
-                <button
-                  *ngIf="isSafari || isIOS"
-                  type="button"
-                  class="safari-guide-link"
-                  (click)="showSafariHelp = !showSafariHelp"
-                >
-                  {{ showSafariHelp ? 'Hide iPhone Shortcuts ▲' : '💡 See 2 Instant iPhone Voice Methods ▼' }}
-                </button>
-              </div>
+            <!-- Voice Notice / Error Banner (Only for genuine speech failure) -->
+            <div *ngIf="speechError && !speechError.startsWith('iPhone tip')" class="voice-error-banner">
+              <span>⚠️ {{ speechError }}</span>
               <button type="button" class="btn-dismiss" (click)="speechError = null">✕</button>
             </div>
 
@@ -679,11 +669,7 @@ export class FastEntryModalComponent implements OnInit, OnDestroy {
 
     this.hasSpeechSupport = this.checkSpeechSupport();
     if (this.startWithVoice && this.hasSpeechSupport) {
-      if (this.isStandalone && this.isIOS) {
-        // In iOS PWA, WebKit blocks microphone permission prompts when triggered outside direct tap handlers.
-        // Prompt user to tap "Speak Now" or use the iPhone keyboard mic.
-        this.speechError = 'iPhone tip: Tap 🎙️ Speak Now, or tap the 🎙️ mic on your iPhone keyboard (next to space bar) for zero prompts!';
-      } else {
+      if (!this.isStandalone || !this.isIOS) {
         try {
           this.startListeningSession();
         } catch {

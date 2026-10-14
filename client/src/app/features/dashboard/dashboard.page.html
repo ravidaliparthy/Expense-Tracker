@@ -29,22 +29,82 @@
 <app-streak-card [streak]="streakInfo()"></app-streak-card>
 
 <div class="kpi-grid">
-  <div class="card kpi"><h3>Total expenses</h3><div class="value negative">{{ money(kpis().expense, currency()) }}</div><div class="sub">{{ kpis().expenseCount }} debit transactions</div></div>
-  <div class="card kpi"><h3>Total income</h3><div class="value positive">{{ money(kpis().income, currency()) }}</div><div class="sub">{{ kpis().incomeCount }} credits received</div></div>
-  <div class="card kpi"><h3>Net savings</h3><div class="value" [class.positive]="kpis().net >= 0" [class.negative]="kpis().net < 0">{{ signedMoney(kpis().net, currency()) }}</div><div class="sub">income minus expenses</div></div>
-  <div class="card kpi"><h3>Savings rate</h3><div class="value" [class.positive]="kpis().savings >= 0" [class.negative]="kpis().savings < 0">{{ kpis().savings }}%</div><div class="sub">of income retained</div></div>
+  <div class="card kpi kpi-expense">
+    <div class="kpi-header">
+      <span class="kpi-icon">📉</span>
+      <h3>Total expenses</h3>
+    </div>
+    <div class="value negative">{{ money(kpis().expense, currency()) }}</div>
+    <div class="sub">{{ kpis().expenseCount }} debit transactions</div>
+  </div>
+  <div class="card kpi kpi-income">
+    <div class="kpi-header">
+      <span class="kpi-icon">📈</span>
+      <h3>Total income</h3>
+    </div>
+    <div class="value positive">{{ money(kpis().income, currency()) }}</div>
+    <div class="sub">{{ kpis().incomeCount }} credits received</div>
+  </div>
+  <div class="card kpi kpi-savings">
+    <div class="kpi-header">
+      <span class="kpi-icon">💎</span>
+      <h3>Net savings</h3>
+    </div>
+    <div class="value" [class.positive]="kpis().net >= 0" [class.negative]="kpis().net < 0">{{ signedMoney(kpis().net, currency()) }}</div>
+    <div class="sub">income minus expenses</div>
+  </div>
+  <div class="card kpi kpi-rate">
+    <div class="kpi-header">
+      <span class="kpi-icon">⚡</span>
+      <h3>Savings rate</h3>
+    </div>
+    <div class="value" [class.positive]="kpis().savings >= 0" [class.negative]="kpis().savings < 0">{{ kpis().savings }}%</div>
+    <div class="sub">of income retained</div>
+  </div>
 </div>
 <div class="analysis-grid">
-  <div class="card"><h3>Avg expense</h3><div class="value" style="font-size:22px">{{ money(kpis().avgExpense, currency()) }}</div><p class="mini">Average debit in this filter.</p></div>
-  <div class="card"><h3>Top spend category</h3><div class="value" style="font-size:20px">{{ kpis().topName }}</div><p class="mini">{{ money(kpis().topCents, currency()) }}</p></div>
-  <div class="card"><h3>Daily burn rate</h3><div class="value" style="font-size:22px">{{ money(cashflowBreakdown().burnRate, currency()) }}</div><p class="mini">Expense run-rate over selected range.</p></div>
-  <div class="card"><h3>Expense / income</h3><div class="value" style="font-size:22px">{{ cashflowBreakdown().expenseRatio }}%</div><p class="mini">Lower is better; over 100% means overspending income.</p></div>
+  <div class="card analysis-card">
+    <div class="card-head-mini"><span class="mini-ico">📊</span><h3>Avg expense</h3></div>
+    <div class="value mono" style="font-size:22px">{{ money(kpis().avgExpense, currency()) }}</div>
+    <p class="mini">Average debit in this filter.</p>
+  </div>
+  <div class="card analysis-card">
+    <div class="card-head-mini"><span class="mini-ico">🏆</span><h3>Top spend category</h3></div>
+    <div class="value" style="font-size:20px">{{ kpis().topName }}</div>
+    <p class="mini">{{ money(kpis().topCents, currency()) }}</p>
+  </div>
+  <div class="card analysis-card">
+    <div class="card-head-mini"><span class="mini-ico">🔥</span><h3>Daily burn rate</h3></div>
+    <div class="value mono" style="font-size:22px">{{ money(cashflowBreakdown().burnRate, currency()) }}</div>
+    <p class="mini">Expense run-rate over selected range.</p>
+  </div>
+  <div class="card analysis-card">
+    <div class="card-head-mini"><span class="mini-ico">⚖️</span><h3>Expense / income</h3></div>
+    <div class="value mono" style="font-size:22px">{{ cashflowBreakdown().expenseRatio }}%</div>
+    <p class="mini">Lower is better; over 100% means overspending.</p>
+  </div>
 </div>
 <div class="analysis-grid">
-  <div class="card"><h3>Added vs spent</h3><div class="value positive" style="font-size:22px">{{ money(kpis().income, currency()) }}</div><p class="mini">Added, against {{ money(kpis().expense, currency()) }} spent.</p></div>
-  <div class="card"><h3>Savings this period</h3><div class="value" style="font-size:22px" [class.positive]="kpis().net >= 0" [class.negative]="kpis().net < 0">{{ signedMoney(kpis().net, currency()) }}</div><p class="mini">Actual retained cash after expenses.</p></div>
-  <div class="card"><h3>Projected savings</h3><div class="value" style="font-size:22px" [class.positive]="cashflowBreakdown().projectedNet >= 0" [class.negative]="cashflowBreakdown().projectedNet < 0">{{ signedMoney(cashflowBreakdown().projectedNet, currency()) }}</div><p class="mini">If today's burn rate continues.</p></div>
-  <div class="card"><h3>Safe to spend/day</h3><div class="value" style="font-size:22px">{{ money(cashflowBreakdown().safeToday, currency()) }}</div><p class="mini">For {{ cashflowBreakdown().daysLeft }} days left in this range.</p></div>
+  <div class="card analysis-card">
+    <div class="card-head-mini"><span class="mini-ico">📥</span><h3>Added vs spent</h3></div>
+    <div class="value positive mono" style="font-size:22px">{{ money(kpis().income, currency()) }}</div>
+    <p class="mini">Added, against {{ money(kpis().expense, currency()) }} spent.</p>
+  </div>
+  <div class="card analysis-card">
+    <div class="card-head-mini"><span class="mini-ico">💰</span><h3>Savings this period</h3></div>
+    <div class="value mono" style="font-size:22px" [class.positive]="kpis().net >= 0" [class.negative]="kpis().net < 0">{{ signedMoney(kpis().net, currency()) }}</div>
+    <p class="mini">Actual retained cash after expenses.</p>
+  </div>
+  <div class="card analysis-card">
+    <div class="card-head-mini"><span class="mini-ico">🎯</span><h3>Projected savings</h3></div>
+    <div class="value mono" style="font-size:22px" [class.positive]="cashflowBreakdown().projectedNet >= 0" [class.negative]="cashflowBreakdown().projectedNet < 0">{{ signedMoney(cashflowBreakdown().projectedNet, currency()) }}</div>
+    <p class="mini">If today's burn rate continues.</p>
+  </div>
+  <div class="card analysis-card">
+    <div class="card-head-mini"><span class="mini-ico">🛡️</span><h3>Safe to spend/day</h3></div>
+    <div class="value mono" style="font-size:22px">{{ money(cashflowBreakdown().safeToday, currency()) }}</div>
+    <p class="mini">For {{ cashflowBreakdown().daysLeft }} days left in this range.</p>
+  </div>
 </div>
 <div class="grid-2">
   <div class="card"><h3>🧠 Money insights</h3>
